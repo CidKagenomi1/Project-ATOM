@@ -1,9 +1,17 @@
+"""
+A.T.O.M. Chat Interface
+Autonomous Task Orchestration Machine
+With Dynamic CSS & Visual Cortex Status
+"""
+
 import streamlit as st
 import os
+import time
 from dotenv import load_dotenv
 
 # Import ATOMCortex from modules
-from modules.cortex import ATOMCortex, GROQ_AVAILABLE, CREW_AVAILABLE
+from modules.cortex import ATOMCortex, GROQ_AVAILABLE, CREW_AVAILABLE, OLLAMA_AVAILABLE
+from modules.style_manager import generate_css, get_settings, get_status_html
 
 # --- PAGE CONFIG ---
 st.set_page_config(
@@ -15,121 +23,12 @@ st.set_page_config(
 
 load_dotenv()
 
-# --- CSS STYLING ---
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap');
-    
-    .stApp {
-        background-color: #000000;
-        color: #E0E0E0;
-        font-family: 'Inter', sans-serif;
-    }
-    
-    #MainMenu, footer {visibility: hidden;}
-    header[data-testid="stHeader"] {background: transparent;}
-    
-    .main .block-container {
-        padding: 2rem 3rem;
-        max-width: 1200px;
-    }
-    
-    h1, h2, h3 {
-        font-family: 'Inter', sans-serif;
-        font-weight: 300;
-        letter-spacing: 0.15em;
-        text-transform: uppercase;
-        color: #FFFFFF;
-        border-bottom: 1px solid #333333;
-        padding-bottom: 0.5rem;
-    }
-    
-    .stCaption {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.75rem;
-        color: #666666;
-    }
-    
-    [data-testid="stSidebar"] {
-        background-color: #000000;
-        border-right: 1px solid #1A1A1A;
-    }
-    
-    .stChatInput > div {
-        background-color: #000000 !important;
-        border: 1px solid #333333 !important;
-        border-radius: 0 !important;
-    }
-    
-    .stChatInput input {
-        background-color: #000000 !important;
-        color: #FFFFFF !important;
-        font-family: 'JetBrains Mono', monospace !important;
-    }
-    
-    .stChatMessage {
-        background-color: transparent !important;
-        border-left: 2px solid #333333 !important;
-        border-radius: 0 !important;
-        padding: 1rem 1.5rem !important;
-    }
-    
-    .stChatMessage[data-testid="stChatMessageAssistant"] {
-        border-left-color: #FFFFFF !important;
-    }
-    
-    .stChatMessage p {
-        color: #CCCCCC !important;
-        font-family: 'Inter', sans-serif !important;
-        line-height: 1.6 !important;
-    }
-    
-    .stChatMessage .stAvatar { display: none !important; }
-    
-    .stButton > button {
-        background-color: transparent !important;
-        color: #888888 !important;
-        border: 1px solid #333333 !important;
-        border-radius: 0 !important;
-        font-family: 'JetBrains Mono', monospace !important;
-        font-size: 0.75rem !important;
-        text-transform: uppercase !important;
-    }
-    
-    .stButton > button:hover {
-        background-color: #FFFFFF !important;
-        color: #000000 !important;
-    }
-    
-    .stSuccess, .stWarning, .stError {
-        background-color: transparent !important;
-        border-radius: 0 !important;
-        font-family: 'JetBrains Mono', monospace !important;
-        font-size: 0.7rem !important;
-    }
-    
-    .stSuccess { border-left: 2px solid #00FF00 !important; color: #00FF00 !important; }
-    .stWarning { border-left: 2px solid #FFAA00 !important; color: #FFAA00 !important; }
-    .stError { border-left: 2px solid #FF3333 !important; color: #FF3333 !important; }
-    
-    .streamlit-expanderHeader {
-        background-color: #0A0A0A !important;
-        border: 1px solid #222222 !important;
-        color: #888888 !important;
-        font-family: 'JetBrains Mono', monospace !important;
-        font-size: 0.75rem !important;
-    }
-    
-    .streamlit-expanderContent {
-        background-color: #050505 !important;
-        border: 1px solid #222222 !important;
-        border-top: none !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+# --- DYNAMIC CSS (from settings) ---
+settings = get_settings(st.session_state)
+st.markdown(generate_css(settings), unsafe_allow_html=True)
 
 
-# --- CORTEX ---
+# --- CORTEX INITIALIZATION ---
 def get_cortex():
     if "cortex_instance" not in st.session_state:
         try:
@@ -149,30 +48,70 @@ if "messages" not in st.session_state:
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("### CORTEX")
-    st.markdown("---")
+    st.markdown("### CORTEX STATUS")
     
     cortex = get_cortex()
-    if cortex:
-        st.success("ONLINE")
-        st.caption(f"Groq: {'Y' if GROQ_AVAILABLE else 'N'} | Crew: {'Y' if CREW_AVAILABLE else 'N'}")
-    else:
-        st.error("ERROR")
-        if st.button("REINIT"):
-            if "cortex_instance" in st.session_state:
-                del st.session_state.cortex_instance
-            st.rerun()
     
-    st.markdown("---")
-    st.markdown("### NAVIGATION")
-    st.page_link("ATOM_Chat.py", label="💬 Chat")
-    st.page_link("pages/telemetry.py", label="📊 Telemetry")
-    st.page_link("pages/notes.py", label="📝 Notes")
-    
+    # Visual Dashboard Grid
     st.markdown("---")
     
-    # Save chat to Smart Notes
-    if st.button("💾 Save to Notes"):
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Local Model Status
+        local_latency = "~2-5s" if OLLAMA_AVAILABLE else "—"
+        st.markdown(
+            get_status_html("LOCAL", OLLAMA_AVAILABLE, local_latency),
+            unsafe_allow_html=True
+        )
+    
+    with col2:
+        # Groq Cloud Status
+        groq_latency = "~0.5-2s" if GROQ_AVAILABLE else "—"
+        st.markdown(
+            get_status_html("GROQ", GROQ_AVAILABLE, groq_latency),
+            unsafe_allow_html=True
+        )
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    col3, col4 = st.columns(2)
+    
+    with col3:
+        # CrewAI Status
+        st.markdown(
+            get_status_html("CREW", CREW_AVAILABLE, "Multi-Agent"),
+            unsafe_allow_html=True
+        )
+    
+    with col4:
+        # Overall System Status
+        system_ok = cortex is not None
+        st.markdown(
+            get_status_html("SYSTEM", system_ok, "v4.0"),
+            unsafe_allow_html=True
+        )
+    
+    st.markdown("---")
+    
+    # Quick Actions
+    st.markdown("### ACTIONS")
+    
+    if st.button("🔄 Reinitialize Cortex", use_container_width=True):
+        if "cortex_instance" in st.session_state:
+            del st.session_state.cortex_instance
+        st.rerun()
+    
+    if st.button("🧹 Clear Memory", use_container_width=True):
+        st.session_state.messages = [
+            {"role": "assistant", "content": "Memory cleared. Ready.", "thinking": None}
+        ]
+        if "cortex_instance" in st.session_state:
+            del st.session_state.cortex_instance
+        st.rerun()
+    
+    # Save chat to Notes
+    if st.button("💾 Save to Notes", use_container_width=True):
         if len(st.session_state.messages) > 1:
             try:
                 from modules.note_brain import summarize_conversation
@@ -194,22 +133,24 @@ with st.sidebar:
         else:
             st.warning("Belum ada chat")
     
-    if st.button("CLEAR MEMORY"):
-        st.session_state.messages = [
-            {"role": "assistant", "content": "Memory cleared. Ready.", "thinking": None}
-        ]
-        if "cortex_instance" in st.session_state:
-            del st.session_state.cortex_instance
-        st.rerun()
+    st.markdown("---")
+    
+    # Navigation
+    st.markdown("### NAVIGATION")
+    st.page_link("ATOM_Chat.py", label="💬 Chat")
+    st.page_link("pages/notes.py", label="📝 Notes")
+    st.page_link("pages/telemetry.py", label="📊 Telemetry")
+    st.page_link("pages/settings.py", label="⚙️ Settings")
 
 
-# --- MAIN ---
+# --- MAIN CONTENT ---
 st.markdown("## A.T.O.M")
-st.caption("AUTONOMOUS TASK ORCHESTRATION MACHINE · v3.2 CORTEX")
+st.caption("AUTONOMOUS TASK ORCHESTRATION MACHINE · v4.0 CORTEX")
 
-# Display Chat
+# Display Chat History
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
+        # Show thinking process if available
         if msg.get("thinking"):
             with st.expander("🧠 Thinking Process", expanded=False):
                 for step in msg["thinking"]:
@@ -219,12 +160,14 @@ for msg in st.session_state.messages:
         
         st.markdown(msg["content"])
 
-# Input
+# Chat Input
 if prompt := st.chat_input("Enter command..."):
+    # Add user message
     st.session_state.messages.append({"role": "user", "content": prompt, "thinking": None})
     with st.chat_message("user"):
         st.markdown(prompt)
 
+    # Generate response
     with st.chat_message("assistant"):
         thinking_placeholder = st.empty()
         message_placeholder = st.empty()
@@ -237,6 +180,7 @@ if prompt := st.chat_input("Enter command..."):
                 
                 response, thinking_steps = cortex.process(prompt)
                 
+                # Show thinking process
                 with thinking_placeholder.expander("🧠 Thinking Process", expanded=False):
                     for step in thinking_steps:
                         st.markdown(f"**{step['step']}**")
@@ -245,6 +189,7 @@ if prompt := st.chat_input("Enter command..."):
                 
                 message_placeholder.markdown(response)
                 
+                # Save to history
                 st.session_state.messages.append({
                     "role": "assistant", 
                     "content": response, 

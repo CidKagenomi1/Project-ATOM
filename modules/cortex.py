@@ -1,7 +1,7 @@
 """
-ATOM CORTEX v3.0
-Otak utama ATOM dengan arsitektur bersih.
-Primary: Groq | Backup: Gemini | Special: CrewAI & Interpreter
+ATOM CORTEX v4.0 - Local First, Cloud Rescue
+Otak utama ATOM dengan arsitektur Timeout Failover.
+Primary: Ollama (Llama 3.2 Local) | Backup: Groq Cloud | Fallback: Gemini
 """
 
 import os
@@ -10,15 +10,29 @@ import json
 import pandas as pd
 from datetime import datetime
 from dotenv import load_dotenv
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from langchain_groq import ChatGroq
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_ollama import ChatOllama
 from langchain_core.messages import HumanMessage, SystemMessage
 
 load_dotenv()
 
+# --- CONFIG ---
+LOCAL_TIMEOUT_SECONDS = 40  # Kill switch timeout for local model
+
 # --- STATUS FLAGS ---
 GROQ_AVAILABLE = bool(os.getenv("GROQ_API_KEY"))
 GEMINI_AVAILABLE = bool(os.getenv("GOOGLE_API_KEY"))
+OLLAMA_AVAILABLE = False
+
+# Check if Ollama is running
+try:
+    import requests
+    resp = requests.get("http://localhost:11434/api/tags", timeout=2)
+    OLLAMA_AVAILABLE = resp.status_code == 200
+except:
+    OLLAMA_AVAILABLE = False
 
 # Import CrewAI (optional)
 CREW_AVAILABLE = False
@@ -38,7 +52,7 @@ class Sentinel:
             df = pd.DataFrame(columns=["timestamp", "user_input", "model_used", "response_time", "status"])
             df.to_csv(self.log_file, index=False)
 
-    def log(self, user_input, model_used, start_time):
+    def log(self, user_input, model_used, start_time, status="SUCCESS"):
         duration = round(time.time() - start_time, 2)
         try:
             new_data = pd.DataFrame([{
@@ -46,7 +60,7 @@ class Sentinel:
                 "user_input": user_input[:50] + "...",
                 "model_used": model_used,
                 "response_time": duration,
-                "status": "SUCCESS"
+                "status": status
             }])
             new_data.to_csv(self.log_file, mode='a', header=False, index=False)
         except Exception as e:
@@ -91,19 +105,33 @@ class NeuralRouter:
         if CREW_AVAILABLE and any(kw in txt for kw in crew_kw):
             return "CREW"
         
-        return "CLOUD"
+        return "AI"  # Changed from "CLOUD" to "AI" for new logic
 
 
-# --- 4. THE CORTEX (Otak Utama) ---
+# --- 4. THE CORTEX (Otak Utama dengan Timeout Failover) ---
 class ATOMCortex:
     def __init__(self):
-        print("[ATOM] Initializing CORTEX v3.0...")
+        print("[ATOM] Initializing CORTEX v4.0 - Local First, Cloud Rescue...")
         
         self.sentinel = Sentinel()
         self.librarian = Librarian()
         self.router = NeuralRouter()
+        self.status_callback = None  # For UI status updates
         
-        # OTAK UTAMA: GROQ
+        # OTAK LOKAL: OLLAMA (Primary)
+        self.local_brain = None
+        if OLLAMA_AVAILABLE:
+            try:
+                self.local_brain = ChatOllama(
+                    model="llama3.2",
+                    base_url="http://localhost:11434",
+                    temperature=0.7
+                )
+                print("[OK] LOCAL: Ollama Llama-3.2")
+            except Exception as e:
+                print(f"[WARN] Ollama failed: {e}")
+        
+        # OTAK CLOUD: GROQ (Rescue)
         self.groq_brain = None
         if GROQ_AVAILABLE:
             try:
@@ -112,11 +140,11 @@ class ATOMCortex:
                     api_key=os.getenv("GROQ_API_KEY"),
                     temperature=0.7
                 )
-                print("[OK] PRIMARY: Groq Llama-70B")
+                print("[OK] CLOUD: Groq Llama-70B")
             except Exception as e:
                 print(f"[WARN] Groq failed: {e}")
         
-        # OTAK CADANGAN: GEMINI
+        # OTAK CADANGAN: GEMINI (Last Resort)
         self.gemini_brain = None
         if GEMINI_AVAILABLE:
             try:
@@ -125,38 +153,95 @@ class ATOMCortex:
                     google_api_key=os.getenv("GOOGLE_API_KEY"),
                     temperature=0.7
                 )
-                print("[OK] BACKUP: Gemini Flash")
+                print("[OK] FALLBACK: Gemini Flash")
             except Exception as e:
                 print(f"[WARN] Gemini failed: {e}")
         
-        print("[ATOM] All systems ready.")
-
-    def _call_ai(self, messages):
-        """Logika Failover: Groq -> Gemini"""
+        print(f"[ATOM] All systems ready. Timeout: {LOCAL_TIMEOUT_SECONDS}s")
+    
+    def set_status_callback(self, callback):
+        """Set callback function for UI status updates."""
+        self.status_callback = callback
+    
+    def _update_status(self, message):
+        """Update UI status if callback is set."""
+        print(f"   [STATUS] {message}")
+        if self.status_callback:
+            try:
+                self.status_callback(message)
+            except:
+                pass
+    
+    def _invoke_local(self, messages):
+        """Call local Ollama model (blocking)."""
+        response = self.local_brain.invoke(messages)
+        return response.content
+    
+    def _call_ai_with_timeout(self, messages):
+        """
+        Local First, Cloud Rescue Logic:
+        1. Try Ollama first with 70s timeout
+        2. If timeout/error, switch to Groq Cloud
+        3. If Groq fails, fallback to Gemini
+        """
         
+        # === PHASE 1: TRY LOCAL (OLLAMA) ===
+        if self.local_brain:
+            self._update_status("🧠 Thinking locally (Llama 3.2)...")
+            
+            try:
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(self._invoke_local, messages)
+                    
+                    try:
+                        # Wait with timeout
+                        result = future.result(timeout=LOCAL_TIMEOUT_SECONDS)
+                        return result, "Ollama-Llama-3.2-Local", False
+                        
+                    except FuturesTimeoutError:
+                        # KILL SWITCH ACTIVATED
+                        print(f"   [!] Local Timeout (>{LOCAL_TIMEOUT_SECONDS}s). Switching to Cloud.")
+                        self._update_status(f"⏱️ Local too slow (>{LOCAL_TIMEOUT_SECONDS}s). Switching to Cloud Turbo...")
+                        # Future will be cancelled/abandoned when executor exits
+                        
+            except Exception as e:
+                print(f"   [!] Local error: {e}")
+                self._update_status("⚠️ Local error. Switching to Cloud...")
+        else:
+            self._update_status("☁️ No local model. Using Cloud...")
+        
+        # === PHASE 2: CLOUD RESCUE (GROQ) ===
         if self.groq_brain:
+            self._update_status("🚀 Cloud Turbo (Groq Llama-70B)...")
             try:
                 response = self.groq_brain.invoke(messages)
-                return response.content, "Groq-Llama-70B"
+                return response.content, "Groq-Llama-70B-Cloud", True
             except Exception as e:
                 print(f"   [!] Groq error: {e}")
+                self._update_status("⚠️ Groq error. Trying Gemini...")
         
+        # === PHASE 3: LAST RESORT (GEMINI) ===
         if self.gemini_brain:
+            self._update_status("🔄 Fallback to Gemini...")
             try:
                 response = self.gemini_brain.invoke(messages)
                 content = response.content
                 if isinstance(content, list):
                     content = content[0].get('text', str(content[0])) if content else ""
-                return str(content), "Gemini-Flash"
+                return str(content), "Gemini-Flash", True
             except Exception as e:
-                return f"Semua server sibuk. Error: {e}", "ALL_FAIL"
+                return f"Semua server sibuk. Error: {e}", "ALL_FAIL", True
         
-        return "Tidak ada AI yang aktif. Cek API keys.", "NO_AI"
+        return "Tidak ada AI yang aktif. Cek Ollama/API keys.", "NO_AI", True
 
-    def process(self, user_input):
+    def process(self, user_input, status_callback=None):
         """Main processor - returns (response, thinking_steps)"""
         start_time = time.time()
         thinking = []
+        
+        # Set status callback if provided
+        if status_callback:
+            self.status_callback = status_callback
         
         route = self.router.decide_route(user_input)
         thinking.append({"step": "[ROUTER]", "detail": f"Route: **{route}**"})
@@ -168,6 +253,7 @@ class ATOMCortex:
         
         response = ""
         model_name = "System"
+        was_failover = False
         
         if route == "ACTION":
             thinking.append({"step": "[ACTION]", "detail": "Executing physical command"})
@@ -191,8 +277,8 @@ class ATOMCortex:
                 response = f"CrewAI error: {e}"
                 model_name = "Error"
         
-        else:
-            thinking.append({"step": "[CLOUD]", "detail": "Calling AI brain"})
+        else:  # AI route with timeout failover
+            thinking.append({"step": "[AI]", "detail": "Local First, Cloud Rescue mode"})
             
             system_prompt = SystemMessage(content=f"""
             IDENTITY: Kamu adalah ATOM (Autonomous Task Orchestration Machine).
@@ -204,10 +290,18 @@ class ATOMCortex:
             """)
             
             messages = [system_prompt, HumanMessage(content=user_input)]
-            response, model_name = self._call_ai(messages)
+            response, model_name, was_failover = self._call_ai_with_timeout(messages)
+            
+            # Add failover info to thinking
+            if was_failover:
+                thinking.append({"step": "[FAILOVER]", "detail": f"Switched to cloud: {model_name}"})
 
         self.librarian.add_interaction(user_input, response)
-        duration = self.sentinel.log(user_input, model_name, start_time)
+        
+        # Log with failover status
+        status = "FAILOVER" if was_failover else "SUCCESS"
+        duration = self.sentinel.log(user_input, model_name, start_time, status)
+        
         thinking.append({"step": "[LOG]", "detail": f"Time: {duration}s | Model: {model_name}"})
         print(f"   > Done in {duration}s via {model_name}")
         
@@ -220,7 +314,10 @@ ATOMCorntext = ATOMCortex
 
 # --- TEST ---
 if __name__ == "__main__":
-    print("\n=== ATOM CORTEX TEST ===\n")
+    print("\n=== ATOM CORTEX v4.0 TEST ===\n")
+    print(f"Local: {'✓' if OLLAMA_AVAILABLE else '✗'} | Groq: {'✓' if GROQ_AVAILABLE else '✗'} | Gemini: {'✓' if GEMINI_AVAILABLE else '✗'}")
+    print(f"Timeout: {LOCAL_TIMEOUT_SECONDS}s\n")
+    
     atom = ATOMCortex()
     
     while True:

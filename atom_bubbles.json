@@ -1,8 +1,19 @@
-[
-  {
-    "id": 1768639796,
-    "text": "bisnis lobster aer tawar",
-    "color": "#96CEB4",
-    "created": "15:49"
-  }
-]
+{
+  "bubbles": [
+    {
+      "id": 4,
+      "text": "Exploring the depths of the ocean with robotics.",
+      "color": "amber",
+      "created_at": "2026-01-19T01:09:40.337488",
+      "expanded": true
+    },
+    {
+      "id": 3,
+      "text": "The impact of AI on renewable energy efficiency.",
+      "color": "amber",
+      "created_at": "2026-01-19T01:08:33.215111",
+      "expanded": true
+    }
+  ],
+  "last_id": 4
+}

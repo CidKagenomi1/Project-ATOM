@@ -9,56 +9,81 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- CSS STYLING ---
+# --- CSS STYLING (Elegant Classic Theme - Normalized Fonts) ---
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400&display=swap');
     
     .stApp {
-        background-color: #000000;
-        color: #E0E0E0;
-        font-family: 'Inter', sans-serif;
+        background-color: #0a0a0a;
+        color: #e8e8e8;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
     }
     
     #MainMenu, footer {visibility: hidden;}
     header[data-testid="stHeader"] {background: transparent;}
     
     h1, h2, h3 {
+        font-family: 'Playfair Display', serif;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+        color: #e8e8e8;
+        border-bottom: 1px solid #1a1a1a;
+        padding-bottom: 0.75rem;
+    }
+    
+    /* Text elements - but NOT icons */
+    .stMarkdown p, .stMarkdown span, .stTextInput label {
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+    }
+    
+    .stCaption {
         font-family: 'Inter', sans-serif;
-        font-weight: 300;
-        letter-spacing: 0.15em;
-        text-transform: uppercase;
-        color: #FFFFFF;
-        border-bottom: 1px solid #333333;
-        padding-bottom: 0.5rem;
+        font-size: 0.85rem;
+        color: #888888;
     }
     
     [data-testid="stMetric"] {
-        background-color: #0A0A0A;
-        border: 1px solid #222222;
+        background-color: #111111;
+        border: 1px solid #1a1a1a;
         padding: 1.5rem;
+        border-radius: 4px;
     }
     
     [data-testid="stMetric"] label {
-        color: #666666 !important;
-        font-family: 'JetBrains Mono', monospace !important;
-        font-size: 0.75rem !important;
-        text-transform: uppercase;
+        color: #888888 !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.85rem !important;
     }
     
     [data-testid="stMetric"] [data-testid="stMetricValue"] {
-        color: #FFFFFF !important;
-        font-family: 'JetBrains Mono', monospace !important;
+        color: #c9a962 !important;
+        font-family: 'Playfair Display', serif !important;
         font-size: 2rem !important;
     }
     
     .stDataFrame {
-        border: 1px solid #222222 !important;
+        border: 1px solid #1a1a1a !important;
     }
     
     [data-testid="stSidebar"] {
-        background-color: #000000;
-        border-right: 1px solid #1A1A1A;
+        background-color: #0a0a0a;
+        border-right: 1px solid #1a1a1a;
+    }
+    
+    .stButton > button {
+        background-color: transparent !important;
+        color: #888888 !important;
+        border: 1px solid #1a1a1a !important;
+        border-radius: 4px !important;
+        font-family: 'Inter', sans-serif !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .stButton > button:hover {
+        background-color: #c9a962 !important;
+        color: #0a0a0a !important;
+        border-color: #c9a962 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -169,7 +194,7 @@ else:
 # --- SIDEBAR ---
 with st.sidebar:
     st.markdown("### NAVIGATION")
-    st.page_link("interface.py", label="💬 Chat", icon="💬")
+    st.page_link("ATOM_Chat.py", label="💬 Chat", icon="💬")
     st.page_link("pages/telemetry.py", label="📊 Telemetry", icon="📊")
     
     st.markdown("---")
