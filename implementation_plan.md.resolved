@@ -1,0 +1,83 @@
+# Perbaikan API dan Aktivasi Open Interpreter untuk Device Problem
+
+## Masalah yang Ditemukan
+
+1. **API Key Mismatch**: File [.env](file:///d:/Data%20Project/Personal%20Project/PROJECT%20HIM/.env) menggunakan `GEMINI_API_KEY` tetapi [project_him.py](file:///d:/Data%20Project/Personal%20Project/PROJECT%20HIM/project_him.py) mencari `GOOGLE_API_KEY`
+2. **Open Interpreter Dinonaktifkan**: Fungsi [main()](file:///d:/Data%20Project/Personal%20Project/PROJECT%20HIM/interpreter.py#306-315) di [interpreter.py](file:///d:/Data%20Project/Personal%20Project/PROJECT%20HIM/interpreter.py) langsung keluar tanpa menjalankan fitur
+3. **Model Usang**: [interpreter.py](file:///d:/Data%20Project/Personal%20Project/PROJECT%20HIM/interpreter.py) masih menggunakan `gemini-pro`, seharusnya menggunakan model terbaru
+4. **Tidak Ada Fitur Device Problem**: Open Interpreter belum memiliki kemampuan untuk menganalisis Task Manager/WizTree
+
+---
+
+## Proposed Changes
+
+### Component 1: Environment Configuration
+
+#### [MODIFY] [.env](file:///d:/Data%20Project/Personal%20Project/PROJECT%20HIM/.env)
+
+Menambahkan alias `GOOGLE_API_KEY` agar kedua file bisa menggunakan key yang sama:
+
+```diff
+# Gemini API Key
+# Dapatkan API key dari: https://makersuite.google.com/app/apikey
+GEMINI_API_KEY=AIzaSyBW_-CxbuM207GsQWOQBc5rGqRxl2bFzUQ
++GOOGLE_API_KEY=AIzaSyBW_-CxbuM207GsQWOQBc5rGqRxl2bFzUQ
+```
+
+---
+
+### Component 2: Open Interpreter Activation with Device Diagnostics
+
+#### [MODIFY] [interpreter.py](file:///d:/Data%20Project/Personal%20Project/PROJECT%20HIM/interpreter.py)
+
+Perubahan yang akan dilakukan:
+
+1. **Update model** dari `gemini-pro` ke `gemini-2.0-flash` (model terbaru)
+2. **Aktifkan Open Interpreter** dengan menghapus pesan disabled di [main()](file:///d:/Data%20Project/Personal%20Project/PROJECT%20HIM/interpreter.py#306-315)
+3. **Tambah fungsi analisis sistem** untuk:
+   - Membaca proses dari Task Manager (via PowerShell)
+   - Mengeksekusi perintah WizTree jika tersedia
+   - Menampilkan rekomendasi perbaikan masalah lokal device
+
+**Fungsi baru yang akan ditambahkan:**
+
+```python
+def get_system_processes(self) -> Dict[str, any]:
+    """Get running processes (like Task Manager data)"""
+    # Menggunakan PowerShell untuk mendapatkan proses top CPU/Memory
+
+def get_disk_usage(self) -> Dict[str, any]:
+    """Get disk usage info (WizTree-like functionality)"""
+    # PowerShell untuk analisis ukuran folder
+
+def analyze_local_device_issues(self) -> str:
+    """Analyze and suggest fixes for local device problems"""
+    # Kombinasi analisis CPU, Memory, dan Disk
+```
+
+**Update system prompt** untuk fokus memperbaiki masalah lokal device.
+
+---
+
+## Verification Plan
+
+### Manual Testing
+
+Karena tidak ada unit test di proyek ini, verifikasi dilakukan secara manual:
+
+1. **Test API Key Fix**:
+   - Jalankan `python project_him.py` dan pastikan tidak ada error "API Key tidak ditemukan"
+   - Input "siapa kamu" dan pastikan HIM merespon
+
+2. **Test Open Interpreter Aktif**:
+   - Jalankan `python interpreter.py`
+   - Pastikan muncul prompt interaktif, bukan pesan "dimatikan"
+
+3. **Test Device Diagnostics**:
+   - Di Open Interpreter, ketik: "tampilkan proses yang berjalan"
+   - Pastikan menampilkan daftar proses dengan CPU/Memory usage
+   - Ketik: "analisis masalah device saya"
+   - Pastikan memberikan analisis dan rekomendasi
+
+> [!IMPORTANT]
+> Perlu konfirmasi: Apakah WizTree terinstall di sistem Anda? Jika ya, path instalasinya di mana?

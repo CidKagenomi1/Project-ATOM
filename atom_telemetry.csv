@@ -1,0 +1,32 @@
+timestamp,user_input,model_used,response_time,status
+2026-01-17 05:11:14,bisakah kamu putarkan video podcast malaka project...,Llama-3.2-Local,60.1,SUCCESS
+2026-01-17 05:15:01,kenapa kau pikir kau tidak dapat melakukannya?,Llama-3.2-Local,79.29,SUCCESS
+2026-01-17 05:17:45,"iya, tapi saya sudah memasangkan mu dengan model o...",Llama-3.2-Local,81.31,SUCCESS
+2026-01-17 05:19:46,"iya, tapi saya sudah memasangkan mu dengan model o...",Llama-3.2-Local,122.46,SUCCESS
+2026-01-17 05:27:08,halo,Gemini-Flash,4.28,SUCCESS
+2026-01-17 05:27:49,cek direktori saat ini,Gemini-Flash,5.43,SUCCESS
+2026-01-17 05:29:11,cek direktori saat ini,Gemini-Flash,4.08,SUCCESS
+2026-01-17 05:30:13,cek folder saat ini,ATOM-Interpreter,8.95,SUCCESS
+2026-01-17 05:34:06,cek folder saat ini,ATOM-Interpreter,4.85,SUCCESS
+2026-01-17 05:35:37,cek folder saat ini,ATOM-Interpreter,5.83,SUCCESS
+2026-01-17 05:37:23,cek folder saat ini,ATOM-Interpreter,42.06,SUCCESS
+2026-01-17 05:40:27,bisakah kamu putarkan video podcast malaka project...,ERROR,70.15,SUCCESS
+2026-01-17 05:46:22,yaudah deh gapapa,ERROR,70.28,SUCCESS
+2026-01-17 05:50:15,yaa gausah pakai cloud lah,ERROR,71.15,SUCCESS
+2026-01-17 06:10:29,halo,Groq-Llama,35.91,SUCCESS
+2026-01-17 06:21:20,bisakah kamu putarkan video podcast malaka project...,Groq-Llama,37.22,SUCCESS
+2026-01-17 06:38:46,bisakah kamu putarkan video podcast malaka project...,Groq-Llama-70B,1.23,SUCCESS
+2026-01-17 06:48:53,bisakah kamu putarkan video podcast malaka project...,Groq-Llama-70B,0.7,SUCCESS
+2026-01-17 06:50:55,bisakah kamu putarkan video podcast malaka project...,Groq-Llama-70B,1.0,SUCCESS
+2026-01-17 06:51:16,bisakah kamu putarkan video podcast youtube malaka...,Groq-Llama-70B,1.02,SUCCESS
+2026-01-17 07:01:30,"yaudah, berapa harga minyak sekaang dan apakah har...",ATOM-Hand,16.01,SUCCESS
+2026-01-17 07:08:26,aku tidak mengerti...,ALL_FAIL,1.22,SUCCESS
+2026-01-17 13:24:49,tolong berikan jawaban...,ALL_FAIL,1.65,SUCCESS
+2026-01-17 13:54:23,"kau tidak mengerti masalah nya dimana, tapi tolong...",Groq-Llama-70B,0.72,SUCCESS
+2026-01-17 13:55:25,buka aplikasi microsoft word di laptopku lalu keti...,ATOM-Hand,1.81,SUCCESS
+2026-01-17 13:56:20,berapa batrai ku saat ini?...,Groq-Llama-70B,0.67,SUCCESS
+2026-01-17 13:56:46,tetap dalam mode performa...,Groq-Llama-70B,0.93,SUCCESS
+2026-01-17 13:58:53,putar lagu waiting for love by avici di youtube...,ATOM-Hand,1.53,SUCCESS
+2026-01-17 15:05:41, bisakah kamu putarkan video podcast malaka projec...,Groq-Llama-70B,1.06,SUCCESS
+2026-01-18 15:18:42,"apasih yang dirasakan oleh pebisnis typhoon, orang...",Groq-Llama-70B,2.23,SUCCESS
+2026-01-18 15:22:33,"kalau aku mau pasang banyak ai di komputer ku, unt...",Groq-Llama-70B,1.96,SUCCESS
