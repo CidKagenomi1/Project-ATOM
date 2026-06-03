@@ -1,5 +1,39 @@
-.env
-__pycache__/
-.venvs/
+# Python venv
 .venv/
 .venv_atom/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Environment variables — JANGAN COMMIT!
+.env
+.env.local
+.env.production
+
+# Telemetry (local only)
+atom_telemetry.csv
+
+# Notes database (local data — user data)
+# atom_smart_notes.json  ← uncomment kalau tidak mau commit notes
+# atom_bubbles.json      ← uncomment kalau tidak mau commit bubbles
+
+# Cache
+cache/
+.cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel/

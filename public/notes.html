@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A.T.O.M. — Smart Notes</title>
+  <meta name="description" content="ATOM Smart Notes — Obsidian-style knowledge management with AI features">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <div class="sidebar-header">
+        <span class="atom-logo">⚛️</span>
+        <div class="atom-brand">
+          <div class="atom-brand-title">A.T.O.M.</div>
+          <div class="atom-brand-sub">Smart Notes</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="index.html" id="nav-chat">
+          <span class="nav-icon">💬</span>
+          Chat
+        </a>
+        <a href="notes.html" class="active" id="nav-notes">
+          <span class="nav-icon">📝</span>
+          Smart Notes
+        </a>
+        <a href="telemetry.html" id="nav-telemetry">
+          <span class="nav-icon">📊</span>
+          Telemetry
+        </a>
+      </nav>
+      <div class="sidebar-status">
+        <div class="status-row">
+          <div class="status-dot online"></div>
+          <span class="status-label">Notes AI aktif</span>
+        </div>
+      </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- ============ MAIN ============ -->
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="flex items-center gap-3">
+          <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+          <span class="topbar-title">Smart Notes</span>
+        </div>
+        <div class="topbar-actions">
+          <!-- Tab switch: Notes / Bubbles -->
+          <div class="mode-tabs">
+            <button class="mode-tab active" id="tab-notes-btn" onclick="switchTab('notes')">📝 Notes</button>
+            <button class="mode-tab" id="tab-bubbles-btn" onclick="switchTab('bubbles')">🫧 Bubbles</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- ============ NOTES TAB ============ -->
+      <div id="tab-notes" class="notes-layout">
+
+        <!-- Notes Sidebar -->
+        <aside class="notes-sidebar">
+          <div class="notes-sidebar-header">
+            <button class="btn btn-primary btn-sm w-full" id="btn-new-note" style="margin-bottom:var(--space-3);">
+              ➕ New Note
+            </button>
+            <div class="search-input">
+              <span class="search-icon">🔍</span>
+              <input type="text" class="form-input" id="notes-search" placeholder="Search notes...">
+            </div>
+          </div>
+
+          <div class="notes-list" id="notes-list">
+            <!-- Populated by JS -->
+          </div>
+
+          <div class="notes-sidebar-footer" id="notes-stats">
+            0 notes · 0 tags
+          </div>
+        </aside>
+
+        <!-- Note Content Area -->
+        <div class="note-content-area" id="note-content-area">
+
+          <!-- Empty placeholder -->
+          <div id="note-placeholder" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-muted);gap:var(--space-3);text-align:center;padding:var(--space-8);">
+            <span style="font-size:3rem;opacity:0.4;">📝</span>
+            <p>Pilih note dari sidebar<br>atau buat note baru</p>
+          </div>
+
+          <!-- Note Editor (hidden until note selected) -->
+          <div id="note-editor" class="hidden" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
+            <!-- Toolbar -->
+            <div class="note-toolbar">
+              <input type="text" class="note-title-input" id="note-title-input" placeholder="Judul note...">
+              <div class="mode-tabs">
+                <button class="mode-tab active" id="mode-view-btn" onclick="setNoteMode('view')">👁 View</button>
+                <button class="mode-tab" id="mode-edit-btn" onclick="setNoteMode('edit')">✏️ Edit</button>
+                <button class="mode-tab" id="mode-chat-btn" onclick="setNoteMode('chat')">💬 Chat</button>
+              </div>
+              <button class="btn btn-secondary btn-sm" id="btn-save-note">💾 Save</button>
+              <button class="btn btn-danger btn-sm" id="btn-delete-note">🗑</button>
+            </div>
+
+            <!-- Tags Bar -->
+            <div id="tags-bar" style="padding:0 var(--space-5) var(--space-2) var(--space-5);display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;border-bottom:1px solid var(--border-color);">
+              <span id="tags-display"></span>
+              <input type="text" id="tags-input" class="form-input" placeholder="tag1, tag2..." style="flex:1;min-width:120px;max-width:200px;font-size:0.78rem;padding:4px 8px;height:auto;">
+              <button class="btn btn-ghost btn-sm" id="btn-autotag" title="AI Auto-Tag">🤖 Auto-Tag</button>
+            </div>
+
+            <!-- Note Body -->
+            <div class="note-body" id="note-body">
+
+              <!-- View Mode -->
+              <div id="note-view-content" class="markdown-view">
+                <p style="color:var(--text-muted);font-style:italic;">Empty note. Switch to Edit mode to start writing.</p>
+              </div>
+
+              <!-- Edit Mode -->
+              <div id="note-edit-content" style="display:none;flex-direction:column;gap:var(--space-3);height:100%;">
+                <div class="flex gap-2" style="flex-shrink:0;">
+                  <button class="btn btn-secondary btn-sm" id="btn-refine" title="AI rapihkan teks">✨ Rapihkan (AI)</button>
+                  <button class="btn btn-secondary btn-sm" id="btn-gen-title" title="AI generate judul">🏷️ Gen Title</button>
+                </div>
+                <textarea
+                  id="note-textarea"
+                  class="form-textarea"
+                  placeholder="Tulis catatan dalam Markdown...
+  
+# Heading 1
+## Heading 2
+  
+- Bullet point
+- Another item
+  
+**Bold** *Italic* `code`"
+                  style="flex:1;min-height:400px;font-family:var(--font-mono);font-size:0.85rem;"
+                ></textarea>
+              </div>
+
+              <!-- Chat Mode -->
+              <div id="note-chat-content" class="note-chat-area" style="display:none;">
+                <div style="background:var(--bg-elevated);border-radius:var(--radius-md);padding:var(--space-3);margin-bottom:var(--space-3);font-size:0.8rem;color:var(--text-secondary);">
+                  💡 Chat ini menjawab berdasarkan <strong>isi note saja</strong> (seperti NotebookLM).
+                </div>
+                <div class="note-chat-messages" id="note-chat-messages"></div>
+                <div class="note-chat-input-row">
+                  <input type="text" class="form-input" id="note-chat-input" placeholder="Tanya tentang catatan ini..." style="flex:1;">
+                  <button class="btn btn-primary btn-sm" id="btn-note-chat-send">Kirim</button>
+                </div>
+                <button class="btn btn-ghost btn-sm" id="btn-clear-note-chat" style="margin:var(--space-2) var(--space-4);">🗑 Clear Chat</button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ BUBBLES TAB ============ -->
+      <div id="tab-bubbles" style="display:none;flex:1;overflow:auto;">
+        <div style="padding:var(--space-5);max-width:900px;margin:0 auto;">
+          <h2 style="margin-bottom:var(--space-2);">🫧 Floating Bubbles</h2>
+          <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:var(--space-4);">
+            Catatan kilat untuk ide-ide singkat. Bisa dikembangkan menjadi artikel penuh.
+          </p>
+
+          <!-- Add bubble -->
+          <div class="flex gap-2" style="margin-bottom:var(--space-5);">
+            <input type="text" class="form-input" id="bubble-input" placeholder="Ketik ide singkat (1-2 kalimat)..." style="flex:1;">
+            <button class="btn btn-primary" id="btn-add-bubble">🫧 Add</button>
+          </div>
+
+          <!-- Bubble grid -->
+          <div class="bubble-grid" id="bubble-grid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="mobile-bottom-nav">
+    <div class="nav-items">
+      <a href="index.html" class="nav-item">
+        <span class="icon">💬</span>
+        <span>Chat</span>
+      </a>
+      <a href="notes.html" class="nav-item active">
+        <span class="icon">📝</span>
+        <span>Notes</span>
+      </a>
+      <a href="telemetry.html" class="nav-item">
+        <span class="icon">📊</span>
+        <span>Stats</span>
+      </a>
+    </div>
+  </nav>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- AI Status overlay -->
+  <div id="ai-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;">
+    <div class="card" style="text-align:center;padding:var(--space-8);min-width:260px;">
+      <div style="font-size:2rem;margin-bottom:var(--space-3);">⚛️</div>
+      <p id="ai-overlay-msg" style="color:var(--text-primary);font-weight:600;">AI sedang bekerja...</p>
+    </div>
+  </div>
+
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/notes.js"></script>
+</body>
+</html>

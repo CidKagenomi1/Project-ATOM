@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A.T.O.M. — Autonomous Task Orchestration Machine</title>
+  <meta name="description" content="ATOM: AI assistant powered by Gemini & Groq. Smart, fast, and intelligent.">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <!-- marked.js for markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <div class="sidebar-header">
+        <span class="atom-logo">⚛️</span>
+        <div class="atom-brand">
+          <div class="atom-brand-title">A.T.O.M.</div>
+          <div class="atom-brand-sub">Cortex v4.0</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="index.html" class="active" id="nav-chat">
+          <span class="nav-icon">💬</span>
+          Chat
+        </a>
+        <a href="notes.html" id="nav-notes">
+          <span class="nav-icon">📝</span>
+          Smart Notes
+        </a>
+        <a href="telemetry.html" id="nav-telemetry">
+          <span class="nav-icon">📊</span>
+          Telemetry
+        </a>
+      </nav>
+
+      <div class="sidebar-status">
+        <div class="status-row">
+          <div class="status-dot" id="dot-groq"></div>
+          <span class="status-label">Cloud AI (Groq)</span>
+        </div>
+        <div class="status-row">
+          <div class="status-dot" id="dot-gemini"></div>
+          <span class="status-label">Fallback (Gemini)</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Sidebar overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="app-main">
+
+      <!-- Topbar -->
+      <header class="app-topbar">
+        <div class="flex items-center gap-3">
+          <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Open menu">☰</button>
+          <span class="topbar-title">Chat</span>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost btn-sm" id="btn-clear-chat" title="Clear chat">
+            🗑️ Clear
+          </button>
+        </div>
+      </header>
+
+      <!-- Chat Layout -->
+      <div class="chat-layout">
+
+        <!-- Grand Header -->
+        <div class="atom-header">
+          <h1 class="atom-title">A.T.O.M.</h1>
+          <p class="atom-subtitle">Autonomous Task Orchestration Machine · v4.0 Cortex</p>
+          <div class="atom-status-row" id="status-pills">
+            <span class="status-pill offline" id="pill-groq">
+              <span>●</span> Cloud AI
+            </span>
+            <span class="status-pill offline" id="pill-gemini">
+              <span>●</span> Fallback
+            </span>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="messages-area" id="messages-area">
+
+          <!-- Empty state (shown when no messages) -->
+          <div class="empty-chat" id="empty-chat">
+            <div class="icon">⚛️</div>
+            <p>ATOM siap. Tanyakan apa saja.</p>
+            <div class="suggestions">
+              <button class="suggestion-chip" data-suggestion="Jelaskan konsep machine learning dalam bahasa sederhana">
+                💡 Jelaskan machine learning
+              </button>
+              <button class="suggestion-chip" data-suggestion="Bantu saya menulis kode Python untuk scraping web">
+                🐍 Python web scraping
+              </button>
+              <button class="suggestion-chip" data-suggestion="Buatkan saya jadwal belajar pemrograman 30 hari">
+                📅 Jadwal belajar 30 hari
+              </button>
+              <button class="suggestion-chip" data-suggestion="Apa perbedaan antara AI, ML, dan Deep Learning?">
+                🧠 AI vs ML vs Deep Learning
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Attached Files Display -->
+        <div class="attached-files" id="attached-files"></div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+          <div class="input-row" id="input-row">
+            <textarea
+              class="chat-input"
+              id="chat-input"
+              placeholder="Ask A.T.O.M. anything..."
+              rows="1"
+              aria-label="Chat message input"
+            ></textarea>
+            <div class="input-actions">
+              <button class="btn-attach" id="btn-attach" title="Attach file">
+                📎
+              </button>
+              <button class="btn-send" id="btn-send" title="Send message" disabled>
+                ➤
+              </button>
+            </div>
+          </div>
+          <!-- Hidden file input -->
+          <input
+            type="file"
+            id="file-upload"
+            accept=".txt,.md,.py,.json,.csv,.html,.css,.js"
+            multiple
+          >
+        </div>
+
+      </div><!-- /chat-layout -->
+    </main>
+  </div>
+
+  <!-- Bottom Nav (Mobile) -->
+  <nav class="mobile-bottom-nav">
+    <div class="nav-items">
+      <a href="index.html" class="nav-item active">
+        <span class="icon">💬</span>
+        <span>Chat</span>
+      </a>
+      <a href="notes.html" class="nav-item">
+        <span class="icon">📝</span>
+        <span>Notes</span>
+      </a>
+      <a href="telemetry.html" class="nav-item">
+        <span class="icon">📊</span>
+        <span>Stats</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/chat.js"></script>
+</body>
+</html>

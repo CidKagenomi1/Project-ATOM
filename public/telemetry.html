@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A.T.O.M. — Telemetry</title>
+  <meta name="description" content="ATOM Telemetry — Monitor AI usage and performance">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <div class="sidebar-header">
+        <span class="atom-logo">⚛️</span>
+        <div class="atom-brand">
+          <div class="atom-brand-title">A.T.O.M.</div>
+          <div class="atom-brand-sub">Telemetry</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="index.html">
+          <span class="nav-icon">💬</span>Chat
+        </a>
+        <a href="notes.html">
+          <span class="nav-icon">📝</span>Smart Notes
+        </a>
+        <a href="telemetry.html" class="active">
+          <span class="nav-icon">📊</span>Telemetry
+        </a>
+      </nav>
+    </aside>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- ============ MAIN ============ -->
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="flex items-center gap-3">
+          <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+          <span class="topbar-title">Telemetry</span>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-secondary btn-sm" onclick="loadAndRender()">🔄 Refresh</button>
+          <button class="btn btn-danger btn-sm" id="btn-clear-telemetry">🗑 Clear</button>
+        </div>
+      </header>
+
+      <div style="padding:var(--space-6);max-width:1100px;margin:0 auto;width:100%;">
+
+        <!-- Header -->
+        <div style="margin-bottom:var(--space-6);">
+          <h1 style="font-size:1.75rem;font-weight:800;letter-spacing:0.05em;">📊 TELEMETRY</h1>
+          <p style="color:var(--text-muted);font-size:0.85rem;letter-spacing:0.1em;text-transform:uppercase;">SYSTEM MONITORING · ATOM v4.0</p>
+        </div>
+
+        <!-- No data state -->
+        <div id="no-data" style="text-align:center;padding:var(--space-12);color:var(--text-muted);">
+          <div style="font-size:3rem;margin-bottom:var(--space-3);opacity:0.4;">📊</div>
+          <p>Belum ada data telemetri.</p>
+          <p style="font-size:0.8rem;margin-top:var(--space-2);">Mulai chat dengan ATOM untuk generate data.</p>
+        </div>
+
+        <!-- Data content -->
+        <div id="telem-content" style="display:none;">
+
+          <!-- Metrics Row -->
+          <section style="margin-bottom:var(--space-6);">
+            <h2 style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:var(--space-4);">OVERVIEW</h2>
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-label">Total Queries</div>
+                <div class="metric-value" id="m-total">0</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Avg Response</div>
+                <div class="metric-value" id="m-avg">0s</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Success Rate</div>
+                <div class="metric-value text-success" id="m-success">100%</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Top Model</div>
+                <div class="metric-value" id="m-top" style="font-size:1.1rem;"></div>
+              </div>
+            </div>
+          </section>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-5);margin-bottom:var(--space-5);">
+
+            <!-- Model Usage -->
+            <section class="card">
+              <div class="card-header">
+                <span class="card-title">Model Usage</span>
+              </div>
+              <div id="model-usage-list" style="display:flex;flex-direction:column;gap:var(--space-3);">
+              </div>
+            </section>
+
+            <!-- Response Time -->
+            <section class="card">
+              <div class="card-header">
+                <span class="card-title">Response Time</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:var(--space-3);">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-2);">
+                  <div style="text-align:center;">
+                    <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">FASTEST</div>
+                    <div id="t-fastest" style="font-size:1.25rem;font-weight:700;color:var(--success);">-</div>
+                  </div>
+                  <div style="text-align:center;">
+                    <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">AVG</div>
+                    <div id="t-avg" style="font-size:1.25rem;font-weight:700;color:var(--gold-primary);">-</div>
+                  </div>
+                  <div style="text-align:center;">
+                    <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">SLOWEST</div>
+                    <div id="t-slowest" style="font-size:1.25rem;font-weight:700;color:var(--error);">-</div>
+                  </div>
+                </div>
+
+                <!-- Bar Chart (canvas) -->
+                <div>
+                  <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:var(--space-2);">By Model (avg seconds):</div>
+                  <div id="model-time-bars" style="display:flex;flex-direction:column;gap:6px;">
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Activity Log -->
+          <section class="card">
+            <div class="card-header">
+              <span class="card-title">Activity Log (Last 20)</span>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Model</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th>Query</th>
+                  </tr>
+                </thead>
+                <tbody id="activity-tbody">
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="mobile-bottom-nav">
+    <div class="nav-items">
+      <a href="index.html" class="nav-item"><span class="icon">💬</span><span>Chat</span></a>
+      <a href="notes.html" class="nav-item"><span class="icon">📝</span><span>Notes</span></a>
+      <a href="telemetry.html" class="nav-item active"><span class="icon">📊</span><span>Stats</span></a>
+    </div>
+  </nav>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/telemetry.js"></script>
+</body>
+</html>
