@@ -69,42 +69,84 @@ def execute_system_action(user_command):
     except Exception as e:
         return f"[ERROR] Otak Groq Gagal: {e}"
 
-    # 2. EKSEKUSI NYATA (THE REAL HANDS)
+    # 2. EKSEKUSI NYATA (THE REAL HANDS - PyAutoGUI Version)
     try:
+        import pyautogui
+        import time
+        
+        # Safety Fail-Safe: memindahkan mouse ke pojok layar akan menghentikan pyautogui
+        pyautogui.FAILSAFE = True
+        pyautogui.PAUSE = 0.3
+
         # --- KASUS 1: BROWSER / YOUTUBE / GOOGLE ---
         if action_type == "BROWSER":
-            webbrowser.open(target)
-            return f"[SUKSES] Membuka Browser:\n{target}\n\n(Cek tab browser Anda, Sir)"
+            # Buka Windows Search
+            pyautogui.press('win')
+            time.sleep(0.5)
+            # Ketik nama browser (default chrome)
+            pyautogui.write('chrome')
+            time.sleep(0.5)
+            pyautogui.press('enter')
+            
+            # Tunggu browser terbuka
+            time.sleep(2.0)
+            
+            # Fokus ke address bar menggunakan Ctrl+L
+            pyautogui.hotkey('ctrl', 'l')
+            time.sleep(0.3)
+            
+            # Ketik URL target dan enter
+            pyautogui.write(target)
+            pyautogui.press('enter')
+            
+            return f"[SUKSES] Membuka Browser & Navigasi ke:\n{target}\n\n(Menggunakan PyAutoGUI)"
             
         # --- KASUS 2: APLIKASI WINDOWS ---
         elif action_type == "APP":
             app_map = {
-                "kalkulator": "calc.exe", "calculator": "calc.exe",
-                "notepad": "notepad.exe",
-                "cmd": "cmd.exe",
-                "explorer": "explorer.exe",
-                "vscode": "code",
+                "kalkulator": "calculator",
+                "notepad": "notepad",
+                "cmd": "cmd",
+                "explorer": "explorer",
+                "vscode": "visual studio code",
                 "spotify": "spotify"
             }
             
-            cmd_to_run = app_map.get(target.lower(), target)
-            subprocess.Popen(cmd_to_run, shell=True)
-            return f"[SUKSES] Meluncurkan Aplikasi: `{cmd_to_run}`"
+            app_name = app_map.get(target.lower(), target)
+            
+            # Buka Windows Search
+            pyautogui.press('win')
+            time.sleep(0.5)
+            # Ketik nama aplikasi
+            pyautogui.write(app_name)
+            time.sleep(0.5)
+            pyautogui.press('enter')
+            
+            return f"[SUKSES] Menjalankan Aplikasi '{app_name}' via Windows Search (Menggunakan PyAutoGUI)"
             
         # --- KASUS 3: SYSTEM UTILS ---
         elif action_type == "SYSTEM":
             if "shutdown" in target.lower():
-                return "[SAFETY] Saya tidak akan mematikan laptop otomatis. Perintahnya: `shutdown /s /t 60`"
+                return "[SAFETY] Tindakan shutdown dibatalkan demi keamanan sistem Anda."
+            elif "lock" in target.lower() or "kunci" in target.lower():
+                # Kunci PC (Win + L)
+                pyautogui.hotkey('win', 'l')
+                return "[SUKSES] Mengunci komputer (Win + L) menggunakan PyAutoGUI"
             elif "battery" in target.lower() or "baterai" in target.lower():
                  import psutil
                  battery = psutil.sensors_battery()
-                 return f"[INFO SISTEM] Baterai: {battery.percent}% | Charging: {battery.power_plugged}"
+                 percent = battery.percent if battery else "N/A"
+                 plugged = battery.power_plugged if battery else "N/A"
+                 return f"[INFO SISTEM] Baterai: {percent}% | Charging: {plugged}"
             
         return f"[INFO] Tindakan '{explanation}' telah diproses."
         
     except Exception as e:
-        return f"[GAGAL EKSEKUSI] Tangan tergelincir: {e}"
+        return f"[GAGAL EKSEKUSI] Terjadi kesalahan pada PyAutoGUI: {e}"
 
 # Test Manual
 if __name__ == "__main__":
-    print(execute_system_action("Putarkan video podcast malaka project"))
+    # Aktifkan import test jika dijalankan langsung
+    import pyautogui
+    print("[ATOM HANDS] PyAutoGUI siap digunakan.")
+

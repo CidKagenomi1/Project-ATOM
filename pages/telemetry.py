@@ -1,92 +1,24 @@
 import streamlit as st
 import os
+import sys
 import pandas as pd
 from datetime import datetime
 
+# Add parent directory to path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 st.set_page_config(
     page_title="ATOM - Telemetry",
-    page_icon="📊",
+    page_icon="T",
     layout="wide"
 )
 
-# --- CSS STYLING (Elegant Classic Theme - Normalized Fonts) ---
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400&display=swap');
-    
-    .stApp {
-        background-color: #0a0a0a;
-        color: #e8e8e8;
-        font-family: 'Inter', 'Segoe UI', sans-serif;
-    }
-    
-    #MainMenu, footer {visibility: hidden;}
-    header[data-testid="stHeader"] {background: transparent;}
-    
-    h1, h2, h3 {
-        font-family: 'Playfair Display', serif;
-        font-weight: 500;
-        letter-spacing: 0.05em;
-        color: #e8e8e8;
-        border-bottom: 1px solid #1a1a1a;
-        padding-bottom: 0.75rem;
-    }
-    
-    /* Text elements - but NOT icons */
-    .stMarkdown p, .stMarkdown span, .stTextInput label {
-        font-family: 'Inter', 'Segoe UI', sans-serif;
-    }
-    
-    .stCaption {
-        font-family: 'Inter', sans-serif;
-        font-size: 0.85rem;
-        color: #888888;
-    }
-    
-    [data-testid="stMetric"] {
-        background-color: #111111;
-        border: 1px solid #1a1a1a;
-        padding: 1.5rem;
-        border-radius: 4px;
-    }
-    
-    [data-testid="stMetric"] label {
-        color: #888888 !important;
-        font-family: 'Inter', sans-serif !important;
-        font-size: 0.85rem !important;
-    }
-    
-    [data-testid="stMetric"] [data-testid="stMetricValue"] {
-        color: #c9a962 !important;
-        font-family: 'Playfair Display', serif !important;
-        font-size: 2rem !important;
-    }
-    
-    .stDataFrame {
-        border: 1px solid #1a1a1a !important;
-    }
-    
-    [data-testid="stSidebar"] {
-        background-color: #0a0a0a;
-        border-right: 1px solid #1a1a1a;
-    }
-    
-    .stButton > button {
-        background-color: transparent !important;
-        color: #888888 !important;
-        border: 1px solid #1a1a1a !important;
-        border-radius: 4px !important;
-        font-family: 'Inter', sans-serif !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    .stButton > button:hover {
-        background-color: #c9a962 !important;
-        color: #0a0a0a !important;
-        border-color: #c9a962 !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+# --- DYNAMIC CSS ---
+from modules.style_manager import get_css, get_settings
+
+current_settings = get_settings(st.session_state)
+theme = current_settings.get("theme", "dark")
+st.markdown(get_css(theme, current_settings), unsafe_allow_html=True)
 
 
 def load_telemetry():

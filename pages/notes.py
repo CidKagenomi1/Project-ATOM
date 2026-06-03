@@ -37,10 +37,11 @@ st.set_page_config(
 )
 
 # --- DYNAMIC CSS (from settings) ---
-from modules.style_manager import generate_css, get_settings
+from modules.style_manager import get_css, get_settings
 
-settings = get_settings(st.session_state)
-st.markdown(generate_css(settings), unsafe_allow_html=True)
+current_settings = get_settings(st.session_state)
+theme = current_settings.get("theme", "dark")
+st.markdown(get_css(theme, current_settings), unsafe_allow_html=True)
 
 # Additional Notes-specific styles
 st.markdown("""
