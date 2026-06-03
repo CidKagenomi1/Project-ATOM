@@ -306,6 +306,33 @@ document.getElementById('btn-gen-title')?.addEventListener('click', async () => 
   }
 });
 
+// ─── AI: Generate Metadata (Pydantic AI) ───────────────────
+document.getElementById('btn-metadata')?.addEventListener('click', async () => {
+  const content = document.getElementById('note-textarea')?.value || '';
+  if (!content.trim()) { showToast('Konten kosong', 'warning'); return; }
+
+  showAIOverlay('📊 Pydantic AI mengekstrak metadata...');
+  try {
+    const result = await callNotesAI('metadata', { content });
+    if (result) {
+      const titleInput = document.getElementById('note-title-input');
+      if (titleInput && result.title) titleInput.value = result.title;
+      
+      const tagsInput = document.getElementById('tags-input');
+      if (tagsInput && result.tags) {
+        tagsInput.value = result.tags.join(', ');
+        renderTagsDisplay(result.tags);
+      }
+      
+      showToast(`Metadata berhasil diekstrak! Summary: "${result.summary || ''}"`, 'success');
+    }
+  } catch (e) {
+    showToast('Gagal memproses metadata: ' + e.message, 'error');
+  } finally {
+    hideAIOverlay();
+  }
+});
+
 // ─── Note Chat ────────────────────────────────────────────
 function renderNoteChatMessages() {
   const msgArea = document.getElementById('note-chat-messages');

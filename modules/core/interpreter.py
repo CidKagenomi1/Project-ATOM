@@ -10,10 +10,12 @@ import subprocess
 import webbrowser
 import json
 import urllib.parse
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 from langchain_groq import ChatGroq
-
-load_dotenv()
 
 def execute_system_action(user_command):
     """
@@ -126,13 +128,14 @@ def execute_system_action(user_command):
             
         # --- KASUS 3: SYSTEM UTILS ---
         elif action_type == "SYSTEM":
-            if "shutdown" in target.lower():
+            target_str = str(target or "").lower()
+            if "shutdown" in target_str:
                 return "[SAFETY] Tindakan shutdown dibatalkan demi keamanan sistem Anda."
-            elif "lock" in target.lower() or "kunci" in target.lower():
+            elif "lock" in target_str or "kunci" in target_str:
                 # Kunci PC (Win + L)
                 pyautogui.hotkey('win', 'l')
                 return "[SUKSES] Mengunci komputer (Win + L) menggunakan PyAutoGUI"
-            elif "battery" in target.lower() or "baterai" in target.lower():
+            elif "battery" in target_str or "baterai" in target_str:
                  import psutil
                  battery = psutil.sensors_battery()
                  percent = battery.percent if battery else "N/A"

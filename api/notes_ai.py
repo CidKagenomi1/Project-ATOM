@@ -1,40 +1,55 @@
 """
 A.T.O.M. - Notes AI API Endpoint (Vercel Serverless)
 POST /api/notes_ai
-Body: { "action": "refine"|"autotag"|"chat"|"title", "content": str, "question": str }
-Response: { "result": str|list }
+Body: { "action": "refine"|"autotag"|"chat"|"title"|"metadata", "content": str, "question": str }
+Response: { "result": str|list|dict }
 """
 
 import os
 import json
 from http.server import BaseHTTPRequestHandler
+from pydantic import BaseModel, Field
+from typing import List
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 
 # Try Groq first (primary for notes AI)
 try:
     from langchain_groq import ChatGroq
-    GROQ_AVAILABLE = bool(os.environ.get("GROQ_API_KEY"))
+    HAS_GROQ = True
 except ImportError:
-    GROQ_AVAILABLE = False
+    HAS_GROQ = False
 
 # Gemini fallback
 try:
     from langchain_google_genai import ChatGoogleGenerativeAI
-    GEMINI_AVAILABLE = bool(os.environ.get("GOOGLE_API_KEY"))
+    HAS_GEMINI = True
 except ImportError:
-    GEMINI_AVAILABLE = False
+    HAS_GEMINI = False
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
 
+class NoteMetadata(BaseModel):
+    title: str = Field(description="Short, descriptive title of the note content, max 6 words")
+    tags: List[str] = Field(description="3 to 5 lowercase keywords/tags related to the content, max 2 words per tag")
+    summary: str = Field(description="One-sentence executive summary of the note content in Indonesian")
+
+
 def get_llm(temperature: float = 0.3):
     """Get best available LLM."""
-    if GROQ_AVAILABLE:
+    if HAS_GROQ and os.environ.get("GROQ_API_KEY"):
         return ChatGroq(
             model="llama-3.3-70b-versatile",
             api_key=os.environ.get("GROQ_API_KEY"),
             temperature=temperature
         )
-    if GEMINI_AVAILABLE:
+    if HAS_GEMINI and os.environ.get("GOOGLE_API_KEY"):
         return ChatGoogleGenerativeAI(
             model="gemini-1.5-flash",
             google_api_key=os.environ.get("GOOGLE_API_KEY"),
@@ -143,6 +158,36 @@ TITLE:"""
         return "Untitled Note"
 
 
+def generate_metadata_pydantic(content: str) -> dict:
+    """Generate structured title, tags, and summary using Pydantic AI with graceful fallback."""
+    try:
+        from pydantic_ai import Agent
+        
+        if os.environ.get("GROQ_API_KEY"):
+            os.environ["GROQ_API_KEY"] = os.environ.get("GROQ_API_KEY")
+            agent = Agent('groq:llama-3.3-70b-versatile', result_type=NoteMetadata)
+        elif os.environ.get("GOOGLE_API_KEY"):
+            os.environ["GEMINI_API_KEY"] = os.environ.get("GOOGLE_API_KEY")
+            agent = Agent('gemini-1.5-flash', result_type=NoteMetadata)
+        else:
+            raise ValueError("No API key configured for metadata generation")
+            
+        result = agent.run_sync(f"Ekstrak metadata untuk konten berikut:\n\n{content[:4000]}")
+        return {
+            "title": result.data.title,
+            "tags": result.data.tags,
+            "summary": result.data.summary
+        }
+    except Exception as e:
+        print(f"[PYDANTIC AI FALLBACK] Using standard backup due to error: {e}")
+        # Fallback to existing working LangChain functions
+        return {
+            "title": generate_title(content),
+            "tags": auto_tag(content),
+            "summary": "Metadata hasil ekstraksi cepat (Pydantic AI fallback)."
+        }
+
+
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(200)
@@ -191,6 +236,12 @@ class handler(BaseHTTPRequestHandler):
                 self._send_json({"error": "content is required for title"}, 400)
                 return
             result = generate_title(content)
+
+        elif action == "metadata":
+            if not content:
+                self._send_json({"error": "content is required for metadata"}, 400)
+                return
+            result = generate_metadata_pydantic(content)
 
         else:
             self._send_json({"error": f"Unknown action: {action}"}, 400)

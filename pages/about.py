@@ -10,7 +10,7 @@ import sys
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from modules.style_manager import get_css, get_settings
+from modules.settings.style_manager import get_css, get_settings
 
 st.set_page_config(
     page_title="ATOM - About",
@@ -125,13 +125,13 @@ st.markdown("## System Modules")
 st.markdown("""
 | Module | File | Purpose |
 |--------|------|---------|
-| Cortex | `modules/cortex.py` | Core AI routing and failover logic |
-| Sentinel | `modules/cortex.py` | Telemetry and logging system |
-| Librarian | `modules/cortex.py` | Conversation memory management |
-| Note Brain | `modules/note_brain.py` | Smart Notes AI functions |
-| Note Storage | `modules/note_storage.py` | Notes CRUD operations |
-| CrewAI | `crew_atom.py` | Multi-agent research system |
-| Interpreter | `atom_interpreter.py` | System action execution |
+| Cortex | `modules/core/cortex.py` | Core AI routing and failover logic |
+| Sentinel | `modules/core/cortex.py` | Telemetry and logging system |
+| Librarian | `modules/core/cortex.py` | Conversation memory management |
+| Note Brain | `modules/notes/note_brain.py` | Smart Notes AI functions |
+| Note Storage | `modules/notes/note_storage.py` | Notes CRUD operations |
+| CrewAI | `modules/core/crew.py` | Multi-agent research system |
+| Interpreter | `modules/core/interpreter.py` | System action execution |
 """)
 
 st.markdown("---")

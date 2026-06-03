@@ -13,17 +13,17 @@ from datetime import datetime
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from modules.note_storage import (
+from modules.notes.note_storage import (
     get_all_notes, get_note, create_note, update_note, delete_note,
     search_notes, get_all_tags, get_note_preview, get_stats
 )
-from modules.note_brain import (
+from modules.notes.note_brain import (
     chat_with_context, auto_tag, summarize_conversation, generate_title, refine_text
 )
 
 # Try to import CrewAI
 try:
-    from crew_atom import run_research_crew
+    from modules.core.crew import run_research_crew
     CREW_AVAILABLE = True
 except ImportError:
     CREW_AVAILABLE = False
@@ -37,7 +37,7 @@ st.set_page_config(
 )
 
 # --- DYNAMIC CSS (from settings) ---
-from modules.style_manager import get_css, get_settings
+from modules.settings.style_manager import get_css, get_settings
 
 current_settings = get_settings(st.session_state)
 theme = current_settings.get("theme", "dark")
@@ -75,7 +75,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- BUBBLE STORAGE FUNCTIONS ---
-BUBBLES_FILE = "atom_bubbles.json"
+BUBBLES_FILE = "data/atom_bubbles.json"
 
 def load_bubbles():
     if os.path.exists(BUBBLES_FILE):

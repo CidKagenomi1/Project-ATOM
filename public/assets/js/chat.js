@@ -66,6 +66,40 @@ fileUploadEl?.addEventListener('change', (e) => {
   e.target.value = ''; // Reset
 });
 
+// Clipboard paste support
+chatInputEl?.addEventListener('paste', (e) => {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  
+  // If clipboard contains a file/image, prevent default text pasting behavior entirely
+  let hasFile = false;
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].kind === 'file') {
+      hasFile = true;
+      break;
+    }
+  }
+
+  if (hasFile) {
+    e.preventDefault();
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        if (file) {
+          let uniqueName = file.name || 'image.png';
+          if (file.type.startsWith('image/') && (!file.name || file.name === 'image.png')) {
+            const ts = Math.floor(Date.now() / 1000);
+            uniqueName = `screenshot_${ts}.png`;
+          }
+          const renamedFile = new File([file], uniqueName, { type: file.type });
+          readAndAttachFile(renamedFile);
+        }
+      }
+    }
+  }
+});
+
 // Suggestion chips
 document.querySelectorAll('.suggestion-chip').forEach(chip => {
   chip.addEventListener('click', () => {
@@ -81,9 +115,10 @@ document.querySelectorAll('.suggestion-chip').forEach(chip => {
 
 // ─── File Reading ──────────────────────────────────────────
 function readAndAttachFile(file) {
-  const maxSize = 100 * 1024; // 100KB limit
+  const isImage = file.type?.startsWith('image/');
+  const maxSize = isImage ? 10 * 1024 * 1024 : 500 * 1024; // 10MB limit for images, 500KB for text
   if (file.size > maxSize) {
-    showToast(`File "${file.name}" terlalu besar (max 100KB)`, 'warning');
+    showToast(`File "${file.name}" terlalu besar (max ${isImage ? '10MB' : '500KB'})`, 'warning');
     return;
   }
 
@@ -91,21 +126,41 @@ function readAndAttachFile(file) {
   reader.onload = (e) => {
     const existing = contextFiles.find(f => f.name === file.name);
     if (!existing) {
-      contextFiles.push({ name: file.name, content: e.target.result });
+      contextFiles.push({ 
+        name: file.name, 
+        content: e.target.result,
+        type: file.type 
+      });
       renderAttachedFiles();
     }
   };
-  reader.readAsText(file, 'utf-8');
+  if (isImage) {
+    reader.readAsDataURL(file);
+  } else {
+    reader.readAsText(file, 'utf-8');
+  }
 }
 
 function renderAttachedFiles() {
   if (!attachedFilesEl) return;
-  attachedFilesEl.innerHTML = contextFiles.map((f, i) => `
-    <div class="attached-file">
-      <span>📄 ${escapeHtml(f.name)}</span>
-      <button onclick="removeFile(${i})" aria-label="Remove ${f.name}">×</button>
-    </div>
-  `).join('');
+  attachedFilesEl.innerHTML = contextFiles.map((f, i) => {
+    const isImg = f.type?.startsWith('image/') || f.content?.startsWith('data:image/');
+    if (isImg) {
+      return `
+        <div class="attached-file image-preview-chip" style="position: relative; display: inline-block; margin: 4px; padding: 0; background: none; border: none; border-radius: 8px;">
+          <img src="${f.content}" style="width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color);" alt="${escapeHtml(f.name)}">
+          <button onclick="removeFile(${i})" style="position: absolute; top: -6px; right: -6px; background: #ea6060; color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 11px; border: 1px solid var(--border-color); cursor: pointer;" aria-label="Remove ${f.name}">×</button>
+        </div>
+      `;
+    }
+    return `
+      <div class="attached-file">
+        <span>📄 ${escapeHtml(f.name)}</span>
+        <button onclick="removeFile(${i})" aria-label="Remove ${f.name}">×</button>
+      </div>
+    `;
+  }).join('');
+  updateSendButton();
 }
 
 window.removeFile = function(index) {
@@ -117,7 +172,8 @@ window.removeFile = function(index) {
 async function sendMessage() {
   if (isProcessing) return;
   const prompt = chatInputEl?.value.trim();
-  if (!prompt) return;
+  const hasFiles = contextFiles.length > 0;
+  if (!prompt && !hasFiles) return;
 
   isProcessing = true;
   chatInputEl.value = '';
@@ -125,8 +181,9 @@ async function sendMessage() {
   updateSendButton();
 
   // Add user message to UI
-  renderMessage('user', prompt);
-  chatHistory.push({ role: 'user', content: prompt });
+  const displayPrompt = prompt || (hasFiles ? (contextFiles.some(f => f.type?.startsWith('image/')) ? '[Gambar Terlampir]' : '[Dokumen Terlampir]') : '');
+  renderMessage('user', displayPrompt);
+  chatHistory.push({ role: 'user', content: displayPrompt });
   updateEmptyState();
   scrollToBottom(messagesArea);
 
@@ -148,8 +205,9 @@ async function sendMessage() {
     });
 
     // Log to telemetry
+    const logPrompt = prompt || displayPrompt;
     logTelemetry({
-      user_input: prompt.substring(0, 50) + (prompt.length > 50 ? '...' : ''),
+      user_input: logPrompt.substring(0, 50) + (logPrompt.length > 50 ? '...' : ''),
       model_used: response.model || 'unknown',
       response_time: response.duration || 0,
       status: 'SUCCESS'
@@ -167,8 +225,9 @@ async function sendMessage() {
     const errorMsg = `[ERROR] ${err.message || 'Gagal menghubungi API. Periksa koneksi.'}`;
     renderMessage('assistant', errorMsg);
 
+    const logPrompt = prompt || displayPrompt;
     logTelemetry({
-      user_input: prompt.substring(0, 50),
+      user_input: logPrompt.substring(0, 50),
       model_used: 'ERROR',
       response_time: 0,
       status: 'ERROR'
@@ -182,10 +241,14 @@ async function sendMessage() {
 
 // ─── API Call ──────────────────────────────────────────────
 async function callChatAPI(prompt, history, files) {
+  const modelSelectEl = document.getElementById('model-select');
+  const selectedModel = modelSelectEl ? modelSelectEl.value : 'auto';
+
   const body = {
     prompt,
     history: history.map(m => ({ role: m.role, content: m.content })),
-    files: files.map(f => ({ name: f.name, content: f.content }))
+    files: files.map(f => ({ name: f.name, content: f.content })),
+    model_preference: selectedModel
   };
 
   const resp = await fetch('/api/chat', {
@@ -294,7 +357,8 @@ function updateEmptyState() {
 function updateSendButton() {
   if (!btnSend || !chatInputEl) return;
   const hasText = chatInputEl.value.trim().length > 0;
-  btnSend.disabled = !hasText || isProcessing;
+  const hasFiles = typeof contextFiles !== 'undefined' && contextFiles.length > 0;
+  btnSend.disabled = !(hasText || hasFiles) || isProcessing;
 }
 
 function saveHistory() {

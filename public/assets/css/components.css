@@ -796,3 +796,35 @@
     max-width: 88%;
   }
 }
+
+/* ─── Model Selector Dropdown ─── */
+.model-select-wrapper {
+  margin-bottom: var(--space-2);
+  display: flex;
+  justify-content: flex-start;
+}
+
+.model-select {
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-family: var(--font-sans);
+  outline: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.model-select:hover {
+  border-color: var(--border-gold);
+  color: var(--gold-primary);
+  background: var(--bg-elevated);
+}
+
+.model-select:focus {
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 0 2px var(--gold-glow);
+}
+

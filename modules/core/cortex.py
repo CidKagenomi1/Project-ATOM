@@ -23,6 +23,9 @@ LOCAL_TIMEOUT_SECONDS = 40  # Kill switch timeout for local model
 
 # --- STATUS FLAGS ---
 GROQ_AVAILABLE = bool(os.getenv("GROQ_API_KEY"))
+FIREWORKS_AVAILABLE = bool(os.getenv("FIREWORKS_API_KEY"))
+OPENROUTER_AVAILABLE = bool(os.getenv("OPENROUTER_API_KEY"))
+DEEPSEEK_AVAILABLE = bool(os.getenv("DEEPSEEK_API_KEY"))
 GEMINI_AVAILABLE = bool(os.getenv("GOOGLE_API_KEY"))
 OLLAMA_AVAILABLE = False
 
@@ -37,7 +40,7 @@ except:
 # Import CrewAI (optional)
 CREW_AVAILABLE = False
 try:
-    from crew_atom import run_research_crew
+    from modules.core.crew import run_research_crew
     CREW_AVAILABLE = True
 except ImportError:
     def run_research_crew(topic):
@@ -46,7 +49,7 @@ except ImportError:
 
 # --- 1. THE SENTINEL (Sistem Pengawas/Logger) ---
 class Sentinel:
-    def __init__(self, log_file="atom_telemetry.csv"):
+    def __init__(self, log_file="data/atom_telemetry.csv"):
         self.log_file = log_file
         if not os.path.exists(self.log_file):
             df = pd.DataFrame(columns=["timestamp", "user_input", "model_used", "response_time", "status"])
@@ -144,6 +147,18 @@ class ATOMCortex:
             except Exception as e:
                 print(f"[WARN] Groq failed: {e}")
         
+        # OTAK CLOUD: FIREWORKS
+        if FIREWORKS_AVAILABLE:
+            print(f"[OK] CLOUD: Fireworks Model: {os.getenv('FIREWORKS_MODEL')}")
+            
+        # OTAK CLOUD: OPENROUTER
+        if OPENROUTER_AVAILABLE:
+            print(f"[OK] CLOUD: OpenRouter Model: {os.getenv('OPENROUTER_MODEL')}")
+            
+        # OTAK CLOUD: DEEPSEEK
+        if DEEPSEEK_AVAILABLE:
+            print(f"[OK] CLOUD: DeepSeek Model: {os.getenv('DEEPSEEK_MODEL')}")
+        
         # OTAK CADANGAN: GEMINI (Last Resort)
         self.gemini_brain = None
         if GEMINI_AVAILABLE:
@@ -171,6 +186,38 @@ class ATOMCortex:
                 self.status_callback(message)
             except:
                 pass
+    
+    def _call_openai_compatible(self, url, api_key, model, messages):
+        import urllib.request
+        import json
+        
+        formatted_messages = []
+        for msg in messages:
+            role = "user"
+            if msg.__class__.__name__ == "SystemMessage":
+                role = "system"
+            elif msg.__class__.__name__ == "AIMessage":
+                role = "assistant"
+            formatted_messages.append({"role": role, "content": msg.content})
+            
+        data = json.dumps({
+            "model": model,
+            "messages": formatted_messages
+        }).encode("utf-8")
+        
+        req = urllib.request.Request(
+            url,
+            data=data,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            method="POST"
+        )
+        
+        with urllib.request.urlopen(req, timeout=15) as response:
+            res = json.loads(response.read().decode("utf-8"))
+            return res["choices"][0]["message"]["content"]
     
     def _invoke_local(self, messages):
         """Call local Ollama model (blocking)."""
@@ -218,7 +265,55 @@ class ATOMCortex:
                 return response.content, "Groq-Llama-70B-Cloud", True
             except Exception as e:
                 print(f"   [!] Groq error: {e}")
-                self._update_status("⚠️ Groq error. Trying Gemini...")
+                self._update_status("⚠️ Groq error. Trying Fireworks...")
+
+        # === PHASE 2.1: CLOUD RESCUE (FIREWORKS) ===
+        if FIREWORKS_AVAILABLE:
+            self._update_status("🎆 Cloud (Fireworks)...")
+            try:
+                model = os.getenv("FIREWORKS_MODEL", "accounts/fireworks/models/llama-v3p1-8b-instruct")
+                content = self._call_openai_compatible(
+                    "https://api.fireworks.ai/inference/v1/chat/completions",
+                    os.getenv("FIREWORKS_API_KEY"),
+                    model,
+                    messages
+                )
+                return content, f"Fireworks-{model.split('/')[-1]}-Cloud", True
+            except Exception as e:
+                print(f"   [!] Fireworks error: {e}")
+                self._update_status("⚠️ Fireworks error. Trying OpenRouter...")
+
+        # === PHASE 2.2: CLOUD RESCUE (OPENROUTER) ===
+        if OPENROUTER_AVAILABLE:
+            self._update_status("🌐 Cloud (OpenRouter)...")
+            try:
+                model = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.1-8b-instruct")
+                content = self._call_openai_compatible(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    os.getenv("OPENROUTER_API_KEY"),
+                    model,
+                    messages
+                )
+                return content, f"OpenRouter-{model.split('/')[-1]}-Cloud", True
+            except Exception as e:
+                print(f"   [!] OpenRouter error: {e}")
+                self._update_status("⚠️ OpenRouter error. Trying DeepSeek...")
+
+        # === PHASE 2.3: CLOUD RESCUE (DEEPSEEK) ===
+        if DEEPSEEK_AVAILABLE:
+            self._update_status("🐳 Cloud (DeepSeek)...")
+            try:
+                model = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+                content = self._call_openai_compatible(
+                    "https://api.deepseek.com/chat/completions",
+                    os.getenv("DEEPSEEK_API_KEY"),
+                    model,
+                    messages
+                )
+                return content, f"DeepSeek-{model}-Cloud", True
+            except Exception as e:
+                print(f"   [!] DeepSeek error: {e}")
+                self._update_status("⚠️ DeepSeek error. Trying Gemini...")
         
         # === PHASE 3: LAST RESORT (GEMINI) ===
         if self.gemini_brain:
@@ -258,11 +353,11 @@ class ATOMCortex:
         if route == "ACTION":
             thinking.append({"step": "[ACTION]", "detail": "Executing physical command"})
             try:
-                from atom_interpreter import execute_system_action
+                from modules.core.interpreter import execute_system_action
                 response = execute_system_action(user_input)
                 model_name = "ATOM-Hand"
             except ImportError:
-                response = "Module atom_interpreter.py tidak ditemukan."
+                response = "Module modules/core/interpreter.py tidak ditemukan."
                 model_name = "Error"
             except Exception as e:
                 response = f"Gagal eksekusi: {e}"

@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 # --- DYNAMIC CSS ---
-from modules.style_manager import get_css, get_settings
+from modules.settings.style_manager import get_css, get_settings
 
 current_settings = get_settings(st.session_state)
 theme = current_settings.get("theme", "dark")
@@ -24,8 +24,8 @@ st.markdown(get_css(theme, current_settings), unsafe_allow_html=True)
 def load_telemetry():
     """Load telemetry data."""
     try:
-        if os.path.exists("atom_telemetry.csv"):
-            df = pd.read_csv("atom_telemetry.csv")
+        if os.path.exists("data/atom_telemetry.csv"):
+            df = pd.read_csv("data/atom_telemetry.csv")
             df["timestamp"] = pd.to_datetime(df["timestamp"])
             return df
     except Exception as e:

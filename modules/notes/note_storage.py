@@ -10,7 +10,7 @@ from typing import List, Optional, Dict, Any
 import re
 
 # Data file
-NOTES_DB = "atom_smart_notes.json"
+NOTES_DB = "data/atom_smart_notes.json"
 
 
 def _load_db() -> Dict[str, Any]:

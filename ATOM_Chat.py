@@ -22,14 +22,14 @@ st.set_page_config(
 # ============================================================
 # 2. IMPORTS
 # ============================================================
-from modules.cortex import (
+from modules.core.cortex import (
     ATOMCortex, 
     GROQ_AVAILABLE, 
     CREW_AVAILABLE, 
     OLLAMA_AVAILABLE,
     read_file_content
 )
-from modules.style_manager import get_css, get_settings
+from modules.settings.style_manager import get_css, get_settings
 
 # ============================================================
 # 3. APPLY CSS

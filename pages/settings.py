@@ -9,7 +9,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from modules.style_manager import get_css, get_settings, THEMES, FONTS, DEFAULT_SETTINGS
+from modules.settings.style_manager import get_css, get_settings, THEMES, FONTS, DEFAULT_SETTINGS
 
 st.set_page_config(
     page_title="ATOM - Settings",
