@@ -89,6 +89,7 @@ class TelemetryEntry(BaseModel):
     model_used: str
     response_time: float
     status: str
+    ai_response: Optional[str] = ""
 
 
 # --- Core Endpoints ---
@@ -528,7 +529,8 @@ async def post_telemetry_endpoint(entry: TelemetryEntry):
                 "user_input": entry.user_input,
                 "model_used": entry.model_used,
                 "response_time": entry.response_time,
-                "status": entry.status
+                "status": entry.status,
+                "ai_response": entry.ai_response
             })
             return {"status": "success"}
         except Exception as e:
@@ -541,13 +543,14 @@ async def post_telemetry_endpoint(entry: TelemetryEntry):
         with open(TELEMETRY_FILE, mode="a", encoding="utf-8", newline="") as f:
             writer = csv.writer(f)
             if write_header:
-                writer.writerow(["timestamp", "user_input", "model_used", "response_time", "status"])
+                writer.writerow(["timestamp", "user_input", "model_used", "response_time", "status", "ai_response"])
             writer.writerow([
                 timestamp_str,
                 entry.user_input,
                 entry.model_used,
                 entry.response_time,
-                entry.status
+                entry.status,
+                entry.ai_response
             ])
         return {"status": "success"}
     except Exception as e:

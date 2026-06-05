@@ -114,23 +114,47 @@ async function loadAndRender() {
   const tbody = document.getElementById('activity-tbody');
   if (tbody) {
     const recent = [...data].reverse().slice(0, 20);
-    tbody.innerHTML = recent.map(row => {
+    tbody.innerHTML = recent.map((row, idx) => {
       const ts  = row.timestamp ? row.timestamp : '-';
       const dur = parseFloat(row.response_time).toFixed(2) + 's';
       const statusColor = row.status === 'SUCCESS' ? 'var(--success)' : row.status === 'FAILOVER' ? 'var(--warning)' : 'var(--error)';
       const modelClass  = (row.model_used || '').toLowerCase().includes('groq') ? 'groq' : (row.model_used || '').toLowerCase().includes('gemini') ? 'gemini' : '';
+      const rowId = `telem-row-${idx}`;
       return `
-        <tr>
+        <tr onclick="toggleRowDetails('${rowId}')" style="cursor:pointer;" class="telem-header-row">
           <td style="white-space:nowrap;">${escapeHtml(ts)}</td>
           <td><span class="model-badge ${modelClass}">${escapeHtml(row.model_used || '-')}</span></td>
           <td style="font-family:var(--font-mono);">${dur}</td>
           <td><span style="color:${statusColor};font-size:0.75rem;font-weight:600;">${escapeHtml(row.status || '-')}</span></td>
-          <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(row.user_input || '')}">${escapeHtml(row.user_input || '-')}</td>
+          <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="Click to view conversation details">${escapeHtml(row.user_input || '-')}</td>
+        </tr>
+        <tr id="${rowId}-details" style="display:none; background: rgba(0, 0, 0, 0.2);">
+          <td colspan="5" style="padding:var(--space-4); border-bottom:var(--glass-border);">
+            <div style="display:flex; flex-direction:column; gap:var(--space-3); text-align:left;">
+              <div>
+                <div style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px; font-weight:700;">Full Prompt</div>
+                <div style="font-size:0.85rem; color:var(--text-primary); white-space:pre-wrap; background:rgba(255,255,255,0.01); padding:var(--space-3); border-radius:var(--radius-md); border:var(--glass-border); font-family:var(--font-chat);">${escapeHtml(row.user_input || '-')}</div>
+              </div>
+              <div>
+                <div style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px; font-weight:700;">AI Response</div>
+                <div style="font-size:0.85rem; color:var(--text-primary); white-space:pre-wrap; background:rgba(255,255,255,0.01); padding:var(--space-3); border-radius:var(--radius-md); border:var(--glass-border); font-family:var(--font-chat);">${escapeHtml(row.ai_response || '(No AI response was captured for this entry)')}</div>
+              </div>
+            </div>
+          </td>
         </tr>
       `;
     }).join('');
   }
 }
+
+// Expandable telemetry row handler
+window.toggleRowDetails = function(rowId) {
+  const detailsEl = document.getElementById(`${rowId}-details`);
+  if (detailsEl) {
+    const isHidden = detailsEl.style.display === 'none';
+    detailsEl.style.display = isHidden ? 'table-row' : 'none';
+  }
+};
 
 // ─── Clear Telemetry ───────────────────────────────────────
 document.getElementById('btn-clear-telemetry')?.addEventListener('click', async () => {

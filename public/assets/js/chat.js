@@ -208,10 +208,11 @@ async function sendMessage() {
     // Log to telemetry
     const logPrompt = prompt || displayPrompt;
     logTelemetry({
-      user_input: logPrompt.substring(0, 50) + (logPrompt.length > 50 ? '...' : ''),
+      user_input: logPrompt,
       model_used: response.model || 'unknown',
       response_time: response.duration || 0,
-      status: 'SUCCESS'
+      status: 'SUCCESS',
+      ai_response: response.response
     });
 
     // Save history
@@ -228,10 +229,11 @@ async function sendMessage() {
 
     const logPrompt = prompt || displayPrompt;
     logTelemetry({
-      user_input: logPrompt.substring(0, 50),
+      user_input: logPrompt,
       model_used: 'ERROR',
       response_time: 0,
-      status: 'ERROR'
+      status: 'ERROR',
+      ai_response: errorMsg
     });
   }
 
