@@ -45,7 +45,8 @@ FIREWORKS_AVAILABLE = False  # Terminated by user request
 OPENROUTER_AVAILABLE = bool(os.getenv("OPENROUTER_API_KEY"))
 DEEPSEEK_AVAILABLE = False  # Terminated by user request
 GEMINI_AVAILABLE = bool(os.getenv("GOOGLE_API_KEY"))
-OLLAMA_AVAILABLE = True  # Enabled by user request
+OLLAMA_AVAILABLE = False  # Disabled for public cloud-only deployment
+
 
 # pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
