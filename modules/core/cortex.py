@@ -14,6 +14,28 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
+def safe_print(*args, **kwargs):
+    import sys
+    import builtins
+    try:
+        enc = sys.stdout.encoding or 'cp1252' if (sys.stdout and hasattr(sys.stdout, 'encoding')) else 'cp1252'
+        new_args = []
+        for arg in args:
+            if isinstance(arg, str):
+                new_args.append(arg.encode(enc, errors='replace').decode(enc))
+            else:
+                new_args.append(arg)
+        builtins.print(*new_args, **kwargs)
+    except Exception:
+        try:
+            new_args = [str(arg).encode('ascii', errors='replace').decode('ascii') for arg in args]
+            builtins.print(*new_args, **kwargs)
+        except Exception:
+            pass
+
+print = safe_print
+
+
 # --- CONFIG ---
 LOCAL_TIMEOUT_SECONDS = 40  # Kill switch timeout for local model
 
