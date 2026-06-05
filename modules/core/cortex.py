@@ -129,8 +129,13 @@ class Sentinel:
     def __init__(self, log_file="data/atom_telemetry.csv"):
         self.log_file = log_file
         if not os.path.exists(self.log_file):
-            df = pd.DataFrame(columns=["timestamp", "user_input", "model_used", "response_time", "status"])
-            df.to_csv(self.log_file, index=False, encoding='utf-8')
+            try:
+                os.makedirs(os.path.dirname(self.log_file), exist_ok=True)
+                df = pd.DataFrame(columns=["timestamp", "user_input", "model_used", "response_time", "status"])
+                df.to_csv(self.log_file, index=False, encoding='utf-8')
+            except Exception as e:
+                print(f"[WARN] Sentinel: Could not create local CSV file (expected on read-only hosts like Vercel): {e}")
+
 
     def log(self, user_input, model_used, start_time, status="SUCCESS"):
         duration = round(time.time() - start_time, 2)
