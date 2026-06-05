@@ -335,6 +335,22 @@ pre code {
   color: var(--text-secondary);
 }
 
+.sidebar-credit {
+  padding: 8px var(--space-4);
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  opacity: 0.2;
+  text-align: center;
+  transition: opacity 0.2s ease;
+  letter-spacing: 0.05em;
+  font-family: var(--font-ui);
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.sidebar-credit:hover {
+  opacity: 0.6;
+}
+
 /* ─── Main Content ─── */
 .app-main {
   margin-left: 0 !important;
