@@ -9,33 +9,31 @@ import time
 import json
 import pandas as pd
 from datetime import datetime
+# pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
-from langchain_groq import ChatGroq
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_ollama import ChatOllama
-from langchain_core.messages import HumanMessage, SystemMessage
 
-load_dotenv()
+load_dotenv(override=True)
 
 # --- CONFIG ---
 LOCAL_TIMEOUT_SECONDS = 40  # Kill switch timeout for local model
 
 # --- STATUS FLAGS ---
 GROQ_AVAILABLE = bool(os.getenv("GROQ_API_KEY"))
-FIREWORKS_AVAILABLE = bool(os.getenv("FIREWORKS_API_KEY"))
+FIREWORKS_AVAILABLE = False  # Terminated by user request
 OPENROUTER_AVAILABLE = bool(os.getenv("OPENROUTER_API_KEY"))
-DEEPSEEK_AVAILABLE = bool(os.getenv("DEEPSEEK_API_KEY"))
+DEEPSEEK_AVAILABLE = False  # Terminated by user request
 GEMINI_AVAILABLE = bool(os.getenv("GOOGLE_API_KEY"))
-OLLAMA_AVAILABLE = False
+OLLAMA_AVAILABLE = True  # Enabled by user request
 
-# Check if Ollama is running
-try:
-    import requests
-    resp = requests.get("http://localhost:11434/api/tags", timeout=2)
-    OLLAMA_AVAILABLE = resp.status_code == 200
-except:
-    OLLAMA_AVAILABLE = False
+# pyrefly: ignore [missing-import]
+from dotenv import load_dotenv
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+# pyrefly: ignore [missing-import]
+from langchain_groq import ChatGroq
+# pyrefly: ignore [missing-import]
+from langchain_google_genai import ChatGoogleGenerativeAI
+# pyrefly: ignore [missing-import]
+from langchain_core.messages import HumanMessage, SystemMessage
 
 # Import CrewAI (optional)
 CREW_AVAILABLE = False
@@ -47,13 +45,69 @@ except ImportError:
         return "[CREW OFFLINE] CrewAI belum terinstall. Jalankan: pip install crewai"
 
 
+# --- OLLAMA LOCAL/CLOUD BRAIN WRAPPER ---
+class LocalOllamaBrain:
+    def __init__(self, host=None, model=None, api_key=None):
+        self.host = host or os.getenv("OLLAMA_HOST", "http://localhost:11434")
+        self.model = model or os.getenv("OLLAMA_MODEL", "deepseek-v4-flash:cloud")
+        self.api_key = api_key or os.getenv("OLLAMA_API_KEY")
+
+    def invoke(self, messages):
+        import urllib.request
+        import json
+        import ssl
+        
+        formatted_messages = []
+        for msg in messages:
+            role = "user"
+            if msg.__class__.__name__ == "SystemMessage":
+                role = "system"
+            elif msg.__class__.__name__ == "AIMessage":
+                role = "assistant"
+            formatted_messages.append({"role": role, "content": msg.content})
+            
+        data = json.dumps({
+            "model": self.model,
+            "messages": formatted_messages,
+            "stream": False
+        }).encode("utf-8")
+        
+        headers = {
+            "Content-Type": "application/json"
+        }
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+            
+        req = urllib.request.Request(
+            f"{self.host}/api/chat",
+            data=data,
+            headers=headers,
+            method="POST"
+        )
+        
+        ctx = ssl._create_unverified_context()
+        with urllib.request.urlopen(req, context=ctx, timeout=120) as response:
+            res = json.loads(response.read().decode("utf-8"))
+            if "message" in res and "content" in res["message"]:
+                content = res["message"]["content"]
+            elif "choices" in res:
+                content = res["choices"][0]["message"]["content"]
+            else:
+                content = str(res)
+            
+            class SimpleResponse:
+                def __init__(self, content):
+                    self.content = content
+            return SimpleResponse(content)
+
+
 # --- 1. THE SENTINEL (Sistem Pengawas/Logger) ---
 class Sentinel:
     def __init__(self, log_file="data/atom_telemetry.csv"):
         self.log_file = log_file
         if not os.path.exists(self.log_file):
             df = pd.DataFrame(columns=["timestamp", "user_input", "model_used", "response_time", "status"])
-            df.to_csv(self.log_file, index=False)
+            df.to_csv(self.log_file, index=False, encoding='utf-8')
 
     def log(self, user_input, model_used, start_time, status="SUCCESS"):
         duration = round(time.time() - start_time, 2)
@@ -65,7 +119,7 @@ class Sentinel:
                 "response_time": duration,
                 "status": status
             }])
-            new_data.to_csv(self.log_file, mode='a', header=False, index=False)
+            new_data.to_csv(self.log_file, mode='a', header=False, index=False, encoding='utf-8')
         except Exception as e:
             print(f"[LOG ERROR] {e}")
         return duration
@@ -121,18 +175,11 @@ class ATOMCortex:
         self.router = NeuralRouter()
         self.status_callback = None  # For UI status updates
         
-        # OTAK LOKAL: OLLAMA (Primary)
+        # OTAK LOKAL: OLLAMA (Enabled)
         self.local_brain = None
         if OLLAMA_AVAILABLE:
-            try:
-                self.local_brain = ChatOllama(
-                    model="llama3.2",
-                    base_url="http://localhost:11434",
-                    temperature=0.7
-                )
-                print("[OK] LOCAL: Ollama Llama-3.2")
-            except Exception as e:
-                print(f"[WARN] Ollama failed: {e}")
+            self.local_brain = LocalOllamaBrain()
+            print(f"[OK] LOCAL: Ollama wrapper initialized ({os.getenv('OLLAMA_MODEL', 'deepseek-v4-flash:cloud')})")
         
         # OTAK CLOUD: GROQ (Rescue)
         self.groq_brain = None
@@ -163,12 +210,13 @@ class ATOMCortex:
         self.gemini_brain = None
         if GEMINI_AVAILABLE:
             try:
+                gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
                 self.gemini_brain = ChatGoogleGenerativeAI(
-                    model="gemini-1.5-flash",
+                    model=gemini_model,
                     google_api_key=os.getenv("GOOGLE_API_KEY"),
                     temperature=0.7
                 )
-                print("[OK] FALLBACK: Gemini Flash")
+                print(f"[OK] FALLBACK: Gemini model loaded ({gemini_model})")
             except Exception as e:
                 print(f"[WARN] Gemini failed: {e}")
         
@@ -180,7 +228,16 @@ class ATOMCortex:
     
     def _update_status(self, message):
         """Update UI status if callback is set."""
-        print(f"   [STATUS] {message}")
+        try:
+            print(f"   [STATUS] {message}")
+        except UnicodeEncodeError:
+            try:
+                import sys
+                enc = sys.stdout.encoding or 'cp1252'
+                safe_msg = message.encode(enc, errors='replace').decode(enc)
+                print(f"   [STATUS] {safe_msg}")
+            except:
+                pass
         if self.status_callback:
             try:
                 self.status_callback(message)
@@ -221,29 +278,133 @@ class ATOMCortex:
     
     def _invoke_local(self, messages):
         """Call local Ollama model (blocking)."""
+        if not self.local_brain:
+            return "Ollama model is offline/terminated."
         response = self.local_brain.invoke(messages)
         return response.content
     
-    def _call_ai_with_timeout(self, messages):
+    def _call_ai_with_timeout(self, messages, model_preference="auto"):
         """
         Local First, Cloud Rescue Logic:
-        1. Try Ollama first with 70s timeout
+        If model_preference is set to a specific provider, try it first.
+        Otherwise:
+        1. Try Ollama first with 40s timeout
         2. If timeout/error, switch to Groq Cloud
         3. If Groq fails, fallback to Gemini
         """
-        
+        pref = model_preference.lower() if model_preference else "auto"
+        pref_provider = pref
+        pref_model = None
+        if ":" in pref and not pref.startswith("accounts/"):
+            parts = pref.split(":", 1)
+            pref_provider = parts[0]
+            pref_model = parts[1]
+
+        def get_text_messages(msgs):
+            # pyrefly: ignore [missing-import]
+            from langchain_core.messages import HumanMessage
+            text_msgs = []
+            for m in msgs:
+                if m.__class__.__name__ == "HumanMessage" and isinstance(m.content, list):
+                    txt = next((item["text"] for item in m.content if item.get("type") == "text"), "")
+                    text_msgs.append(HumanMessage(content=txt))
+                else:
+                    text_msgs.append(m)
+            return text_msgs
+
+        def try_groq():
+            if self.groq_brain:
+                self._update_status("🚀 Cloud Turbo (Groq Llama-70B)...")
+                response = self.groq_brain.invoke(get_text_messages(messages))
+                return response.content, "Groq-Llama-70B-Cloud", False
+            raise ValueError("Groq not configured")
+
+        def try_fireworks(model_override=None):
+            if FIREWORKS_AVAILABLE:
+                self._update_status("🎆 Cloud (Fireworks)...")
+                model = model_override if model_override else os.getenv("FIREWORKS_MODEL", "accounts/fireworks/models/llama-v3p1-70b-instruct")
+                content = self._call_openai_compatible(
+                    "https://api.fireworks.ai/inference/v1/chat/completions",
+                    os.getenv("FIREWORKS_API_KEY"),
+                    model,
+                    get_text_messages(messages)
+                )
+                return content, f"Fireworks-{model.split('/')[-1]}-Cloud", False
+            raise ValueError("Fireworks not configured")
+
+        def try_openrouter(model_override=None):
+            if OPENROUTER_AVAILABLE:
+                self._update_status("🌐 Cloud (OpenRouter)...")
+                model = model_override if model_override else os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.1-8b-instruct")
+                content = self._call_openai_compatible(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    os.getenv("OPENROUTER_API_KEY"),
+                    model,
+                    messages
+                )
+                return content, f"OpenRouter-{model.split('/')[-1]}-Cloud", False
+            raise ValueError("OpenRouter not configured")
+
+        def try_deepseek():
+            if DEEPSEEK_AVAILABLE:
+                self._update_status("🐳 Cloud (DeepSeek)...")
+                model = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+                content = self._call_openai_compatible(
+                    "https://api.deepseek.com/chat/completions",
+                    os.getenv("DEEPSEEK_API_KEY"),
+                    model,
+                    get_text_messages(messages)
+                )
+                return content, f"DeepSeek-{model}-Cloud", False
+            raise ValueError("DeepSeek not configured")
+
+        def try_gemini():
+            if self.gemini_brain:
+                self._update_status("🔄 Cloud Fallback (Gemini)...")
+                response = self.gemini_brain.invoke(messages)
+                content = response.content
+                if isinstance(content, list):
+                    content = content[0].get('text', str(content[0])) if content else ""
+                return str(content), "Gemini-Flash", False
+            raise ValueError("Gemini not configured")
+
+        def try_ollama():
+            if self.local_brain:
+                self._update_status(f"🧠 Thinking via Ollama ({os.getenv('OLLAMA_MODEL', 'deepseek-v4-flash:cloud')})...")
+                res = self._invoke_local(get_text_messages(messages))
+                return res, f"Ollama-{os.getenv('OLLAMA_MODEL', 'deepseek-v4-flash:cloud')}", False
+            raise ValueError("Ollama not configured")
+
+        if pref_provider in ["groq", "fireworks", "openrouter", "deepseek", "gemini", "ollama"]:
+            try:
+                if pref_provider == "groq":
+                    return try_groq()
+                elif pref_provider == "fireworks":
+                    return try_fireworks(pref_model)
+                elif pref_provider == "openrouter":
+                    return try_openrouter(pref_model)
+                elif pref_provider == "deepseek":
+                    return try_deepseek()
+                elif pref_provider == "gemini":
+                    return try_gemini()
+                elif pref_provider == "ollama":
+                    return try_ollama()
+            except Exception as e:
+                print(f"[PREFERENCE ERROR] Preferred provider {pref_provider} failed: {e}. Falling back to default chain.")
+                self._update_status(f"⚠️ Preferred model failed. Falling back...")
+
         # === PHASE 1: TRY LOCAL (OLLAMA) ===
         if self.local_brain:
-            self._update_status("🧠 Thinking locally (Llama 3.2)...")
+            self._update_status(f"🧠 Thinking via Ollama ({os.getenv('OLLAMA_MODEL', 'deepseek-v4-flash:cloud')})...")
             
             try:
                 with ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(self._invoke_local, messages)
+                    future = executor.submit(self._invoke_local, get_text_messages(messages))
                     
                     try:
                         # Wait with timeout
                         result = future.result(timeout=LOCAL_TIMEOUT_SECONDS)
-                        return result, "Ollama-Llama-3.2-Local", False
+                        return result, f"Ollama-{os.getenv('OLLAMA_MODEL', 'deepseek-v4-flash:cloud')}", False
                         
                     except FuturesTimeoutError:
                         # KILL SWITCH ACTIVATED
@@ -261,7 +422,7 @@ class ATOMCortex:
         if self.groq_brain:
             self._update_status("🚀 Cloud Turbo (Groq Llama-70B)...")
             try:
-                response = self.groq_brain.invoke(messages)
+                response = self.groq_brain.invoke(get_text_messages(messages))
                 return response.content, "Groq-Llama-70B-Cloud", True
             except Exception as e:
                 print(f"   [!] Groq error: {e}")
@@ -276,7 +437,7 @@ class ATOMCortex:
                     "https://api.fireworks.ai/inference/v1/chat/completions",
                     os.getenv("FIREWORKS_API_KEY"),
                     model,
-                    messages
+                    get_text_messages(messages)
                 )
                 return content, f"Fireworks-{model.split('/')[-1]}-Cloud", True
             except Exception as e:
@@ -308,7 +469,7 @@ class ATOMCortex:
                     "https://api.deepseek.com/chat/completions",
                     os.getenv("DEEPSEEK_API_KEY"),
                     model,
-                    messages
+                    get_text_messages(messages)
                 )
                 return content, f"DeepSeek-{model}-Cloud", True
             except Exception as e:
@@ -329,7 +490,7 @@ class ATOMCortex:
         
         return "Tidak ada AI yang aktif. Cek Ollama/API keys.", "NO_AI", True
 
-    def process(self, user_input, status_callback=None):
+    def process(self, user_input, status_callback=None, model_preference="auto", image_files=None):
         """Main processor - returns (response, thinking_steps)"""
         start_time = time.time()
         thinking = []
@@ -384,18 +545,31 @@ class ATOMCortex:
             {context}
             """)
             
-            messages = [system_prompt, HumanMessage(content=user_input)]
-            response, model_name, was_failover = self._call_ai_with_timeout(messages)
+            if image_files:
+                content_list = [{"type": "text", "text": user_input}]
+                for img in image_files:
+                    content_list.append({
+                        "type": "image_url",
+                        "image_url": {"url": img["content"]}
+                    })
+                messages = [system_prompt, HumanMessage(content=content_list)]
+            else:
+                messages = [system_prompt, HumanMessage(content=user_input)]
+                
+            response, model_name, was_failover = self._call_ai_with_timeout(messages, model_preference)
             
             # Add failover info to thinking
             if was_failover:
                 thinking.append({"step": "[FAILOVER]", "detail": f"Switched to cloud: {model_name}"})
-
+ 
         self.librarian.add_interaction(user_input, response)
         
         # Log with failover status
         status = "FAILOVER" if was_failover else "SUCCESS"
-        duration = self.sentinel.log(user_input, model_name, start_time, status)
+        log_input = user_input
+        if isinstance(log_input, list):
+            log_input = next((item["text"] for item in log_input if item.get("type") == "text"), "[Multimodal Input]")
+        duration = self.sentinel.log(log_input, model_name, start_time, status)
         
         thinking.append({"step": "[LOG]", "detail": f"Time: {duration}s | Model: {model_name}"})
         print(f"   > Done in {duration}s via {model_name}")
@@ -426,6 +600,7 @@ def read_file_content(uploaded_file) -> str:
         # PDF files
         elif filename.endswith('.pdf'):
             try:
+                # pyrefly: ignore [missing-import]
                 import PyPDF2
                 import io
                 
@@ -458,6 +633,7 @@ def scrape_url(url: str) -> str:
     """
     try:
         import requests
+        # pyrefly: ignore [missing-import]
         from bs4 import BeautifulSoup
         
         headers = {

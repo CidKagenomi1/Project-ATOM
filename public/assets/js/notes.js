@@ -1,11 +1,7 @@
 /**
  * A.T.O.M. — Notes Logic
- * CRUD operations in localStorage, AI features via /api/notes_ai
+ * CRUD operations via backend API /api/notes and /api/bubbles
  */
-
-// ─── Storage Key ──────────────────────────────────────────
-const NOTES_KEY   = 'atom_smart_notes';
-const BUBBLES_KEY = 'atom_bubbles';
 
 // ─── State ────────────────────────────────────────────────
 let currentNoteId  = null;
@@ -13,115 +9,102 @@ let currentNoteMode = 'view'; // 'view' | 'edit' | 'chat'
 let noteChatHistory = [];
 let currentTab     = 'notes';
 
-// ─── Note Storage ─────────────────────────────────────────
-function loadNotes() {
-  try {
-    return JSON.parse(localStorage.getItem(NOTES_KEY) || '{"notes":[],"lastId":0}');
-  } catch { return { notes: [], lastId: 0 }; }
+// ─── Note API Handlers ─────────────────────────────────────
+async function createNote(title = 'Untitled Note', content = '', tags = []) {
+  const resp = await fetch('/api/notes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, content, tags })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.detail || `HTTP ${resp.status}`);
+  }
+  return resp.json();
 }
 
-function saveNotes(db) {
-  localStorage.setItem(NOTES_KEY, JSON.stringify(db));
+async function getNote(id) {
+  const resp = await fetch(`/api/notes/${id}`);
+  if (!resp.ok) return null;
+  return resp.json();
 }
 
-function createNote(title = 'Untitled Note', content = '', tags = []) {
-  const db = loadNotes();
-  const id = db.lastId + 1;
-  const now = new Date().toISOString();
-  const note = { id, title, content, tags, type: 'note', createdAt: now, updatedAt: now };
-  db.notes.push(note);
-  db.lastId = id;
-  saveNotes(db);
-  return note;
+async function getAllNotes() {
+  const resp = await fetch('/api/notes');
+  if (!resp.ok) return [];
+  return resp.json();
 }
 
-function getNote(id) {
-  const db = loadNotes();
-  return db.notes.find(n => n.id === id) || null;
+async function updateNote(id, updates) {
+  const resp = await fetch(`/api/notes/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates)
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.detail || `HTTP ${resp.status}`);
+  }
+  return resp.json();
 }
 
-function getAllNotes() {
-  const db = loadNotes();
-  return [...db.notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+async function deleteNote(id) {
+  const resp = await fetch(`/api/notes/${id}`, {
+    method: 'DELETE'
+  });
+  return resp.ok;
 }
 
-function updateNote(id, updates) {
-  const db = loadNotes();
-  const idx = db.notes.findIndex(n => n.id === id);
-  if (idx === -1) return null;
-  db.notes[idx] = { ...db.notes[idx], ...updates, updatedAt: new Date().toISOString() };
-  saveNotes(db);
-  return db.notes[idx];
+async function searchNotes(query) {
+  const q = encodeURIComponent(query.trim());
+  const resp = await fetch(`/api/notes?query=${q}`);
+  if (!resp.ok) return [];
+  return resp.json();
 }
 
-function deleteNote(id) {
-  const db = loadNotes();
-  db.notes = db.notes.filter(n => n.id !== id);
-  saveNotes(db);
+async function getAllTags() {
+  const resp = await fetch('/api/notes/tags');
+  if (!resp.ok) return [];
+  return resp.json();
 }
 
-function searchNotes(query) {
-  const notes = getAllNotes();
-  if (!query.trim()) return notes;
-  const q = query.toLowerCase();
-  return notes.filter(n =>
-    n.title.toLowerCase().includes(q) ||
-    n.content.toLowerCase().includes(q) ||
-    n.tags.some(t => t.toLowerCase().includes(q))
-  );
+// ─── Bubble API Handlers ───────────────────────────────────
+async function loadBubbles() {
+  const resp = await fetch('/api/bubbles');
+  if (!resp.ok) return [];
+  return resp.json();
 }
 
-function getAllTags() {
-  const notes = getAllNotes();
-  const tags = new Set();
-  notes.forEach(n => n.tags?.forEach(t => tags.add(t)));
-  return [...tags].sort();
+async function addBubble(text) {
+  const resp = await fetch('/api/bubbles', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.detail || `HTTP ${resp.status}`);
+  }
+  return resp.json();
 }
 
-// ─── Bubble Storage ───────────────────────────────────────
-const BUBBLE_COLORS = ['#9333EA', '#3B82F6', '#14B8A6', '#F59E0B', '#F43F5E', '#10B981'];
-
-function loadBubbles() {
-  try {
-    return JSON.parse(localStorage.getItem(BUBBLES_KEY) || '{"bubbles":[],"lastId":0}');
-  } catch { return { bubbles: [], lastId: 0 }; }
-}
-
-function saveBubbles(db) {
-  localStorage.setItem(BUBBLES_KEY, JSON.stringify(db));
-}
-
-function addBubble(text) {
-  const db = loadBubbles();
-  const id = db.lastId + 1;
-  const bubble = {
-    id,
-    text,
-    color: BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)],
-    createdAt: new Date().toISOString(),
-    expanded: false
-  };
-  db.bubbles.unshift(bubble);
-  db.lastId = id;
-  saveBubbles(db);
-  return bubble;
-}
-
-function deleteBubble(id) {
-  const db = loadBubbles();
-  db.bubbles = db.bubbles.filter(b => b.id !== id);
-  saveBubbles(db);
+async function deleteBubble(id) {
+  const resp = await fetch(`/api/bubbles/${id}`, {
+    method: 'DELETE'
+  });
+  return resp.ok;
 }
 
 
 // ─── Render Notes Sidebar ─────────────────────────────────
-function renderNotesList(query = '') {
+async function renderNotesList(query = '') {
   const notesList = document.getElementById('notes-list');
   const statsEl   = document.getElementById('notes-stats');
   if (!notesList) return;
 
-  const notes = searchNotes(query);
-  const allTags = getAllTags();
+  const notes = await searchNotes(query);
+  const allTags = await getAllTags();
+  const allNotes = await getAllNotes();
 
   notesList.innerHTML = notes.length === 0
     ? `<p style="text-align:center;color:var(--text-muted);font-size:0.8rem;padding:var(--space-4);">Tidak ada catatan. Buat baru!</p>`
@@ -133,19 +116,19 @@ function renderNotesList(query = '') {
       `).join('');
 
   if (statsEl) {
-    statsEl.textContent = `${getAllNotes().length} notes · ${allTags.length} tags`;
+    statsEl.textContent = `${allNotes.length} notes · ${allTags.length} tags`;
   }
 }
 
 // ─── Open Note ────────────────────────────────────────────
-function openNote(id) {
-  const note = getNote(id);
+async function openNote(id) {
+  const note = await getNote(id);
   if (!note) return;
 
   currentNoteId = id;
   noteChatHistory = [];
   setNoteMode('view');
-  renderNotesList(document.getElementById('notes-search')?.value || '');
+  await renderNotesList(document.getElementById('notes-search')?.value || '');
 
   // Populate editor
   const titleInput = document.getElementById('note-title-input');
@@ -195,7 +178,7 @@ window.setNoteMode = function(mode) {
 };
 
 // ─── Save Note ────────────────────────────────────────────
-document.getElementById('btn-save-note')?.addEventListener('click', () => {
+document.getElementById('btn-save-note')?.addEventListener('click', async () => {
   if (!currentNoteId) return;
 
   const title   = document.getElementById('note-title-input')?.value.trim() || 'Untitled';
@@ -203,26 +186,26 @@ document.getElementById('btn-save-note')?.addEventListener('click', () => {
   const tagsRaw = document.getElementById('tags-input')?.value || '';
   const tags    = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
 
-  updateNote(currentNoteId, { title, content, tags });
+  await updateNote(currentNoteId, { title, content, tags });
   renderTagsDisplay(tags);
   renderMarkdownView(content);
-  renderNotesList(document.getElementById('notes-search')?.value || '');
+  await renderNotesList(document.getElementById('notes-search')?.value || '');
   showToast('Note tersimpan! ✅', 'success');
   setNoteMode('view');
 });
 
 // ─── Delete Note ─────────────────────────────────────────
-window.confirmDeleteNote = function(e, id) {
+window.confirmDeleteNote = async function(e, id) {
   e.stopPropagation();
   if (!confirm('Hapus catatan ini?')) return;
-  deleteNote(id);
+  await deleteNote(id);
   if (currentNoteId === id) {
     currentNoteId = null;
     document.getElementById('note-placeholder').style.display = 'flex';
     const editorEl = document.getElementById('note-editor');
     editorEl.style.display = 'none';
   }
-  renderNotesList(document.getElementById('notes-search')?.value || '');
+  await renderNotesList(document.getElementById('notes-search')?.value || '');
   showToast('Note dihapus', 'info');
 };
 
@@ -232,22 +215,26 @@ document.getElementById('btn-delete-note')?.addEventListener('click', () => {
 });
 
 // ─── New Note ─────────────────────────────────────────────
-document.getElementById('btn-new-note')?.addEventListener('click', () => {
-  const note = createNote();
-  openNote(note.id);
+document.getElementById('btn-new-note')?.addEventListener('click', async () => {
+  const note = await createNote();
+  await openNote(note.id);
   setNoteMode('edit');
-  renderNotesList();
+  await renderNotesList();
   document.getElementById('note-title-input')?.focus();
 });
 
 // ─── Search Notes ─────────────────────────────────────────
-document.getElementById('notes-search')?.addEventListener('input', (e) => {
-  renderNotesList(e.target.value);
+document.getElementById('notes-search')?.addEventListener('input', async (e) => {
+  await renderNotesList(e.target.value);
 });
 
 // ─── AI: Auto-Tag ─────────────────────────────────────────
 document.getElementById('btn-autotag')?.addEventListener('click', async () => {
-  const content = document.getElementById('note-textarea')?.value || getNote(currentNoteId)?.content || '';
+  let content = document.getElementById('note-textarea')?.value;
+  if (!content || !content.trim()) {
+    const note = await getNote(currentNoteId);
+    content = note?.content || '';
+  }
   if (!content.trim()) { showToast('Konten note kosong', 'warning'); return; }
 
   showAIOverlay('🤖 Generating tags...');
@@ -342,16 +329,9 @@ function renderNoteChatMessages() {
     return;
   }
   msgArea.innerHTML = noteChatHistory.map(m => `
-    <div class="${m.role === 'user' ? 'chat-user' : 'chat-ai'}" style="
-      background: var(--bg-elevated);
-      border-left: 3px solid ${m.role === 'user' ? 'var(--text-muted)' : 'var(--gold-primary)'};
-      border-radius: 4px;
-      padding: 10px 14px;
-      font-size: 0.85rem;
-      color: var(--text-primary);
-    ">
-      <strong style="font-size:0.72rem;color:${m.role === 'user' ? 'var(--text-muted)' : 'var(--gold-primary)'};">${m.role === 'user' ? '🧑 You' : '⚛️ ATOM'}</strong>
-      <div style="margin-top:4px;">${m.role === 'user' ? escapeHtml(m.content) : renderMarkdown(m.content)}</div>
+    <div class="chat-message-item ${m.role === 'user' ? 'chat-user' : 'chat-ai'}">
+      <strong class="chat-message-sender">${m.role === 'user' ? '🧑 You' : '⚛️ ATOM'}</strong>
+      <div class="chat-message-content">${m.role === 'user' ? escapeHtml(m.content) : renderMarkdown(m.content)}</div>
     </div>
   `).join('');
   msgArea.scrollTop = msgArea.scrollHeight;
@@ -362,7 +342,7 @@ async function sendNoteChatMessage() {
   const question = input?.value.trim();
   if (!question || !currentNoteId) return;
 
-  const note = getNote(currentNoteId);
+  const note = await getNote(currentNoteId);
   if (!note?.content?.trim()) {
     showToast('Note kosong, tidak ada yang bisa ditanyakan', 'warning');
     return;
@@ -435,12 +415,11 @@ window.switchTab = function(tab) {
 };
 
 // ─── Bubbles ──────────────────────────────────────────────
-function renderBubbles() {
+async function renderBubbles() {
   const grid = document.getElementById('bubble-grid');
   if (!grid) return;
 
-  const data = loadBubbles();
-  const bubbles = data.bubbles;
+  const bubbles = await loadBubbles();
 
   if (!bubbles.length) {
     grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:var(--text-muted);font-size:0.85rem;">Belum ada bubble. Tambah ide pertamamu!</p>`;
@@ -454,8 +433,11 @@ function renderBubbles() {
     ">
       <p class="bubble-text">${escapeHtml(b.text)}</p>
       <div class="bubble-footer">
-        <span class="bubble-date">${b.createdAt.slice(0, 10)} ${b.expanded ? '✨ Expanded' : ''}</span>
-        <div class="bubble-actions">
+        <span class="bubble-date">${b.created_at.slice(0, 10)} ${b.expanded ? '✨ Expanded' : ''}</span>
+        <div class="bubble-actions" style="display:flex;gap:4px;">
+          ${!b.expanded 
+            ? `<button class="btn btn-primary btn-sm" onclick="expandBubble(${b.id})" title="Expand with CrewAI / LLM">🚀 Expand</button>` 
+            : '<span style="font-size:0.75rem;color:var(--success);padding:4px 8px;font-weight:600;">✅ Expanded</span>'}
           <button class="btn btn-danger btn-sm" onclick="removeBubble(${b.id})">🗑</button>
         </div>
       </div>
@@ -463,13 +445,13 @@ function renderBubbles() {
   `).join('');
 }
 
-document.getElementById('btn-add-bubble')?.addEventListener('click', () => {
+document.getElementById('btn-add-bubble')?.addEventListener('click', async () => {
   const input = document.getElementById('bubble-input');
   const text = input?.value.trim();
   if (!text) return;
-  addBubble(text);
+  await addBubble(text);
   input.value = '';
-  renderBubbles();
+  await renderBubbles();
   showToast('Bubble ditambahkan! 🫧', 'success');
 });
 
@@ -477,9 +459,31 @@ document.getElementById('bubble-input')?.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') document.getElementById('btn-add-bubble')?.click();
 });
 
-window.removeBubble = function(id) {
-  deleteBubble(id);
-  renderBubbles();
+window.removeBubble = async function(id) {
+  await deleteBubble(id);
+  await renderBubbles();
+};
+
+window.expandBubble = async function(id) {
+  showAIOverlay('CrewAI sedang riset & menulis...');
+  try {
+    const resp = await fetch(`/api/bubbles/${id}/expand`, { method: 'POST' });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${resp.status}`);
+    }
+    const res = await resp.json();
+    showToast('Bubble berhasil diekspansi menjadi artikel! 🚀', 'success');
+    await renderBubbles();
+    if (res.note && res.note.id) {
+      switchTab('notes');
+      await openNote(res.note.id);
+    }
+  } catch (e) {
+    showToast('Gagal ekspansi bubble: ' + e.message, 'error');
+  } finally {
+    hideAIOverlay();
+  }
 };
 
 // ─── Tab key for note textarea (insert 2 spaces) ──────────
@@ -495,8 +499,8 @@ document.getElementById('note-textarea')?.addEventListener('keydown', (e) => {
 });
 
 // ─── Init ─────────────────────────────────────────────────
-function init() {
-  renderNotesList();
+async function init() {
+  await renderNotesList();
 }
 
 init();

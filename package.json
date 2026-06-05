@@ -1,0 +1,11 @@
+{
+  "name": "project-atom",
+  "version": "4.0.0",
+  "description": "A.T.O.M. - Autonomous Task Orchestration Machine",
+  "scripts": {
+    "dev": "python dev_server.py",
+    "deploy": "vercel",
+    "deploy:prod": "vercel --prod"
+  },
+  "dependencies": {}
+}

@@ -1,18 +1,21 @@
 /**
  * A.T.O.M. — Telemetry Dashboard
- * Reads from localStorage 'atom_telemetry' and renders stats
+ * Reads from backend API /api/telemetry and renders stats
  */
 
-const TELEM_KEY = 'atom_telemetry';
-
-function loadTelemetry() {
+async function loadTelemetry() {
   try {
-    return JSON.parse(localStorage.getItem(TELEM_KEY) || '[]');
-  } catch { return []; }
+    const resp = await fetch('/api/telemetry');
+    if (!resp.ok) return [];
+    return resp.json();
+  } catch (e) {
+    console.error('[ATOM] Failed to load telemetry:', e);
+    return [];
+  }
 }
 
-function loadAndRender() {
-  const data = loadTelemetry();
+async function loadAndRender() {
+  const data = await loadTelemetry();
   const noDataEl  = document.getElementById('no-data');
   const contentEl = document.getElementById('telem-content');
 
@@ -28,7 +31,7 @@ function loadAndRender() {
   // ─── Metrics ───────────────────────────────────────────
   const total       = data.length;
   const avgTime     = data.reduce((s, d) => s + (parseFloat(d.response_time) || 0), 0) / total;
-  const successRate = Math.round((data.filter(d => d.status === 'SUCCESS').length / total) * 100);
+  const successRate = Math.round((data.filter(d => d.status === 'SUCCESS' || d.status === 'FAILOVER').length / total) * 100);
 
   // Top model
   const modelCount = {};
@@ -58,6 +61,7 @@ function loadAndRender() {
       const pct = Math.round((count / total) * 100);
       const color = model.toLowerCase().includes('groq')   ? '#a78bfa'
                   : model.toLowerCase().includes('gemini') ? '#60a5fa'
+                  : model.toLowerCase().includes('llama')  ? '#fbbf24'
                   : '#8B949E';
       return `
         <div>
@@ -90,6 +94,7 @@ function loadAndRender() {
       const pct = Math.round((avg / maxAvg) * 100);
       const color = model.toLowerCase().includes('groq')   ? '#a78bfa'
                   : model.toLowerCase().includes('gemini') ? '#60a5fa'
+                  : model.toLowerCase().includes('llama')  ? '#fbbf24'
                   : '#8B949E';
       return `
         <div>
@@ -110,10 +115,10 @@ function loadAndRender() {
   if (tbody) {
     const recent = [...data].reverse().slice(0, 20);
     tbody.innerHTML = recent.map(row => {
-      const ts  = row.timestamp ? new Date(row.timestamp).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : '-';
+      const ts  = row.timestamp ? row.timestamp : '-';
       const dur = parseFloat(row.response_time).toFixed(2) + 's';
       const statusColor = row.status === 'SUCCESS' ? 'var(--success)' : row.status === 'FAILOVER' ? 'var(--warning)' : 'var(--error)';
-      const modelClass  = (row.model_used || '').toLowerCase().includes('groq') ? 'groq' : 'gemini';
+      const modelClass  = (row.model_used || '').toLowerCase().includes('groq') ? 'groq' : (row.model_used || '').toLowerCase().includes('gemini') ? 'gemini' : '';
       return `
         <tr>
           <td style="white-space:nowrap;">${escapeHtml(ts)}</td>
@@ -128,11 +133,15 @@ function loadAndRender() {
 }
 
 // ─── Clear Telemetry ───────────────────────────────────────
-document.getElementById('btn-clear-telemetry')?.addEventListener('click', () => {
+document.getElementById('btn-clear-telemetry')?.addEventListener('click', async () => {
   if (!confirm('Hapus semua data telemetri?')) return;
-  localStorage.removeItem(TELEM_KEY);
-  loadAndRender();
-  showToast('Telemetri dihapus', 'info');
+  const resp = await fetch('/api/telemetry', { method: 'DELETE' });
+  if (resp.ok) {
+    showToast('Telemetri dihapus', 'info');
+    await loadAndRender();
+  } else {
+    showToast('Gagal menghapus telemetri', 'error');
+  }
 });
 
 // ─── Helper ───────────────────────────────────────────────

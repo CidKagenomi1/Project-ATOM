@@ -31,6 +31,7 @@ function init() {
 
   updateEmptyState();
   updateSendButton();
+  buildCustomModelSelect();
 
   // Scroll to bottom on load
   setTimeout(() => scrollToBottom(messagesArea), 100);
@@ -378,6 +379,68 @@ function clearChat() {
   renderAttachedFiles();
   localStorage.removeItem('atom_chat_history');
   showToast('Chat dihapus', 'success');
+}
+
+// ─── Custom Model Select Dropdown Generator ────────────────
+function buildCustomModelSelect() {
+  const select = document.getElementById('model-select');
+  const wrapper = document.querySelector('.model-select-wrapper');
+  if (!select || !wrapper) return;
+
+  // Hide native select
+  select.style.display = 'none';
+
+  // Create trigger button
+  const trigger = document.createElement('button');
+  trigger.className = 'custom-select-trigger';
+  trigger.type = 'button';
+  trigger.textContent = select.options[select.selectedIndex]?.textContent || 'Select Model';
+
+  // Create options container
+  const optionsContainer = document.createElement('div');
+  optionsContainer.className = 'custom-select-options';
+
+  // Create option elements
+  Array.from(select.options).forEach((opt, idx) => {
+    const customOpt = document.createElement('div');
+    customOpt.className = `custom-select-option${idx === select.selectedIndex ? ' selected' : ''}`;
+    customOpt.textContent = opt.textContent;
+    customOpt.dataset.value = opt.value;
+
+    customOpt.addEventListener('click', (e) => {
+      e.stopPropagation();
+      select.value = opt.value;
+      trigger.textContent = opt.textContent;
+      
+      // Update active option styles
+      optionsContainer.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+      customOpt.classList.add('selected');
+
+      // Close dropdown
+      wrapper.classList.remove('open');
+      
+      // Trigger native change event if needed
+      select.dispatchEvent(new Event('change'));
+    });
+
+    optionsContainer.appendChild(customOpt);
+  });
+
+  // Toggle trigger click
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    wrapper.classList.toggle('open');
+  });
+
+  // Close when clicking outside wrapper
+  document.addEventListener('click', (e) => {
+    if (!wrapper.contains(e.target)) {
+      wrapper.classList.remove('open');
+    }
+  });
+
+  wrapper.appendChild(trigger);
+  wrapper.appendChild(optionsContainer);
 }
 
 // ─── Start ─────────────────────────────────────────────────

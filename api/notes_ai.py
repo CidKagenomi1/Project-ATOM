@@ -50,8 +50,9 @@ def get_llm(temperature: float = 0.3):
             temperature=temperature
         )
     if HAS_GEMINI and os.environ.get("GOOGLE_API_KEY"):
+        gemini_model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
         return ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
+            model=gemini_model,
             google_api_key=os.environ.get("GOOGLE_API_KEY"),
             temperature=temperature
         )
@@ -168,7 +169,8 @@ def generate_metadata_pydantic(content: str) -> dict:
             agent = Agent('groq:llama-3.3-70b-versatile', result_type=NoteMetadata)
         elif os.environ.get("GOOGLE_API_KEY"):
             os.environ["GEMINI_API_KEY"] = os.environ.get("GOOGLE_API_KEY")
-            agent = Agent('gemini-1.5-flash', result_type=NoteMetadata)
+            gemini_model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+            agent = Agent(gemini_model, result_type=NoteMetadata)
         else:
             raise ValueError("No API key configured for metadata generation")
             

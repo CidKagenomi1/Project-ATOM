@@ -210,8 +210,9 @@ def call_ai(messages: list, model_preference: str = "auto", image_files: list = 
 
     def try_gemini():
         if HAS_GEMINI and os.environ.get("GOOGLE_API_KEY"):
+            gemini_model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
             llm = ChatGoogleGenerativeAI(
-                model="gemini-1.5-flash",
+                model=gemini_model,
                 google_api_key=os.environ.get("GOOGLE_API_KEY"),
                 temperature=0.7
             )

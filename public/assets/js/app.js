@@ -3,15 +3,30 @@
  * Sidebar toggle, toast notifications, navigation
  */
 
-// ─── Sidebar Toggle (Mobile) ─────────────────────────────
+// ─── Sidebar Toggle (Desktop & Mobile) ────────────────────
 const sidebar = document.getElementById('app-sidebar');
 const overlay = document.getElementById('sidebar-overlay');
 const menuBtn = document.getElementById('mobile-menu-btn');
+const appMain = document.querySelector('.app-main');
 
-function openSidebar() {
-  sidebar?.classList.add('open');
-  overlay?.classList.add('visible');
-  document.body.style.overflow = 'hidden';
+function toggleSidebar() {
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    sidebar?.classList.toggle('open');
+    overlay?.classList.toggle('visible');
+    if (sidebar?.classList.contains('open')) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+  } else {
+    sidebar?.classList.toggle('collapsed');
+    appMain?.classList.toggle('sidebar-collapsed');
+    
+    // Save state to localStorage
+    const isCollapsed = sidebar?.classList.contains('collapsed');
+    localStorage.setItem('sidebarCollapsed', isCollapsed ? 'true' : 'false');
+  }
 }
 
 function closeSidebar() {
@@ -20,12 +35,55 @@ function closeSidebar() {
   document.body.style.overflow = '';
 }
 
-menuBtn?.addEventListener('click', openSidebar);
+menuBtn?.addEventListener('click', toggleSidebar);
 overlay?.addEventListener('click', closeSidebar);
 
-// Close on nav link click (mobile)
+// Close on nav link click (mobile only)
 document.querySelectorAll('.sidebar-nav a').forEach(link => {
-  link.addEventListener('click', closeSidebar);
+  link.addEventListener('click', () => {
+    if (window.innerWidth <= 768) {
+      closeSidebar();
+    }
+  });
+});
+
+// Restore sidebar state on load & inject close button
+document.addEventListener('DOMContentLoaded', () => {
+  // Restore sidebar state
+  if (window.innerWidth > 768) {
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (isCollapsed) {
+      sidebar?.classList.add('collapsed');
+      appMain?.classList.add('sidebar-collapsed');
+    }
+  }
+
+  // Inject close button in sidebar header on desktop
+  const sidebarHeader = document.querySelector('.sidebar-header');
+  if (sidebarHeader) {
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'sidebar-close-btn';
+    closeBtn.innerHTML = '◀';
+    closeBtn.title = 'Collapse Sidebar';
+    closeBtn.type = 'button';
+    closeBtn.addEventListener('click', toggleSidebar);
+    sidebarHeader.appendChild(closeBtn);
+  }
+
+  // Initialize Vapor Chamber particle system if canvas is present
+  if (document.getElementById('vapor-canvas') && window.VaporChamber) {
+    window.vaporChamberInstance = new window.VaporChamber('vapor-canvas');
+  }
+});
+
+// ─── Flashlight Cursor Glow ──────────────────────────────
+const cursorGlow = document.createElement('div');
+cursorGlow.className = 'cursor-glow';
+document.body.appendChild(cursorGlow);
+
+document.addEventListener('mousemove', (e) => {
+  cursorGlow.style.setProperty('--mouse-x', `${e.clientX}px`);
+  cursorGlow.style.setProperty('--mouse-y', `${e.clientY}px`);
 });
 
 
@@ -58,17 +116,13 @@ window.showToast = showToast;
 
 
 // ─── Telemetry Logger (localStorage) ────────────────────
-function logTelemetry(entry) {
+async function logTelemetry(entry) {
   try {
-    const key = 'atom_telemetry';
-    const existing = JSON.parse(localStorage.getItem(key) || '[]');
-    existing.push({
-      timestamp: new Date().toISOString(),
-      ...entry
+    await fetch('/api/telemetry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry)
     });
-    // Keep last 500 entries
-    if (existing.length > 500) existing.splice(0, existing.length - 500);
-    localStorage.setItem(key, JSON.stringify(existing));
   } catch (e) {
     console.warn('[ATOM] Telemetry log failed:', e);
   }
@@ -124,19 +178,29 @@ window.escapeHtml = escapeHtml;
 
 
 // ─── Status Indicators ─────────────────────────────────
-function updateStatusIndicators() {
-  // We assume Groq and Gemini are available (cloud keys set on Vercel)
-  // We can ping a lightweight check endpoint later
-  const dotGroq   = document.getElementById('dot-groq');
-  const dotGemini = document.getElementById('dot-gemini');
-  const pillGroq   = document.getElementById('pill-groq');
-  const pillGemini = document.getElementById('pill-gemini');
+async function updateStatusIndicators() {
+  try {
+    const resp = await fetch('/api/status');
+    if (!resp.ok) return;
+    const status = await resp.json();
 
-  // Optimistically mark as online (will update on first request)
-  if (dotGroq)   dotGroq.className   = 'status-dot online';
-  if (dotGemini) dotGemini.className = 'status-dot online';
-  if (pillGroq)   pillGroq.className   = 'status-pill online';
-  if (pillGemini) pillGemini.className = 'status-pill online';
+    const services = ['local', 'groq', 'crew', 'gemini'];
+    services.forEach(srv => {
+      const isOnline = status[srv] === 'online';
+      
+      const dot = document.getElementById(`dot-${srv}`);
+      if (dot) {
+        dot.className = `status-dot ${isOnline ? 'online' : 'offline'}`;
+      }
+      
+      const pill = document.getElementById(`pill-${srv}`);
+      if (pill) {
+        pill.className = `status-pill ${isOnline ? 'online' : 'offline'}`;
+      }
+    });
+  } catch (e) {
+    console.warn('[ATOM] Failed to fetch dynamic status:', e);
+  }
 }
 
 updateStatusIndicators();
