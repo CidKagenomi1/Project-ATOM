@@ -411,7 +411,14 @@ window.switchTab = function(tab) {
   document.getElementById('tab-notes-btn').classList.toggle('active', tab === 'notes');
   document.getElementById('tab-bubbles-btn').classList.toggle('active', tab === 'bubbles');
 
-  if (tab === 'bubbles') renderBubbles();
+  if (tab === 'bubbles') {
+    renderBubbles();
+    if (!window.bubblesFogInstance && window.BubblesFog) {
+      window.bubblesFogInstance = new window.BubblesFog('bubbles-fog-canvas');
+    } else if (window.bubblesFogInstance) {
+      window.bubblesFogInstance.resize();
+    }
+  }
 };
 
 // ─── Bubbles ──────────────────────────────────────────────
@@ -423,6 +430,10 @@ async function renderBubbles() {
 
   if (!bubbles.length) {
     grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:var(--text-muted);font-size:0.85rem;">Belum ada bubble. Tambah ide pertamamu!</p>`;
+    // Resize fog canvas on empty state
+    setTimeout(() => {
+      if (window.bubblesFogInstance) window.bubblesFogInstance.resize();
+    }, 50);
     return;
   }
 
@@ -443,6 +454,11 @@ async function renderBubbles() {
       </div>
     </div>
   `).join('');
+
+  // Resize fog canvas to cover new content height
+  setTimeout(() => {
+    if (window.bubblesFogInstance) window.bubblesFogInstance.resize();
+  }, 50);
 }
 
 document.getElementById('btn-add-bubble')?.addEventListener('click', async () => {

@@ -191,3 +191,158 @@ class VaporChamber {
   }
 }
 window.VaporChamber = VaporChamber;
+
+class BubblesFog {
+  constructor(canvasId) {
+    this.canvas = document.getElementById(canvasId);
+    if (!this.canvas) return;
+    this.ctx = this.canvas.getContext('2d');
+    this.particles = [];
+    this.animationFrameId = null;
+    this.resizeObserver = null;
+    
+    this.init();
+  }
+
+  init() {
+    this.resize();
+    const container = this.canvas.parentElement;
+    if (container && window.ResizeObserver) {
+      this.resizeObserver = new ResizeObserver(() => this.resize());
+      this.resizeObserver.observe(container);
+    } else {
+      window.addEventListener('resize', () => this.resize());
+    }
+
+    // Initialize particles
+    this.spawnParticles(15);
+    
+    this.animate();
+  }
+
+  resize() {
+    const parent = this.canvas.parentElement;
+    // Set canvas size to the scrollable content size of parent container so it covers everything
+    this.canvas.width = parent.scrollWidth || parent.clientWidth;
+    this.canvas.height = parent.scrollHeight || parent.clientHeight;
+  }
+
+  spawnParticles(count) {
+    for (let i = 0; i < count; i++) {
+      this.particles.push(this.createParticle(true));
+    }
+  }
+
+  createParticle(randomY = false) {
+    const w = this.canvas.width || window.innerWidth;
+    const h = this.canvas.height || window.innerHeight;
+    
+    // Position primarily at the bottom half of the container, but drift up
+    const minY = h * 0.4;
+    const maxY = h;
+    const y = randomY ? (minY + Math.random() * (maxY - minY)) : (h + 100);
+    
+    return {
+      x: Math.random() * w,
+      y: y,
+      vx: (Math.random() - 0.5) * 0.5, // Horizontal drift speed
+      vy: -0.05 - Math.random() * 0.1,  // Slow vertical drift upwards
+      radius: 100 + Math.random() * 100,
+      opacity: 0.01 + Math.random() * 0.04,
+      maxOpacity: 0.03 + Math.random() * 0.05,
+      colorType: Math.random() < 0.4 ? 'gold' : 'white',
+      growth: 0.005 + Math.random() * 0.005,
+      age: 0,
+      maxAge: 1200 + Math.random() * 800
+    };
+  }
+
+  update() {
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+    if (w === 0 || h === 0) return;
+
+    // Maintain around 15-30 active fog puffs
+    const targetCount = Math.max(15, Math.floor(h / 80));
+    while (this.particles.length < targetCount) {
+      this.particles.push(this.createParticle(false));
+    }
+
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.age++;
+
+      // Drift physics
+      p.x += p.vx;
+      p.y += p.vy;
+      p.radius += p.growth;
+
+      // Randomize horizontal drift direction slightly
+      if (Math.random() < 0.008) {
+        p.vx += (Math.random() - 0.5) * 0.12;
+        // Limit velocity
+        p.vx = Math.max(-0.5, Math.min(0.5, p.vx));
+      }
+
+      // Fade in at start, fade out towards the end of lifetime or when drifting too high
+      if (p.age < 150) {
+        p.opacity = (p.age / 150) * p.maxOpacity;
+      } else if (p.age > p.maxAge - 200) {
+        const remaining = p.maxAge - p.age;
+        p.opacity = (remaining / 200) * p.maxOpacity;
+      } else {
+        p.opacity = p.maxOpacity;
+      }
+
+      // Extra fade out if it gets near the top 30% of canvas
+      if (p.y < h * 0.3) {
+        const topFade = Math.max(0, p.y / (h * 0.3));
+        p.opacity *= topFade;
+      }
+
+      // Remove out of bounds or dead particles
+      if (p.age >= p.maxAge || p.y < -p.radius || p.opacity <= 0) {
+        this.particles.splice(i, 1);
+      }
+    }
+  }
+
+  draw() {
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    for (const p of this.particles) {
+      this.ctx.beginPath();
+      const grad = this.ctx.createRadialGradient(p.x, p.y, p.radius * 0.1, p.x, p.y, p.radius);
+      
+      if (p.colorType === 'gold') {
+        grad.addColorStop(0, `rgba(201, 162, 39, ${p.opacity})`);
+        grad.addColorStop(0.5, `rgba(201, 162, 39, ${p.opacity * 0.4})`);
+        grad.addColorStop(1, 'rgba(201, 162, 39, 0)');
+      } else {
+        grad.addColorStop(0, `rgba(255, 255, 255, ${p.opacity})`);
+        grad.addColorStop(0.5, `rgba(255, 255, 255, ${p.opacity * 0.3})`);
+        grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      }
+      
+      this.ctx.fillStyle = grad;
+      this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+  }
+
+  animate() {
+    this.update();
+    this.draw();
+    this.animationFrameId = requestAnimationFrame(() => this.animate());
+  }
+
+  destroy() {
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+    }
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+    }
+  }
+}
+window.BubblesFog = BubblesFog;

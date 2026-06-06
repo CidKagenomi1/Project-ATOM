@@ -947,8 +947,8 @@
   color: var(--text-secondary);
   border: var(--glass-border);
   border-radius: var(--radius-md);
-  padding: 6px 16px;
-  font-size: 1.25rem;
+  padding: 4px 10px;
+  font-size: 0.8rem;
   font-family: var(--font-ui);
   outline: none;
   cursor: pointer;
@@ -957,13 +957,13 @@
   -webkit-backdrop-filter: var(--glass-backdrop);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   box-shadow: var(--glass-shadow);
 }
 
 .custom-select-trigger::after {
   content: '▲';
-  font-size: 0.65rem;
+  font-size: 0.55rem;
   transition: transform var(--transition-normal);
   color: var(--text-muted);
 }
@@ -990,7 +990,7 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--glass-shadow);
   width: max-content;
-  min-width: 240px;
+  min-width: 180px;
   max-height: 250px;
   overflow-y: auto;
   opacity: 0;
@@ -999,7 +999,7 @@
   transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
-  padding: 6px;
+  padding: 4px;
 }
 
 .model-select-wrapper.open .custom-select-options {
@@ -1009,8 +1009,8 @@
 }
 
 .custom-select-option {
-  padding: 8px 14px;
-  font-size: 1.25rem;
+  padding: 6px 10px;
+  font-size: 0.8rem;
   font-family: var(--font-ui);
   color: var(--text-secondary);
   cursor: pointer;
@@ -1029,4 +1029,113 @@
   color: var(--text-primary);
   font-weight: 500;
 }
+
+/* ─── Mobile Enhancements & Touch Animations ─── */
+.touch-active {
+  transform: scale(0.96) !important;
+  transition: transform 0.1s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.mobile-mode .model-select-wrapper {
+  margin-bottom: 0;
+  align-self: center;
+  margin-right: 4px;
+}
+
+body.mobile-mode .custom-select-trigger.compact-mobile {
+  padding: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+
+body.mobile-mode .custom-select-trigger.compact-mobile::after {
+  display: none; /* Hide the arrow since it's just a compact circular badge now */
+}
+
+body.mobile-mode .custom-select-options {
+  bottom: 45px;
+  left: 0;
+}
+
+.mobile-logo-badge {
+  font-size: 1.1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Denser grid system for Floating Bubbles on Mobile */
+body.mobile-mode .bubble-grid.dense-grid {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+body.mobile-mode .bubble-grid.dense-grid .bubble-card {
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  gap: var(--space-2);
+}
+
+body.mobile-mode .bubble-grid.dense-grid .bubble-text {
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+body.mobile-mode .bubble-grid.dense-grid .bubble-footer {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+body.mobile-mode .bubble-grid.dense-grid .bubble-date {
+  font-size: 0.65rem;
+}
+
+body.mobile-mode .bubble-grid.dense-grid .bubble-actions {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+body.mobile-mode .bubble-grid.dense-grid .bubble-actions .btn {
+  flex: 1;
+  padding: 3px 6px;
+  font-size: 0.68rem;
+  height: 24px;
+}
+
+/* Enhancing input row for integration */
+body.mobile-mode .input-row {
+  display: flex; /* Pastikan flexbox aktif */
+  padding: var(--space-3); /* Sedikit disesuaikan agar tidak terlalu sempit */
+  border-radius: var(--radius-lg);
+  align-items: center; /* Menyelaraskan semua item (avatar, input, button) tepat di tengah secara vertikal */
+  gap: var(--space-2); /* Memberikan jarak konsisten antar elemen di dalamnya */
+}
+
+body.mobile-mode .chat-input {
+  flex: 1; /* Memaksa input untuk mengisi sisa ruang kosong yang tersedia */
+  padding-left: var(--space-2); /* Mengganti 4px agar jarak dari avatar lebih proporsional */
+  border: none;
+  background: transparent;
+  outline: none;
+  /* Hapus align-self: center karena sudah dihandle oleh .input-row */
+}
+
+body.mobile-mode .input-actions {
+  display: flex;
+  align-items: center;
+  /* Hapus align-self: center */
+}
+
 

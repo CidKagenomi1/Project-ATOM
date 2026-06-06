@@ -224,8 +224,9 @@
       </div>
 
       <!-- ============ BUBBLES TAB ============ -->
-      <div id="tab-bubbles" style="display:none;flex:1;overflow:auto;">
-        <div style="padding:var(--space-5);max-width:900px;margin:0 auto;">
+      <div id="tab-bubbles" style="display:none;flex:1;overflow:auto;position:relative;">
+        <canvas id="bubbles-fog-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;"></canvas>
+        <div style="position:relative;z-index:1;padding:var(--space-5);max-width:900px;margin:0 auto;">
           <h2 style="margin-bottom:var(--space-2);">🫧 Floating Bubbles</h2>
           <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:var(--space-4);">
             Catatan kilat untuk ide-ide singkat. Bisa dikembangkan menjadi artikel penuh.
@@ -247,23 +248,7 @@
     </main>
   </div>
 
-  <!-- Bottom Nav -->
-  <nav class="mobile-bottom-nav">
-    <div class="nav-items">
-      <a href="index.html" class="nav-item">
-        <span class="icon">💬</span>
-        <span>Chat</span>
-      </a>
-      <a href="notes.html" class="nav-item active">
-        <span class="icon">📝</span>
-        <span>Notes</span>
-      </a>
-      <a href="telemetry.html" class="nav-item">
-        <span class="icon">📊</span>
-        <span>Stats</span>
-      </a>
-    </div>
-  </nav>
+
 
   <div class="toast-container" id="toast-container"></div>
 
@@ -275,7 +260,9 @@
     </div>
   </div>
 
+  <script src="assets/js/particles.js"></script>
   <script src="assets/js/app.js"></script>
   <script src="assets/js/notes.js"></script>
+  <script src="assets/js/mobile-ui.js"></script>
 </body>
 </html>

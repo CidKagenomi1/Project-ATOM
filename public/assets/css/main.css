@@ -742,16 +742,8 @@ pre code {
     display: flex;
   }
 
-  .mobile-bottom-nav {
-    display: block;
-  }
-
-  .app-main {
-    padding-bottom: 60px;
-  }
-
   .toast-container {
-    bottom: 70px;
+    bottom: var(--space-4);
     right: var(--space-4);
     left: var(--space-4);
   }
@@ -813,16 +805,18 @@ pre code {
   );
 }
 
-.app-sidebar:not(.collapsed) ~ .app-main .mobile-menu-btn {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
+@media (min-width: 769px) {
+  .app-sidebar:not(.collapsed) ~ .app-main .mobile-menu-btn {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
 
-.app-sidebar.collapsed ~ .app-main .mobile-menu-btn {
-  opacity: 1;
-  pointer-events: all;
-  transition: opacity 0.2s ease 0.1s;
+  .app-sidebar.collapsed ~ .app-main .mobile-menu-btn {
+    opacity: 1;
+    pointer-events: all;
+    transition: opacity 0.2s ease 0.1s;
+  }
 }
 
 /* ─── SVG Icons & Logo styling ─── */
