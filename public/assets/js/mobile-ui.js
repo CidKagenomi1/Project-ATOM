@@ -25,14 +25,10 @@ class MobileUIHandler {
     const nativeSelect = document.getElementById('model-select');
     if (nativeSelect) {
       nativeSelect.addEventListener('change', () => this.updateCompactLabel());
-      
-      // Also observe custom dropdown mutations to handle custom select build
-      const observer = new MutationObserver(() => this.updateCompactLabel());
-      const wrapper = document.querySelector('.model-select-wrapper');
-      if (wrapper) {
-        observer.observe(wrapper, { childList: true, subtree: true });
-      }
     }
+    
+    // Initialize compact label after a brief delay to ensure custom select trigger is built
+    setTimeout(() => this.updateCompactLabel(), 100);
   }
 
   checkViewport() {
