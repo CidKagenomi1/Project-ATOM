@@ -287,6 +287,9 @@
   gap: var(--space-2);
   margin-bottom: var(--space-3);
 }
+.attached-files:empty {
+  margin-bottom: 0;
+}
 
 .attached-file {
   display: flex;
