@@ -375,9 +375,17 @@ function saveHistory() {
 function clearChat() {
   chatHistory = [];
   contextFiles = [];
-  if (messagesArea) messagesArea.innerHTML = '';
+  
+  if (messagesArea) {
+    const header = messagesArea.querySelector('.atom-header');
+    messagesArea.innerHTML = '';
+    if (header) {
+      messagesArea.appendChild(header);
+    }
+  }
+  
   if (emptyChatDiv) messagesArea?.appendChild(emptyChatDiv);
-  emptyChatDiv.style.display = '';
+  if (emptyChatDiv) emptyChatDiv.style.display = '';
   renderAttachedFiles();
   localStorage.removeItem('atom_chat_history');
   showToast('Chat dihapus', 'success');

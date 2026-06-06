@@ -941,10 +941,13 @@ pre code {
 }
 
 .chat-bg-container .bg-logo .electron {
-  opacity: 0.35;
-  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
+  opacity: 0.1;
+  animation: none !important;
+  filter: none !important;
 }
 
 .chat-bg-container .bg-logo .nucleus-glow {
-  opacity: 0.15;
+  opacity: 0.04 !important;
+  animation: none !important;
+  filter: none !important;
 }
