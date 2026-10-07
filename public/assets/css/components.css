@@ -7,6 +7,7 @@
   display: flex;
   flex-direction: column;
   height: calc(100vh - var(--topbar-height));
+  height: calc(100dvh - var(--topbar-height));
   max-width: var(--max-content);
   margin: 0 auto;
   width: 100%;
@@ -1007,17 +1008,82 @@
     padding: var(--space-3);
   }
 
+  .atom-header {
+    padding: var(--space-4) 0 var(--space-3) 0;
+  }
+
   .atom-title {
-    font-size: 2.5rem;
-    letter-spacing: 0.15em;
+    font-size: 2.1rem;
+    letter-spacing: 0.1em;
+    margin-right: -0.1em;
+  }
+
+  .atom-subtitle {
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    padding: 0 8px;
   }
 
   .chat-layout {
-    padding: 0 var(--space-3);
+    height: calc(100vh - var(--topbar-height));
+    height: calc(100dvh - var(--topbar-height));
+    padding: 0 10px;
   }
 
   .message-body {
-    max-width: 88%;
+    max-width: 90%;
+  }
+
+  /* Prevent browser auto-zoom glitch on mobile (requires font-size >= 16px) */
+  .chat-input,
+  .model-select,
+  .rp-role-select,
+  .settings-select,
+  .search-input input,
+  select,
+  textarea,
+  input[type="text"] {
+    font-size: 16px !important;
+  }
+
+  .rp-selectors-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .rp-select-wrapper,
+  .model-select-wrapper {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .rp-role-select,
+  .model-select {
+    flex: 1;
+    min-width: 0;
+    max-width: calc(100% - 75px);
+  }
+
+  .input-area {
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  .input-row {
+    padding: 6px 10px;
+  }
+
+  .suggestions {
+    gap: 6px;
+    padding: 0 8px;
+  }
+
+  .suggestion-chip {
+    font-size: 0.74rem;
+    padding: 5px 10px;
+    max-width: 100%;
+    white-space: normal;
+    text-align: center;
   }
 }
 
@@ -1125,7 +1191,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  z-index: 210;
+  z-index: 20;
 }
 
 .rp-role-select {

@@ -67,15 +67,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Inject close button in sidebar header on desktop
+  // Inject close/collapse button in sidebar header (desktop & mobile)
   const sidebarHeader = document.querySelector('.sidebar-header');
-  if (sidebarHeader) {
+  if (sidebarHeader && !sidebarHeader.querySelector('.sidebar-close-btn')) {
     const closeBtn = document.createElement('button');
     closeBtn.className = 'sidebar-close-btn';
-    closeBtn.innerHTML = '◀';
-    closeBtn.title = 'Collapse Sidebar';
+    closeBtn.innerHTML = `
+      <span class="desktop-icon">◀</span>
+      <span class="mobile-icon">✕</span>
+    `;
+    closeBtn.title = 'Tutup / Ciutkan Sidebar';
     closeBtn.type = 'button';
-    closeBtn.addEventListener('click', toggleSidebar);
+    closeBtn.setAttribute('aria-label', 'Tutup Sidebar');
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (window.innerWidth <= 768) {
+        closeSidebar();
+      } else {
+        toggleSidebar();
+      }
+    });
     sidebarHeader.appendChild(closeBtn);
   }
 
