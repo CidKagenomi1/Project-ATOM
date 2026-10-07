@@ -1,120 +1,113 @@
-# A.T.O.M (Autonomous Task Orchestration Machine) v3.1
+# A.T.O.M (Autonomous Task Orchestration Machine) v4.0
 
 > *"I am not just a chatbot, Sir. I am a Neural Orchestrator."*
 
-**A.T.O.M** is a sophisticated **Multi-Agent System** powered by a central **Cortex**. It doesn't just answer; it *thinks*, *decides*, and *delegates*.
-
-![ATOM Interface](https://via.placeholder.com/800x400/000000/FFFFFF?text=A.T.O.M+CORTEX+INTERFACE)
+**A.T.O.M** adalah ekosistem AI **Multi-Agent & Multi-Provider** berbasis **Cortex Router** cerdas. Sistem ini hadir dalam arsitektur hybrid: **Web Application modern** (FastAPI backend + Vanilla HTML/CSS/JS frontend) dan **Desktop GUI** (Streamlit).
 
 ---
 
-## 🇺🇸 English Documentation
+## ⚡ Fitur Utama & Keunggulan Spesial
 
-### 🧠 The CORTEX Architecture
+1. **🔀 Multi-Provider Neural Router (Cortex)**:
+   * **Auto-Routing**: Secara otomatis memilih model terbaik berdasarkan tipe query (coding, riset, kalkulasi, percakapan santai).
+   * **Dukungan Beragam Provider**: 
+     * **Groq** (*Llama 3.3 70B*) untuk respon ultra-cepat.
+     * **Ollama & DeepSeek** (*DeepSeek V3 / V4 Cloud*).
+     * **Gemini Flash 2.5** (Multimodal vision & text).
+     * **OpenRouter Catalog Free & Premium** (*Gemma 4 31B, Nemotron 3 Nano Omni, Qwen3 Coder 480B, Hermes 3 405B*, dll).
+   * **Self-Healing & Fallback**: Otomatis beralih ke penyedia cadangan jika kuota habis atau terjadi kegagalan jaringan.
 
-At the core of A.T.O.M is **`modules/cortex.py`**, an intelligent orchestrator that manages critical subsystems:
+2. **🖼️ Multimodal & Clipboard Instant Paste**:
+   * Cukup tekan `Ctrl + V` untuk langsung menempelkan tangkapan layar (screenshot) ke input chat.
+   * Pembersihan & sanitasi otomatis payload gambar agar aman diproses oleh model multimodal.
 
-1.  **🔀 Neural Router**: Instantly analyzes your prompt and decides the best route:
-    *   **☁️ CLOUD (Gemini Flash)**: For coding, math, and fast factual queries.
-    *   **🏠 LOCAL (Llama 3.2)**: For casual chat, privacy-focused tasks, and offline usage.
-    *   **🚀 CREW (CrewAI)**: For deep research, generating comprehensive reports, and multi-step reasoning.
-2.  **� Smart Notes**: A dedicated brain for knowledge management managed by `modules/note_brain.py`.
-3.  **👁️ Sentinel**: Tracks every interaction for the Telemetry Dashboard.
-4.  **🧠 Transparent Thinking**: Exposes the internal logic steps (Routing -> Context -> Execution) directly in the UI.
+3. **📝 Smart Notes (Obsidian-Style Knowledge Base)**:
+   * **Magic Formatter**: Merapikan teks mentah menjadi ringkasan markdown terstruktur.
+   * **Auto-Tagging**: Memberikan tag & kategori cerdas secara otomatis.
+   * **Chat with Notes**: Bertanya langsung kepada AI berdasarkan basis pengetahuan catatan yang tersimpan.
 
-### ⚡ Key Features
+4. **📊 Real-Time Telemetry & Monitoring**:
+   * Memantau latensi respon, penggunaan token, dan statistik distribusi model per sesi.
+   * Indikator live status untuk provider AI (Ollama Local, Groq Cloud, CrewAI, Gemini Fallback).
 
-*   **Hybrid Intelligence**: Seamlessly blends Cloud AI, Local AI, and Agent Swarms.
-*   **Smart Notes System**: 
-    *   Create and manage markdown notes with auto-tagging.
-    *   **Chat with Notes**: Ask questions specifically about your stored notes context.
-    *   **Magic Formatter**: Use AI to refine and format raw text into structured articles.
-*   **Telemetry Dashboard**: Monitor usage stats, response times, and model distribution.
-*   **Self-Correction**: Robust error handling and graceful fallbacks.
+5. **⚛️ Visual Estetika Reaktor Nuklir**:
+   * Efek latar belakang kanvas interaktif **Vapor Chamber** yang mensimulasikan jejak peluruhan partikel radioaktif (*Alpha, Beta, Gamma paths*).
+   * Desain dark-mode futuristik *Nuclear Gold* yang responsif untuk desktop maupun perangkat seluler.
 
-### 🛠️ Technology Stack
+---
 
-*   **Frontend**: Streamlit
-*   **Orchestration**: Python (Custom Cortex Class)
-*   **LLM Framework**: LangChain
-*   **Models**: Gemini 2.0 (Cloud), Llama 3.2 (Local via Ollama)
+## 🛠️ Tech Stack
 
-### 🚀 Usage
+* **Frontend**: HTML5, Vanilla CSS3 (Custom Design System), JavaScript (ES6+), Marked.js, Chart.js.
+* **Backend API**: Python, FastAPI, Uvicorn, LangChain, Pydantic.
+* **Desktop App**: Streamlit.
+* **Database & Storage**: MongoDB Atlas dengan Fallback otomatis ke File Lokal (JSON & CSV).
+* **AI Models**: Google Gemini, Groq (Llama 3.3), DeepSeek, OpenRouter, CrewAI.
 
-1.  **Install Dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    ```
-2.  **Run the Interface**:
-    ```bash
-    streamlit run ATOM_Chat.py
-    ```
-3.  **Navigate**:
-    *   **Chat**: Main interface for interaction.
-    *   **Notes**: Manage and chat with your knowledge base.
-    *   **Telemetry**: View system performance.
+---
 
-### 📂 Project Structure
+## 📂 Struktur Proyek
 
-```
+```text
 PROJECT ATOM/
-├── ATOM_Chat.py        # 🚀 ENTRY POINT: Main Chat Interface
-├── modules/
-│   ├── cortex.py       # 🧠 THE BRAIN: Neural Router & Orchestrator
-│   ├── note_brain.py   # 📝 NOTE AI: Logic for Smart Notes & Magic Formatter
-│   └── note_storage.py # 💾 DATABASE: JSON storage for notes
-├── pages/
-│   ├── notes.py        # 📝 UI: Notes Management Page
-│   └── telemetry.py    # 📊 UI: Analytics Dashboard
-└── ...
+├── dev_server.py           # 🚀 Server Development Lokal Web (FastAPI + Static)
+├── ATOM_Chat.py            # 💻 Aplikasi UI Desktop (Streamlit)
+├── vercel.json             # Konfigurasi deployment serverless Vercel
+├── requirements.txt        # Daftar dependency Python
+│
+├── api/                    # 🌐 Backend API (FastAPI / Serverless)
+│   ├── index.py            # Entry point API utama & route handler
+│   ├── chat.py             # Logika endpoint chat multimodal & fallback
+│   └── notes_ai.py         # Logika AI untuk Smart Notes (Refine & Tagging)
+│
+├── public/                 # 🎨 Frontend Web Interface
+│   ├── index.html          # Halaman Chat utama
+│   ├── notes.html          # Halaman Smart Notes
+│   ├── telemetry.html      # Halaman Dashboard Telemetri
+│   └── assets/
+│       ├── css/            # Style sistem & tema
+│       └── js/             # Logika aplikasi, partikel kanvas, & chat handler
+│
+├── modules/                # 🧠 Modul Inti Logika Bisnis
+│   ├── core/
+│   │   ├── cortex.py       # Neural Router & Fallback Provider Manager
+│   │   ├── crew.py         # Orkestrasi Multi-Agent (Deep Research)
+│   │   └── database.py     # Integrasi MongoDB & Penyimpanan Lokal
+│   ├── notes/              # Manajemen penyimpanan catatan lokal
+│   └── settings/           # Pengaturan styling & tema
+│
+└── data/                   # 💾 Data lokal & log telemetri
+    ├── atom_notes.json
+    └── atom_telemetry.csv
 ```
 
 ---
 
-## 🇮🇩 Dokumentasi Bahasa Indonesia
+## 🚀 Cara Menjalankan
 
-### 🧠 Arsitektur CORTEX
-
-Inti dari A.T.O.M adalah **`modules/cortex.py`**, orchestrator cerdas yang mengelola subsistem kritis:
-
-1.  **🔀 Neural Router**: Menganalisis prompt Anda secara instan dan menentukan rute terbaik:
-    *   **☁️ CLOUD (Gemini Flash)**: Untuk coding, matematika, dan pertanyaan faktual cepat.
-    *   **🏠 LOCAL (Llama 3.2)**: Untuk obrolan santai, tugas privasi, dan penggunaan offline.
-    *   **🚀 CREW (CrewAI)**: Untuk riset mendalam dan penalaran multi-langkah.
-2.  **📝 Smart Notes**: Otak khusus untuk manajemen pengetahuan yang dikelola oleh `modules/note_brain.py`.
-3.  **👁️ Sentinel**: Melacak setiap interaksi untuk Dashboard Telemetri.
-
-### ⚡ Fitur Utama
-
-*   **Kecerdasan Hibrida**: Menggabungkan AI Cloud, AI Lokal, dan Agent Swarms.
-*   **Sistem Smart Notes**:
-    *   Buat dan kelola catatan markdown dengan auto-tagging.
-    *   **Chat with Notes**: Tanya jawab khusus berdasarkan konteks catatan Anda.
-    *   **Magic Formatter**: Gunakan AI untuk merapikan teks mentah menjadi artikel terstruktur.
-*   **Dashboard Telemetri**: Pantau statistik penggunaan dan distribusi model.
-
-### 🚀 Cara Penggunaan
-
-1.  **Instal Dependensi**:
-    ```bash
-    pip install -r requirements.txt
-    ```
-2.  **Jalankan Interface**:
-    ```bash
-    streamlit run ATOM_Chat.py
-    ```
-
-### 📂 Struktur Proyek
-
+### 1. Menjalankan Aplikasi Web (Direkomendasikan)
+Gunakan virtual environment yang sudah tersedia:
+```powershell
+# Jalankan Dev Server lokal
+.\.venv\Scripts\python.exe dev_server.py
 ```
-PROJECT ATOM/
-├── ATOM_Chat.py        # 🚀 ENTRY POINT: Antarmuka Chat Utama
-├── modules/
-│   ├── cortex.py       # 🧠 THE BRAIN: Router & Orchestrator
-│   ├── note_brain.py   # � NOTE AI: Logika untuk Smart Notes
-│   └── note_storage.py # 💾 DATABASE: Penyimpanan JSON untuk catatan
-├── pages/
-│   ├── notes.py        # � UI: Halaman Manajemen Catatan
-│   └── telemetry.py    # 📊 UI: Dashboard Analitik
-└── ...
+* Buka browser di: **`http://localhost:8000`**
+* Dokumentasi API Swagger di: **`http://localhost:8000/docs`**
+
+### 2. Menjalankan Aplikasi Desktop (Streamlit)
+```powershell
+.\.venv\Scripts\streamlit.exe run ATOM_Chat.py
+```
+
+---
+
+## ⚙️ Konfigurasi Environment (`.env`)
+
+Pastikan file `.env` di direktori utama telah memiliki konfigurasi API key yang diperlukan:
+```env
+GROQ_API_KEY=your_groq_api_key
+GEMINI_API_KEY=your_gemini_api_key
+OPENROUTER_API_KEY=your_openrouter_api_key
+DEEPSEEK_API_KEY=your_deepseek_api_key
+MONGODB_URI=your_mongodb_connection_string # Opsional (otomatis fallback ke lokal)
 ```

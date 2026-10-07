@@ -4,34 +4,35 @@
  */
 
 // ─── State ────────────────────────────────────────────────
-let chatHistory   = [];   // [{role:'user'|'assistant', content:str}]
+let chatSessions  = [];   // [{id: str, title: str, updatedAt: num, messages: [...]}]
+let currentSessionId = null;
+let chatHistory   = [];   // Active session messages [{role:'user'|'assistant', content:str, thinking:[], model:str}]
 let contextFiles  = [];   // [{name:str, content:str}]
 let isProcessing  = false;
 
 // ─── DOM Elements ─────────────────────────────────────────
-const messagesArea    = document.getElementById('messages-area');
-const emptyChatDiv    = document.getElementById('empty-chat');
-const chatInputEl     = document.getElementById('chat-input');
-const btnSend         = document.getElementById('btn-send');
-const btnAttach       = document.getElementById('btn-attach');
-const fileUploadEl    = document.getElementById('file-upload');
-const attachedFilesEl = document.getElementById('attached-files');
-const btnClearChat    = document.getElementById('btn-clear-chat');
+const messagesArea     = document.getElementById('messages-area');
+const emptyChatDiv     = document.getElementById('empty-chat');
+const chatInputEl      = document.getElementById('chat-input');
+const btnSend          = document.getElementById('btn-send');
+const btnAttach        = document.getElementById('btn-attach');
+const fileUploadEl     = document.getElementById('file-upload');
+const attachedFilesEl  = document.getElementById('attached-files');
+const btnClearChat     = document.getElementById('btn-clear-chat');
+const btnNewChat       = document.getElementById('btn-new-chat');
+const chatSessionsList = document.getElementById('chat-sessions-list');
 
 // ─── Init ─────────────────────────────────────────────────
 function init() {
-  // Load history from localStorage
-  try {
-    const saved = localStorage.getItem('atom_chat_history');
-    if (saved) {
-      chatHistory = JSON.parse(saved);
-      chatHistory.forEach(msg => renderMessage(msg.role, msg.content, msg.thinking || [], msg.model || ''));
-    }
-  } catch { chatHistory = []; }
-
+  loadSessionsFromStorage();
   updateEmptyState();
   updateSendButton();
   buildCustomModelSelect();
+  renderSessionsSidebar();
+
+  btnNewChat?.addEventListener('click', () => {
+    createNewSession();
+  });
 
   // Scroll to bottom on load
   setTimeout(() => scrollToBottom(messagesArea), 100);
@@ -364,31 +365,257 @@ function updateSendButton() {
   btnSend.disabled = !(hasText || hasFiles) || isProcessing;
 }
 
-function saveHistory() {
+// ─── Multi-Session Storage & Management ─────────────────────
+function loadSessionsFromStorage() {
   try {
-    // Save last 50 messages
-    const toSave = chatHistory.slice(-50);
-    localStorage.setItem('atom_chat_history', JSON.stringify(toSave));
-  } catch { /* ignore quota errors */ }
+    const rawSessions = localStorage.getItem('atom_chat_sessions');
+    if (rawSessions) {
+      chatSessions = JSON.parse(rawSessions);
+    } else {
+      // Migrasi data lama dari atom_chat_history jika ada
+      const oldHistory = localStorage.getItem('atom_chat_history');
+      if (oldHistory) {
+        const parsedOld = JSON.parse(oldHistory);
+        if (parsedOld && parsedOld.length > 0) {
+          const firstUserMsg = parsedOld.find(m => m.role === 'user');
+          const title = firstUserMsg ? firstUserMsg.content.slice(0, 32) : 'Percakapan Sebelumnya';
+          const defaultSession = {
+            id: 'sess_' + Date.now(),
+            title: title,
+            updatedAt: Date.now(),
+            messages: parsedOld
+          };
+          chatSessions = [defaultSession];
+          saveSessionsToStorage();
+        }
+      }
+    }
+  } catch {
+    chatSessions = [];
+  }
+
+  // Set active session
+  const lastActiveId = localStorage.getItem('atom_active_session_id');
+  const found = chatSessions.find(s => s.id === lastActiveId);
+  if (found) {
+    currentSessionId = found.id;
+    chatHistory = found.messages || [];
+  } else if (chatSessions.length > 0) {
+    currentSessionId = chatSessions[0].id;
+    chatHistory = chatSessions[0].messages || [];
+  } else {
+    // Buat sesi baru kosong jika belum ada
+    createNewSession(false);
+    return;
+  }
+
+  renderCurrentSessionMessages();
+}
+
+function saveSessionsToStorage() {
+  try {
+    localStorage.setItem('atom_chat_sessions', JSON.stringify(chatSessions));
+    if (currentSessionId) {
+      localStorage.setItem('atom_active_session_id', currentSessionId);
+    }
+    // Backward compatibility
+    localStorage.setItem('atom_chat_history', JSON.stringify(chatHistory.slice(-50)));
+  } catch { /* quota limit handling */ }
+}
+
+function saveHistory() {
+  if (!currentSessionId) {
+    currentSessionId = 'sess_' + Date.now();
+  }
+
+  let session = chatSessions.find(s => s.id === currentSessionId);
+  if (!session) {
+    const firstUserMsg = chatHistory.find(m => m.role === 'user');
+    let title = firstUserMsg ? firstUserMsg.content.trim().slice(0, 30) : 'Percakapan Baru';
+    if (firstUserMsg && firstUserMsg.content.length > 30) title += '...';
+    session = {
+      id: currentSessionId,
+      title: title || 'Percakapan Baru',
+      updatedAt: Date.now(),
+      messages: chatHistory
+    };
+    chatSessions.unshift(session);
+  } else {
+    session.messages = chatHistory;
+    session.updatedAt = Date.now();
+    // Update title jika judul masih default dan user baru mengirim pesan pertama
+    if (session.title === 'Percakapan Baru') {
+      const firstUserMsg = chatHistory.find(m => m.role === 'user');
+      if (firstUserMsg) {
+        let title = firstUserMsg.content.trim().slice(0, 30);
+        if (firstUserMsg.content.length > 30) title += '...';
+        session.title = title;
+      }
+    }
+    // Pindahkan sesi yang baru aktif ke urutan paling atas
+    chatSessions = [session, ...chatSessions.filter(s => s.id !== currentSessionId)];
+  }
+
+  saveSessionsToStorage();
+  renderSessionsSidebar();
+}
+
+function createNewSession(notify = true) {
+  currentSessionId = 'sess_' + Date.now();
+  chatHistory = [];
+  contextFiles = [];
+
+  const newSession = {
+    id: currentSessionId,
+    title: 'Percakapan Baru',
+    updatedAt: Date.now(),
+    messages: []
+  };
+
+  chatSessions.unshift(newSession);
+  saveSessionsToStorage();
+  renderCurrentSessionMessages();
+  renderSessionsSidebar();
+  updateEmptyState();
+  updateSendButton();
+
+  if (chatInputEl) {
+    chatInputEl.value = '';
+    chatInputEl.focus();
+  }
+
+  if (notify) {
+    showToast('Sesi baru dibuat', 'info');
+  }
+}
+
+function switchSession(sessionId) {
+  if (sessionId === currentSessionId) return;
+  const target = chatSessions.find(s => s.id === sessionId);
+  if (!target) return;
+
+  currentSessionId = target.id;
+  chatHistory = target.messages || [];
+  contextFiles = [];
+
+  localStorage.setItem('atom_active_session_id', currentSessionId);
+  renderCurrentSessionMessages();
+  renderSessionsSidebar();
+  updateEmptyState();
+  updateSendButton();
+}
+
+function deleteSession(sessionId, event) {
+  if (event) event.stopPropagation();
+  if (!confirm('Hapus sesi obrolan ini?')) return;
+
+  chatSessions = chatSessions.filter(s => s.id !== sessionId);
+
+  if (currentSessionId === sessionId) {
+    if (chatSessions.length > 0) {
+      currentSessionId = chatSessions[0].id;
+      chatHistory = chatSessions[0].messages || [];
+    } else {
+      createNewSession(false);
+      return;
+    }
+  }
+
+  saveSessionsToStorage();
+  renderCurrentSessionMessages();
+  renderSessionsSidebar();
+  updateEmptyState();
+  updateSendButton();
+  showToast('Sesi dihapus', 'success');
+}
+
+function renderCurrentSessionMessages() {
+  if (!messagesArea) return;
+  const header = messagesArea.querySelector('.atom-header');
+  messagesArea.innerHTML = '';
+  if (header) {
+    messagesArea.appendChild(header);
+  }
+
+  chatHistory.forEach(msg => {
+    renderMessage(msg.role, msg.content, msg.thinking || [], msg.model || '');
+  });
+
+  if (emptyChatDiv) {
+    messagesArea.appendChild(emptyChatDiv);
+    emptyChatDiv.style.display = chatHistory.length === 0 ? '' : 'none';
+  }
+
+  renderAttachedFiles();
+  setTimeout(() => scrollToBottom(messagesArea), 50);
+}
+
+function renderSessionsSidebar() {
+  if (!chatSessionsList) return;
+  chatSessionsList.innerHTML = '';
+
+  if (chatSessions.length === 0) {
+    const emptyEl = document.createElement('div');
+    emptyEl.className = 'empty-sessions';
+    emptyEl.textContent = 'Belum ada riwayat';
+    chatSessionsList.appendChild(emptyEl);
+    return;
+  }
+
+  chatSessions.forEach(session => {
+    const item = document.createElement('div');
+    item.className = `session-item${session.id === currentSessionId ? ' active' : ''}`;
+    item.onclick = () => switchSession(session.id);
+
+    const info = document.createElement('div');
+    info.className = 'session-info';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'session-title';
+    titleEl.textContent = session.title || 'Tanpa Judul';
+
+    const timeEl = document.createElement('div');
+    timeEl.className = 'session-time';
+    const d = new Date(session.updatedAt || Date.now());
+    timeEl.textContent = d.toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+    info.appendChild(titleEl);
+    info.appendChild(timeEl);
+
+    const btnDel = document.createElement('button');
+    btnDel.className = 'btn-del-session';
+    btnDel.title = 'Hapus obrolan ini';
+    btnDel.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
+        <polyline points="3 6 5 6 21 6"></polyline>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+      </svg>
+    `;
+    btnDel.onclick = (e) => deleteSession(session.id, e);
+
+    item.appendChild(info);
+    item.appendChild(btnDel);
+    chatSessionsList.appendChild(item);
+  });
 }
 
 function clearChat() {
-  chatHistory = [];
-  contextFiles = [];
-  
-  if (messagesArea) {
-    const header = messagesArea.querySelector('.atom-header');
-    messagesArea.innerHTML = '';
-    if (header) {
-      messagesArea.appendChild(header);
+  if (confirm('Hapus seluruh pesan di sesi obrolan saat ini?')) {
+    chatHistory = [];
+    contextFiles = [];
+
+    const currentSession = chatSessions.find(s => s.id === currentSessionId);
+    if (currentSession) {
+      currentSession.messages = [];
+      currentSession.title = 'Percakapan Baru';
+      currentSession.updatedAt = Date.now();
     }
+
+    saveSessionsToStorage();
+    renderCurrentSessionMessages();
+    renderSessionsSidebar();
+    showToast('Sesi obrolan direset', 'success');
   }
-  
-  if (emptyChatDiv) messagesArea?.appendChild(emptyChatDiv);
-  if (emptyChatDiv) emptyChatDiv.style.display = '';
-  renderAttachedFiles();
-  localStorage.removeItem('atom_chat_history');
-  showToast('Chat dihapus', 'success');
 }
 
 // ─── Custom Model Select Dropdown Generator ────────────────
