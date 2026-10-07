@@ -159,6 +159,10 @@
   border-right: 1px solid #2a2a2a !important;
   box-shadow: none !important;
 }
+[data-ui-theme="chatgpt"] .sidebar-header {
+  background: #171717 !important;
+  border-bottom: 1px solid #2a2a2a !important;
+}
 [data-ui-theme="chatgpt"] .atom-brand-title {
   font-family: var(--font-ui) !important;
   font-size: 1.25rem !important;
@@ -229,6 +233,10 @@
   border-right: 1px solid #38342F !important;
   box-shadow: none !important;
 }
+[data-ui-theme="claude"] .sidebar-header {
+  background: #1E1B18 !important;
+  border-bottom: 1px solid #38342F !important;
+}
 [data-ui-theme="claude"] .atom-brand-title {
   font-family: "Newsreader", Georgia, serif !important;
   font-size: 1.45rem !important;
@@ -293,6 +301,10 @@
   background: #111b21 !important;
   border-right: 1px solid #222e35 !important;
   box-shadow: none !important;
+}
+[data-ui-theme="whatsapp"] .sidebar-header {
+  background: #111b21 !important;
+  border-bottom: 1px solid #222e35 !important;
 }
 [data-ui-theme="whatsapp"] .app-topbar {
   background: #202c33 !important;
@@ -369,6 +381,10 @@
   background: #0a110a !important;
   border-right: 2px solid #00ff66 !important;
   box-shadow: none !important;
+}
+[data-ui-theme="retro"] .sidebar-header {
+  background: #0a110a !important;
+  border-bottom: 2px solid #00ff66 !important;
 }
 [data-ui-theme="retro"] .atom-brand-title {
   font-size: 1.8rem !important;
@@ -456,6 +472,12 @@
   padding: 4px 6px;
   font-size: 0.8rem;
   margin-bottom: 1px;
+}
+[data-density="compact"] .sidebar-history-section {
+  padding: 6px 8px 10px;
+}
+[data-density="compact"] .session-item {
+  padding: 5px 8px;
 }
 [data-density="compact"] .chat-input-wrapper {
   padding: 6px 10px;
@@ -629,6 +651,12 @@ pre code {
   justify-content: space-between;
   gap: var(--space-3);
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  background: #0e1218 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 50;
 }
 
 .sidebar-close-btn {
@@ -690,14 +718,11 @@ pre code {
 
 /* ─── Sidebar Chat History ─── */
 .sidebar-history-section {
-  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  padding: 6px 10px;
+  padding: 10px 10px 14px;
   border-top: var(--glass-border);
-  min-height: 80px;
-  max-height: 200px;
-  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .history-section-header {
@@ -741,21 +766,9 @@ pre code {
 }
 
 .chat-sessions-list {
-  flex: 1;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding-right: 4px;
-}
-
-.chat-sessions-list::-webkit-scrollbar {
-  width: 3px;
-}
-
-.chat-sessions-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 3px;
 }
 
 .session-item {
@@ -886,12 +899,13 @@ pre code {
 }
 
 .sidebar-status {
-  padding: 8px 12px;
+  padding: 10px 12px;
   border-top: var(--glass-border);
   display: flex;
   flex-direction: column;
   gap: 4px;
   flex-shrink: 0;
+  margin-top: auto;
 }
 
 .status-row {
@@ -959,9 +973,7 @@ pre code {
     width: 16px;
   }
   .sidebar-history-section {
-    max-height: 130px;
-    min-height: 60px;
-    padding: 4px 8px;
+    padding: 6px 8px 10px;
   }
   .history-section-header {
     padding-bottom: 4px;
@@ -996,9 +1008,6 @@ pre code {
   .sidebar-nav a {
     padding: 3px 6px;
     font-size: 0.78rem;
-  }
-  .sidebar-history-section {
-    max-height: 90px;
   }
   .sidebar-status {
     display: grid;
