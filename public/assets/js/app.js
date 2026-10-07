@@ -81,10 +81,20 @@ const cursorGlow = document.createElement('div');
 cursorGlow.className = 'cursor-glow';
 document.body.appendChild(cursorGlow);
 
+let mouseX = -999, mouseY = -999;
+let glowRaf = null;
+
 document.addEventListener('mousemove', (e) => {
-  cursorGlow.style.setProperty('--mouse-x', `${e.clientX}px`);
-  cursorGlow.style.setProperty('--mouse-y', `${e.clientY}px`);
-});
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+  if (!glowRaf) {
+    glowRaf = requestAnimationFrame(() => {
+      cursorGlow.style.setProperty('--mouse-x', `${mouseX}px`);
+      cursorGlow.style.setProperty('--mouse-y', `${mouseY}px`);
+      glowRaf = null;
+    });
+  }
+}, { passive: true });
 
 
 // ─── Toast Notifications ────────────────────────────────

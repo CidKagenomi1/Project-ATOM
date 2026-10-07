@@ -596,3 +596,95 @@ async def delete_telemetry_endpoint():
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error clearing telemetry: {e}")
+
+# --- Bulletin Endpoints ---
+
+class MarkedNews(BaseModel):
+    id: str
+    title: str
+    content: str
+    source: str
+
+@app.get("/api/bulletin/fetch")
+async def fetch_bulletin():
+    import requests
+    news_api_key = os.environ.get("NEWS_API_KEY", "")
+    
+    # If no key is set, we return mock data for testing UI
+    if not news_api_key:
+        return {
+            "status": "success",
+            "articles": [
+                {
+                    "id": "mock-1",
+                    "title": "SYSTEM ALERT: GNews API Key Missing",
+                    "content": "Please add NEWS_API_KEY to your .env file to fetch real news data. For now, you are seeing this mock transmission.",
+                    "source": "ATOM System Core"
+                },
+                {
+                    "id": "mock-2",
+                    "title": "Quantum Computing Breakthrough",
+                    "content": "Scientists have achieved a new level of quantum coherence at room temperature, paving the way for advanced neural network simulations.",
+                    "source": "Science Journal"
+                }
+            ]
+        }
+    
+    url = f"https://gnews.io/api/v4/top-headlines?category=technology&lang=en&apikey={news_api_key}"
+    try:
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            articles = []
+            for art in data.get("articles", []):
+                articles.append({
+                    "id": art.get("url"),
+                    "title": art.get("title"),
+                    "content": (art.get("description", "") or "") + " " + (art.get("content", "") or ""),
+                    "source": art.get("source", {}).get("name", "Unknown")
+                })
+            return {"status": "success", "articles": articles}
+        else:
+            return {"status": "error", "message": f"API Error: {response.text}"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+MARKED_NEWS_FILE = "data/atom_bulletin_marked.json"
+
+@app.post("/api/bulletin/mark")
+async def mark_bulletin(news: MarkedNews):
+    from datetime import datetime
+    timestamp = datetime.now().isoformat()
+    news_entry = news.model_dump()
+    news_entry["marked_at"] = timestamp
+    
+    if MONGODB_CONNECTED:
+        try:
+            db["marked_news"].update_one(
+                {"id": news.id},
+                {"$set": news_entry},
+                upsert=True
+            )
+            return {"status": "success"}
+        except Exception as e:
+            print(f"[DB ERROR] mark_bulletin failed: {e}. Writing locally.")
+            
+    try:
+        os.makedirs(os.path.dirname(MARKED_NEWS_FILE), exist_ok=True)
+        data = {"marked_news": []}
+        if os.path.exists(MARKED_NEWS_FILE):
+            try:
+                with open(MARKED_NEWS_FILE, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except:
+                pass
+        
+        # Check if already marked
+        if not any(item.get("id") == news.id for item in data["marked_news"]):
+            data["marked_news"].append(news_entry)
+            with open(MARKED_NEWS_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error marking news: {e}")
