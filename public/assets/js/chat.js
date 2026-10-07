@@ -270,7 +270,7 @@ async function callChatAPI(prompt, history, files) {
 }
 
 // ─── Render Message ────────────────────────────────────────
-function renderMessage(role, content, thinking = [], model = '') {
+function renderMessage(role, content, thinking = [], model = '', personaBadge = '') {
   if (!messagesArea) return;
 
   const msgId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
@@ -305,9 +305,13 @@ function renderMessage(role, content, thinking = [], model = '') {
     `;
   }
 
-  // Model badge
+  // Model & Persona badges
   const modelBadge = (!isUser && model)
     ? `<span class="model-badge ${model.toLowerCase().includes('groq') ? 'groq' : 'gemini'}">${escapeHtml(model)}</span>`
+    : '';
+
+  const personaTag = (!isUser && personaBadge && personaBadge !== 'ATOM Standard')
+    ? `<span class="persona-badge-tag">🎭 ${escapeHtml(personaBadge)}</span>`
     : '';
 
   const msgEl = document.createElement('div');
@@ -316,6 +320,7 @@ function renderMessage(role, content, thinking = [], model = '') {
   msgEl.innerHTML = `
     ${avatarHtml}
     <div class="message-body">
+      ${personaTag}
       ${reasoningHtml}
       <div class="message-bubble">${bubbleContent}</div>
       ${modelBadge}
@@ -484,13 +489,23 @@ function createNewSession(notify = true) {
     chatInputEl.focus();
   }
 
+  // Tutup sidebar otomatis di mobile setelah memilih/membuat sesi baru
+  if (typeof closeSidebar === 'function' && window.innerWidth <= 768) {
+    closeSidebar();
+  }
+
   if (notify) {
     showToast('Sesi baru dibuat', 'info');
   }
 }
 
 function switchSession(sessionId) {
-  if (sessionId === currentSessionId) return;
+  if (sessionId === currentSessionId) {
+    if (typeof closeSidebar === 'function' && window.innerWidth <= 768) {
+      closeSidebar();
+    }
+    return;
+  }
   const target = chatSessions.find(s => s.id === sessionId);
   if (!target) return;
 
@@ -498,11 +513,25 @@ function switchSession(sessionId) {
   chatHistory = target.messages || [];
   contextFiles = [];
 
+  // Sinkronkan persona sesi yang dipilih
+  if (target.personaId) {
+    activePersonaId = target.personaId;
+    updateActivePersonaUI();
+    personaCardsContainer?.querySelectorAll('.persona-card').forEach((c, idx) => {
+      c.classList.toggle('active', PERSONAS[idx]?.id === activePersonaId);
+    });
+  }
+
   localStorage.setItem('atom_active_session_id', currentSessionId);
   renderCurrentSessionMessages();
   renderSessionsSidebar();
   updateEmptyState();
   updateSendButton();
+
+  // Tutup sidebar otomatis di mobile setelah memilih sesi
+  if (typeof closeSidebar === 'function' && window.innerWidth <= 768) {
+    closeSidebar();
+  }
 }
 
 function deleteSession(sessionId, event) {

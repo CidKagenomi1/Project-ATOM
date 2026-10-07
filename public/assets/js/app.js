@@ -47,6 +47,15 @@ document.querySelectorAll('.sidebar-nav a').forEach(link => {
   });
 });
 
+// Auto-close sidebar on any session selection or mobile action
+document.addEventListener('click', (e) => {
+  if (window.innerWidth <= 768) {
+    if (e.target.closest('.session-item') || e.target.closest('.btn-new-chat') || e.target.closest('.sidebar-nav a')) {
+      closeSidebar();
+    }
+  }
+});
+
 // Restore sidebar state on load & inject close button
 document.addEventListener('DOMContentLoaded', () => {
   // Restore sidebar state
