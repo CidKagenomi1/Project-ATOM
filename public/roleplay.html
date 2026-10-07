@@ -150,11 +150,22 @@
       </div>
 
       <!-- Topbar with mobile hamburger -->
-      <div class="app-topbar">
-        <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle menu">☰</button>
-        <span class="topbar-title">RP Model & Ideation</span>
-        <button class="btn-clear-chat" id="btn-clear-rp" title="Hapus percakapan sesi ini">🗑️</button>
-      </div>
+      <header class="app-topbar">
+        <div class="flex items-center gap-3">
+          <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle menu">☰</button>
+          <span class="topbar-title">RP Model & Ideation</span>
+        </div>
+        <div class="topbar-actions">
+          <a href="about.html" class="btn btn-ghost btn-sm" id="btn-about-link" title="Tentang A.T.O.M.">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            About
+          </a>
+        </div>
+      </header>
 
       <div class="chat-layout">
         <!-- Messages Area -->
