@@ -6,6 +6,19 @@
 // ─── Persona Definitions ───────────────────────────────────
 const RP_PERSONAS = [
   {
+    id: 'auto',
+    title: 'Auto Discovery Guide',
+    roleName: 'Socratic Brainstorming Guide',
+    icon: '✨',
+    desc: 'Bantu memancing topik & mengarahkan ide bila bingung',
+    badge: 'Auto Discovery',
+    systemPrompt: `ROLEPLAY MODE: Kamu adalah Socratic Ideation Coach & Creative Catalyst kelas dunia.
+KONDISI PENGGUNA: Pengguna sedang ingin menciptakan sesuatu yang besar dan inovatif, namun belum tahu pasti topiknya atau masih bingung harus mulai dari mana.
+SIKAP: Eksploratif, ramah, penuh rasa ingin tahu, tidak menggurui tapi mengajukan 1-2 pertanyaan pemantik yang cerdas untuk menggali minat/kegelisahan pengguna.
+PANGGILAN: Sapa pengguna sebagai 'Partner' atau 'Visionary'.
+FOKUS: Bantu pengguna menemukan ide orisinal dari hobi, masalah sehari-hari, atau tren teknologi masa depan. Tawarkan 3 opsi bidang menarik jika pengguna benar-benar buntu.`
+  },
+  {
     id: 'co_founder',
     title: 'Chief Innovation Officer',
     roleName: 'Strategic Co-Founder',
@@ -67,7 +80,7 @@ FOKUS: Merancang nama brand yang ikonik, konsep visual, positioning pasar yang m
   }
 ];
 
-let activePersonaId = 'co_founder';
+let activePersonaId = 'auto';
 
 // ─── State ────────────────────────────────────────────────
 let rpSessions     = [];
@@ -87,14 +100,11 @@ const attachedFilesEl  = document.getElementById('attached-files');
 const btnClearRp       = document.getElementById('btn-clear-rp');
 const btnNewRpSession  = document.getElementById('btn-new-rp-session');
 const rpSessionsList   = document.getElementById('rp-sessions-list');
-const rpCardsContainer = document.getElementById('rp-cards-container');
-const rpToggleCardsBtn = document.getElementById('rp-toggle-cards-btn');
-const rpActiveLabel    = document.getElementById('rp-active-label');
+const rpRoleSelectEl   = document.getElementById('rp-role-select');
 
 // ─── Init ─────────────────────────────────────────────────
 function init() {
-  renderPersonaCards();
-  initPersonaToggle();
+  initRoleSelect();
   loadRpSessions();
   updateEmptyState();
   updateSendButton();
@@ -184,33 +194,23 @@ window.removeFile = function(index) {
   updateSendButton();
 };
 
-// ─── Persona Carousel ────────────────────────────────────
-function renderPersonaCards() {
-  if (!rpCardsContainer) return;
-  rpCardsContainer.innerHTML = '';
+// ─── Role Selection Dropdown (Vertical / Side-by-Side) ────
+function initRoleSelect() {
+  if (!rpRoleSelectEl) return;
+  rpRoleSelectEl.value = activePersonaId;
 
-  RP_PERSONAS.forEach(p => {
-    const card = document.createElement('div');
-    card.className = `persona-card${p.id === activePersonaId ? ' active' : ''}`;
-    card.title = p.desc;
-    card.onclick = () => selectPersona(p.id);
-
-    card.innerHTML = `
-      <div class="persona-card-icon">${p.icon}</div>
-      <div class="persona-card-content">
-        <span class="persona-card-title">${escapeHtml(p.title)}</span>
-        <span class="persona-card-desc">${escapeHtml(p.roleName)}</span>
-      </div>
-    `;
-    rpCardsContainer.appendChild(card);
+  rpRoleSelectEl.addEventListener('change', (e) => {
+    selectRolePersona(e.target.value);
   });
-
-  updateActivePersonaUI();
 }
 
-function selectPersona(personaId) {
+function selectRolePersona(personaId) {
   activePersonaId = personaId;
   const selected = RP_PERSONAS.find(p => p.id === personaId) || RP_PERSONAS[0];
+
+  if (rpRoleSelectEl) {
+    rpRoleSelectEl.value = personaId;
+  }
 
   const cur = rpSessions.find(s => s.id === currentRpSessionId);
   if (cur) {
@@ -218,28 +218,7 @@ function selectPersona(personaId) {
     saveRpSessions();
   }
 
-  rpCardsContainer?.querySelectorAll('.persona-card').forEach((c, idx) => {
-    c.classList.toggle('active', RP_PERSONAS[idx]?.id === personaId);
-  });
-
-  updateActivePersonaUI();
   showToast(`Role aktif: ${selected.title}`, 'info');
-}
-
-function updateActivePersonaUI() {
-  const selected = RP_PERSONAS.find(p => p.id === activePersonaId) || RP_PERSONAS[0];
-  if (rpActiveLabel) {
-    rpActiveLabel.textContent = `ROLE: ${selected.title}`;
-  }
-}
-
-function initPersonaToggle() {
-  rpToggleCardsBtn?.addEventListener('click', () => {
-    if (!rpCardsContainer) return;
-    const isCollapsed = rpCardsContainer.classList.contains('collapsed');
-    rpCardsContainer.classList.toggle('collapsed', !isCollapsed);
-    rpToggleCardsBtn.textContent = isCollapsed ? 'Tutup ▴' : 'Pilih Role ▾';
-  });
 }
 
 // ─── Sending Message ──────────────────────────────────────
@@ -384,11 +363,11 @@ function loadRpSessions() {
   if (found) {
     currentRpSessionId = found.id;
     rpChatHistory = found.messages || [];
-    if (found.personaId) selectPersona(found.personaId);
+    if (found.personaId) selectRolePersona(found.personaId);
   } else if (rpSessions.length > 0) {
     currentRpSessionId = rpSessions[0].id;
     rpChatHistory = rpSessions[0].messages || [];
-    if (rpSessions[0].personaId) selectPersona(rpSessions[0].personaId);
+    if (rpSessions[0].personaId) selectRolePersona(rpSessions[0].personaId);
   } else {
     createNewRpSession(false);
     return;
@@ -484,7 +463,7 @@ function switchRpSession(sessionId) {
   currentRpSessionId = target.id;
   rpChatHistory = target.messages || [];
   contextFiles = [];
-  if (target.personaId) selectPersona(target.personaId);
+  if (target.personaId) selectRolePersona(target.personaId);
 
   localStorage.setItem('atom_rp_active_session_id', currentRpSessionId);
   renderCurrentMessages();

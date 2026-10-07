@@ -81,6 +81,25 @@
           </span>
           Telemetry
         </a>
+        <a href="settings.html" id="nav-settings">
+          <span class="nav-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </span>
+          Settings
+        </a>
+        <a href="about.html" id="nav-about">
+          <span class="nav-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </span>
+          About
+        </a>
       </nav>
 
       <!-- RP Session History -->
@@ -147,36 +166,48 @@
 
           <!-- Empty State -->
           <div class="empty-chat" id="rp-empty-chat">
-            <div class="icon">🎭</div>
+            <div class="icon" style="color: var(--gold-primary);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width: 56px; height: 56px;">
+                <path d="M2 10s3-3 7-3 7 3 7 3-3 7-7 7-7-7-7-7z"/>
+                <circle cx="6" cy="9" r="1" fill="currentColor"/>
+                <circle cx="12" cy="9" r="1" fill="currentColor"/>
+                <path d="M7 13a3 3 0 0 0 4 0"/>
+                <path d="M15 7s2-2 5-2 5 2 5 2-2 5-5 5-5-5-5-5z"/>
+                <circle cx="18" cy="7" r="0.8" fill="currentColor"/>
+                <circle cx="22" cy="7" r="0.8" fill="currentColor"/>
+              </svg>
+            </div>
             <p id="rp-empty-text">Pilih salah satu Roleplay Model di bawah untuk mulai berdiskusi dan merancang ide besar Anda.</p>
           </div>
         </div>
 
-        <!-- Input Area with RP Carousel inside -->
+        <!-- Input Area with Dual Selectors Row (RP Role & AI Model) -->
         <div class="input-area">
-          <!-- Selection Cards Horizontal Carousel (Mobile First) -->
-          <div class="persona-carousel-wrapper" id="rp-carousel-wrapper">
-            <div class="persona-header-row">
-              <span class="persona-section-label">
-                <span class="persona-indicator-dot"></span>
-                <span id="rp-active-label">ROLE: Chief Innovation Officer</span>
-              </span>
-              <button class="persona-toggle-btn" id="rp-toggle-cards-btn">Pilih Role ▾</button>
+          <div class="rp-selectors-row">
+            <!-- Selector 1: Roleplay Persona Dropdown -->
+            <div class="rp-select-wrapper" id="rp-select-wrapper">
+              <label class="selector-mini-label">ROLEPLAY:</label>
+              <select class="rp-role-select" id="rp-role-select" aria-label="Pilih Roleplay Model">
+                <option value="auto">✨ Auto Role (Cari Topik & Arah Ide)</option>
+                <option value="co_founder" selected>🚀 Chief Innovation Officer (Co-Founder)</option>
+                <option value="operations_director">💼 Executive Operations (SOP & Eksekusi)</option>
+                <option value="shark_investor">💰 Shark Angel Investor (Uji Bisnis)</option>
+                <option value="tech_architect">⚙️ Chief Tech Architect (Blueprint IT)</option>
+                <option value="creative_director">🎨 Avant-Garde Creative (Branding/UX)</option>
+              </select>
             </div>
-            <div class="persona-cards-container" id="rp-cards-container">
-              <!-- Rendered dynamically -->
-            </div>
-          </div>
 
-          <!-- Model selection dropdown -->
-          <div class="model-select-wrapper">
-            <select class="model-select" id="model-select" aria-label="Pilih Model AI">
-              <option value="auto">🤖 Auto (Cortex Route)</option>
-              <option value="groq">⚡ Groq (Llama 3.3 70B)</option>
-              <option value="ollama">🧠 Ollama (DeepSeek V4 Cloud)</option>
-              <option value="deepseek">🐳 DeepSeek (V3)</option>
-              <option value="gemini">♊ Gemini (Flash 2.5)</option>
-            </select>
+            <!-- Selector 2: AI Model Dropdown -->
+            <div class="model-select-wrapper">
+              <label class="selector-mini-label">MODEL AI:</label>
+              <select class="model-select" id="model-select" aria-label="Pilih Model AI">
+                <option value="auto">🤖 Auto (Cortex Route)</option>
+                <option value="groq">⚡ Groq (Llama 3.3 70B)</option>
+                <option value="ollama">🧠 Ollama (DeepSeek V4 Cloud)</option>
+                <option value="deepseek">🐳 DeepSeek (V3)</option>
+                <option value="gemini">♊ Gemini (Flash 2.5)</option>
+              </select>
+            </div>
           </div>
 
           <!-- Input Row -->
@@ -192,8 +223,17 @@
               ></textarea>
             </div>
             <div class="input-actions">
-              <button class="btn-attach" id="btn-attach" title="Attach file">📎</button>
-              <button class="btn-send" id="btn-send" title="Send message" disabled>➤</button>
+              <button class="btn-attach" id="btn-attach" title="Attach file" aria-label="Attach file">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                </svg>
+              </button>
+              <button class="btn-send" id="btn-send" title="Send message" aria-label="Send message" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 17px; height: 17px; margin-left: 2px;">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+              </button>
             </div>
           </div>
           <input type="file" id="file-upload" accept=".txt,.md,.py,.json,.csv,.html,.css,.js" multiple>

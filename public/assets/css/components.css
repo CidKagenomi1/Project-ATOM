@@ -1100,15 +1100,57 @@
   line-height: 1.5;
 }
 
-/* ─── Custom Model Select Dropdown ─── */
+/* ─── RP Dual Selectors Row (Bersebelahan & Mobile Friendly) ─── */
+.rp-selectors-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.selector-mini-label {
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--gold-light);
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+
+.rp-select-wrapper,
 .model-select-wrapper {
   position: relative;
-  margin-bottom: var(--space-2);
   display: flex;
-  justify-content: flex-start;
+  align-items: center;
+  gap: 4px;
   z-index: 210;
 }
 
+.rp-role-select {
+  background: rgba(10, 10, 10, 0.45);
+  color: var(--text-secondary);
+  border: var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-family: var(--font-ui);
+  outline: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+}
+
+.rp-role-select:hover,
+.rp-role-select:focus {
+  border-color: var(--border-gold);
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+/* ─── Custom Model Select Dropdown ─── */
 .custom-select-trigger {
   background: rgba(10, 10, 10, 0.45);
   color: var(--text-secondary);

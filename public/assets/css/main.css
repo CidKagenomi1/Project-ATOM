@@ -5,7 +5,7 @@
    Chat Font: Inter (Crisp sans-serif)
    ===================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700;800;900&family=Pinyon+Script&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700;800;900&family=Pinyon+Script&family=VT323&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap');
 
 /* ─── CSS Variables ─── */
 :root {
@@ -16,18 +16,19 @@
   --bg-hover:      rgba(30, 30, 30, 0.65);
   --bg-active:     rgba(45, 45, 45, 0.75);
 
-  --gold-primary:  #ffffff;
-  --gold-light:    #f3f4f6;
-  --gold-dark:     #9ca3af;
-  --gold-glow:     rgba(255, 255, 255, 0.08);
+  /* Default Nuclear Gold */
+  --gold-primary:  #ebb338;
+  --gold-light:    #f6d365;
+  --gold-dark:     #8a6715;
+  --gold-glow:     rgba(235, 179, 56, 0.2);
+  --text-gold:     #f6d365;
+  --border-gold:   rgba(235, 179, 56, 0.35);
 
   --text-primary:  #E6EDF3;
   --text-secondary:#8B949E;
   --text-muted:    #6b7280;
-  --text-gold:     #ffffff;
 
   --border-color:  rgba(255, 255, 255, 0.08);
-  --border-gold:   rgba(255, 255, 255, 0.15);
 
   --success:       #3FB950;
   --success-bg:    rgba(63, 185, 80, 0.08);
@@ -72,6 +73,403 @@
   --sidebar-width: 260px;
   --topbar-height: 60px;
   --max-content:   900px;
+}
+
+/* ─── Default Theme Accents ─── */
+[data-accent="gold"], [data-theme="gold"], :root {
+  --gold-primary:  #ebb338;
+  --gold-light:    #f6d365;
+  --gold-dark:     #8a6715;
+  --gold-glow:     rgba(235, 179, 56, 0.2);
+  --text-gold:     #f6d365;
+  --border-gold:   rgba(235, 179, 56, 0.35);
+}
+
+[data-accent="cyan"], [data-theme="cyan"] {
+  --gold-primary:  #00d2ff;
+  --gold-light:    #80e5ff;
+  --gold-dark:     #007799;
+  --gold-glow:     rgba(0, 210, 255, 0.2);
+  --text-gold:     #80e5ff;
+  --border-gold:   rgba(0, 210, 255, 0.35);
+}
+
+[data-accent="violet"], [data-theme="violet"] {
+  --gold-primary:  #b026ff;
+  --gold-light:    #d946ef;
+  --gold-dark:     #5b21b6;
+  --gold-glow:     rgba(176, 38, 255, 0.2);
+  --text-gold:     #d946ef;
+  --border-gold:   rgba(176, 38, 255, 0.35);
+}
+
+[data-accent="emerald"], [data-theme="emerald"] {
+  --gold-primary:  #00ff9d;
+  --gold-light:    #6ee7b7;
+  --gold-dark:     #047857;
+  --gold-glow:     rgba(0, 255, 157, 0.2);
+  --text-gold:     #6ee7b7;
+  --border-gold:   rgba(0, 255, 157, 0.35);
+}
+
+[data-accent="crimson"], [data-theme="crimson"] {
+  --gold-primary:  #ff4757;
+  --gold-light:    #ff6b81;
+  --gold-dark:     #8b0000;
+  --gold-glow:     rgba(255, 71, 87, 0.2);
+  --text-gold:     #ff6b81;
+  --border-gold:   rgba(255, 71, 87, 0.35);
+}
+
+[data-accent="monolith"], [data-theme="monolith"] {
+  --gold-primary:  #e2e8f0;
+  --gold-light:    #ffffff;
+  --gold-dark:     #64748b;
+  --gold-glow:     rgba(226, 232, 240, 0.15);
+  --text-gold:     #ffffff;
+  --border-gold:   rgba(226, 232, 240, 0.25);
+}
+
+/* ═════════════════════════════════════════════════════════
+   BESPOKE UI THEMES (CHATGPT, CLAUDE, WHATSAPP, RETRO)
+   ═════════════════════════════════════════════════════════ */
+
+/* ─── 1. CHATGPT THEME ─── */
+[data-ui-theme="chatgpt"] {
+  --bg-base:        #212121;
+  --bg-surface:     #171717;
+  --bg-elevated:    #2f2f2f;
+  --bg-hover:       #343434;
+  --border-color:   #343434;
+  --gold-primary:   #10a37f;
+  --gold-light:     #19c37d;
+  --gold-dark:      #0e8064;
+  --gold-glow:      rgba(16, 163, 127, 0.2);
+  --text-gold:      #19c37d;
+  --border-gold:    rgba(16, 163, 127, 0.35);
+  --text-primary:   #ececec;
+  --text-secondary: #b4b4b4;
+  --text-muted:     #777777;
+  --font-chat:      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-ui:        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-brand:     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+[data-ui-theme="chatgpt"] .app-sidebar {
+  background: #171717 !important;
+  border-right: 1px solid #2a2a2a !important;
+  box-shadow: none !important;
+}
+[data-ui-theme="chatgpt"] .atom-brand-title {
+  font-family: var(--font-ui) !important;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: #ececec !important;
+  -webkit-text-fill-color: initial !important;
+  background: none !important;
+}
+[data-ui-theme="chatgpt"] .sidebar-nav a {
+  border-radius: 8px !important;
+}
+[data-ui-theme="chatgpt"] .sidebar-nav a.active {
+  background: #212121 !important;
+  color: #ececec !important;
+  border-color: #383838 !important;
+}
+[data-ui-theme="chatgpt"] .chat-message.user .message-bubble {
+  background: #2f2f2f !important;
+  border: 1px solid #383838 !important;
+  border-radius: 20px !important;
+  color: #ececec !important;
+  box-shadow: none !important;
+}
+[data-ui-theme="chatgpt"] .chat-message.assistant .message-bubble {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  color: #ececec !important;
+  box-shadow: none !important;
+  padding-left: 0 !important;
+}
+[data-ui-theme="chatgpt"] .chat-input-wrapper {
+  background: #2f2f2f !important;
+  border: 1px solid #424242 !important;
+  border-radius: 24px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
+}
+[data-ui-theme="chatgpt"] .btn-send {
+  background: #ececec !important;
+  color: #171717 !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+}
+
+/* ─── 2. CLAUDE THEME ─── */
+[data-ui-theme="claude"] {
+  --bg-base:        #262320;
+  --bg-surface:     #1E1B18;
+  --bg-elevated:    #322E29;
+  --bg-hover:       #3A352F;
+  --border-color:   #3D3831;
+  --gold-primary:   #DA7756;
+  --gold-light:     #E0886A;
+  --gold-dark:      #A85338;
+  --gold-glow:      rgba(218, 119, 86, 0.22);
+  --text-gold:      #E0886A;
+  --border-gold:    rgba(218, 119, 86, 0.35);
+  --text-primary:   #FAF7F2;
+  --text-secondary: #B8B0A2;
+  --text-muted:     #847C70;
+  --font-chat:      "Newsreader", "Georgia", "Merriweather", serif;
+  --font-ui:        "Inter", sans-serif;
+  --font-brand:     "Newsreader", Georgia, serif;
+}
+[data-ui-theme="claude"] .app-sidebar {
+  background: #1E1B18 !important;
+  border-right: 1px solid #38342F !important;
+  box-shadow: none !important;
+}
+[data-ui-theme="claude"] .atom-brand-title {
+  font-family: "Newsreader", Georgia, serif !important;
+  font-size: 1.45rem !important;
+  font-weight: 500 !important;
+  font-style: italic !important;
+  color: #FAF7F2 !important;
+  -webkit-text-fill-color: initial !important;
+  background: none !important;
+}
+[data-ui-theme="claude"] .chat-message.user .message-bubble {
+  background: #322E29 !important;
+  border: 1px solid #48423B !important;
+  border-radius: 16px !important;
+  color: #FAF7F2 !important;
+  font-family: "Inter", sans-serif !important;
+  font-size: 0.9rem !important;
+  box-shadow: none !important;
+}
+[data-ui-theme="claude"] .chat-message.assistant .message-bubble {
+  background: #2C2824 !important;
+  border: 1px solid #3E3831 !important;
+  border-radius: 14px !important;
+  color: #FAF7F2 !important;
+  font-family: "Newsreader", Georgia, serif !important;
+  font-size: 1.05rem !important;
+  line-height: 1.7 !important;
+  box-shadow: none !important;
+}
+[data-ui-theme="claude"] .chat-input-wrapper {
+  background: #322E29 !important;
+  border: 1px solid #48423B !important;
+  border-radius: 18px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25) !important;
+}
+[data-ui-theme="claude"] .btn-send {
+  background: #DA7756 !important;
+  color: #ffffff !important;
+  border-radius: 12px !important;
+}
+
+/* ─── 3. WHATSAPP THEME ─── */
+[data-ui-theme="whatsapp"] {
+  --bg-base:        #0b141a;
+  --bg-surface:     #111b21;
+  --bg-elevated:    #202c33;
+  --bg-hover:       #222e35;
+  --border-color:   #222e35;
+  --gold-primary:   #00a884;
+  --gold-light:     #25d366;
+  --gold-dark:      #008069;
+  --gold-glow:      rgba(0, 168, 132, 0.2);
+  --text-gold:      #25d366;
+  --border-gold:    rgba(0, 168, 132, 0.35);
+  --text-primary:   #e9edef;
+  --text-secondary: #8696a0;
+  --text-muted:     #667781;
+  --font-chat:      "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-ui:        "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-brand:     "Segoe UI", sans-serif;
+}
+[data-ui-theme="whatsapp"] .app-sidebar {
+  background: #111b21 !important;
+  border-right: 1px solid #222e35 !important;
+  box-shadow: none !important;
+}
+[data-ui-theme="whatsapp"] .app-topbar {
+  background: #202c33 !important;
+  border-bottom: 1px solid #2a3942 !important;
+}
+[data-ui-theme="whatsapp"] .atom-brand-title {
+  font-family: "Segoe UI", sans-serif !important;
+  font-size: 1.3rem !important;
+  font-weight: 700 !important;
+  color: #00a884 !important;
+  -webkit-text-fill-color: initial !important;
+  background: none !important;
+}
+[data-ui-theme="whatsapp"] .chat-message.user .message-bubble {
+  background: #005c4b !important;
+  color: #e9edef !important;
+  border: none !important;
+  border-radius: 8px 0px 8px 8px !important;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.2) !important;
+}
+[data-ui-theme="whatsapp"] .chat-message.assistant .message-bubble {
+  background: #202c33 !important;
+  color: #e9edef !important;
+  border: none !important;
+  border-radius: 0px 8px 8px 8px !important;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.2) !important;
+}
+[data-ui-theme="whatsapp"] .chat-input-bar {
+  background: #202c33 !important;
+  border-top: 1px solid #2a3942 !important;
+}
+[data-ui-theme="whatsapp"] .chat-input-wrapper {
+  background: #2a3942 !important;
+  border: none !important;
+  border-radius: 20px !important;
+}
+[data-ui-theme="whatsapp"] .btn-send {
+  background: #00a884 !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+  width: 38px !important;
+  height: 38px !important;
+}
+
+/* ─── 4. RETRO PIXELATED THEME ─── */
+[data-ui-theme="retro"] {
+  --bg-base:        #060a06;
+  --bg-surface:     #0a110a;
+  --bg-elevated:    #111d11;
+  --bg-hover:       #192b19;
+  --border-color:   #00ff66;
+  --gold-primary:   #00ff66;
+  --gold-light:     #55ff99;
+  --gold-dark:      #009933;
+  --gold-glow:      rgba(0, 255, 102, 0.35);
+  --text-gold:      #55ff99;
+  --border-gold:    #00ff66;
+  --text-primary:   #00ff66;
+  --text-secondary: #00bb44;
+  --text-muted:     #007722;
+  --font-chat:      'VT323', monospace !important;
+  --font-ui:        'VT323', monospace !important;
+  --font-brand:     'VT323', monospace !important;
+  --font-mono:      'VT323', monospace !important;
+}
+[data-ui-theme="retro"] *,
+[data-ui-theme="retro"] *::before,
+[data-ui-theme="retro"] *::after {
+  border-radius: 0px !important;
+  font-family: 'VT323', monospace !important;
+  letter-spacing: 0.5px;
+}
+[data-ui-theme="retro"] .app-sidebar {
+  background: #0a110a !important;
+  border-right: 2px solid #00ff66 !important;
+  box-shadow: none !important;
+}
+[data-ui-theme="retro"] .atom-brand-title {
+  font-size: 1.8rem !important;
+  color: #00ff66 !important;
+  text-shadow: 0 0 10px #00ff66 !important;
+  -webkit-text-fill-color: initial !important;
+  background: none !important;
+  letter-spacing: 2px !important;
+}
+[data-ui-theme="retro"] .sidebar-nav a {
+  border: 1px solid transparent !important;
+  font-size: 1.15rem !important;
+}
+[data-ui-theme="retro"] .sidebar-nav a.active {
+  background: #112211 !important;
+  border: 1px solid #00ff66 !important;
+  color: #00ff66 !important;
+  box-shadow: 2px 2px 0px #005522 !important;
+}
+[data-ui-theme="retro"] .chat-message.user .message-bubble {
+  background: #00220d !important;
+  border: 2px solid #00ff66 !important;
+  box-shadow: 4px 4px 0px #000 !important;
+  color: #00ff66 !important;
+  font-size: 1.25rem !important;
+  line-height: 1.4 !important;
+}
+[data-ui-theme="retro"] .chat-message.assistant .message-bubble {
+  background: #091409 !important;
+  border: 2px solid #00aa44 !important;
+  box-shadow: 4px 4px 0px #000 !important;
+  color: #55ff99 !important;
+  font-size: 1.25rem !important;
+  line-height: 1.4 !important;
+}
+[data-ui-theme="retro"] .chat-input-wrapper {
+  background: #001a0a !important;
+  border: 2px solid #00ff66 !important;
+  box-shadow: 3px 3px 0px #000 !important;
+}
+[data-ui-theme="retro"] .chat-input {
+  color: #00ff66 !important;
+  font-size: 1.25rem !important;
+}
+[data-ui-theme="retro"] .btn-send {
+  background: #00ff66 !important;
+  color: #000000 !important;
+  border: 2px solid #00ff66 !important;
+  font-size: 1.2rem !important;
+}
+[data-ui-theme="retro"] .settings-card,
+[data-ui-theme="retro"] .about-card,
+[data-ui-theme="retro"] .about-hero {
+  border: 2px solid #00ff66 !important;
+  box-shadow: 4px 4px 0px #003311 !important;
+}
+
+/* ─── Compact Density Mode (High-Impact Scaling) ─── */
+[data-density="compact"] {
+  --sidebar-width: 220px;
+  --topbar-height: 48px;
+  --space-3: 0.5rem;
+  --space-4: 0.65rem;
+  --space-5: 0.85rem;
+  --space-6: 1.1rem;
+}
+[data-density="compact"] .app-main {
+  font-size: 0.84rem;
+}
+[data-density="compact"] .chat-message {
+  padding: 4px var(--space-4);
+  gap: 8px;
+}
+[data-density="compact"] .message-bubble {
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+[data-density="compact"] .message-avatar {
+  width: 26px;
+  height: 26px;
+  font-size: 0.75rem;
+}
+[data-density="compact"] .sidebar-nav a {
+  padding: 4px 6px;
+  font-size: 0.8rem;
+  margin-bottom: 1px;
+}
+[data-density="compact"] .chat-input-wrapper {
+  padding: 6px 10px;
+}
+[data-density="compact"] .settings-card {
+  padding: 12px 16px;
+}
+
+/* ─── Atom Animation Toggle ─── */
+[data-atom-spin="false"] .electron {
+  animation: none !important;
+}
+[data-atom-spin="false"] .orbit-line {
+  animation: none !important;
 }
 
 /* ─── Reset ─── */
@@ -196,6 +594,27 @@ pre code {
   height: 100vh;
   z-index: 200;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(235, 179, 56, 0.25) transparent;
+}
+
+.app-sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.app-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(235, 179, 56, 0.2);
+  border-radius: 4px;
+}
+
+.app-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(235, 179, 56, 0.4);
 }
 
 .app-sidebar.collapsed {
@@ -203,12 +622,13 @@ pre code {
 }
 
 .sidebar-header {
-  padding: var(--space-5) var(--space-4);
+  padding: 12px 14px;
   border-bottom: var(--glass-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+  flex-shrink: 0;
 }
 
 .sidebar-close-btn {
@@ -235,7 +655,7 @@ pre code {
 }
 
 .atom-logo {
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   line-height: 1;
 }
 
@@ -246,35 +666,37 @@ pre code {
 
 .atom-brand-title {
   font-family: var(--font-brand);
-  font-size: 2.2rem;
-  font-weight: 500;
+  font-size: 1.6rem;
+  font-weight: 600;
   letter-spacing: 0.05em;
   background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 60%, var(--gold-primary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  line-height: 1.1;
 }
 
 .atom-brand-sub {
   font-family: var(--font-brand);
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   color: var(--text-gold);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
 }
 
 .sidebar-nav {
-  padding: var(--space-3) var(--space-2) var(--space-2);
+  padding: 6px 8px;
   flex-shrink: 0;
 }
 
 /* ─── Sidebar Chat History ─── */
 .sidebar-history-section {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  padding: var(--space-2) var(--space-3);
+  padding: 6px 10px;
   border-top: var(--glass-border);
-  min-height: 120px;
+  min-height: 80px;
+  max-height: 200px;
   overflow: hidden;
 }
 
@@ -426,15 +848,15 @@ pre code {
 .sidebar-nav a {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
+  gap: 8px;
+  padding: 6px 10px;
   border-radius: var(--radius-md);
   color: var(--text-secondary);
   font-family: var(--font-ui);
-  font-size: 1.05rem;
+  font-size: 0.88rem;
   font-weight: 600;
   transition: all var(--transition-fast);
-  margin-bottom: var(--space-1);
+  margin-bottom: 2px;
   cursor: pointer;
   border: 1px solid transparent;
 }
@@ -453,25 +875,29 @@ pre code {
 }
 
 .sidebar-nav a .nav-icon {
-  font-size: 1.1rem;
-  width: 20px;
+  font-size: 0.95rem;
+  width: 18px;
   text-align: center;
   flex-shrink: 0;
   font-style: normal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar-status {
-  padding: var(--space-3) var(--space-4);
+  padding: 8px 12px;
   border-top: var(--glass-border);
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .status-row {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 8px;
 }
 
 .status-dot {
@@ -486,24 +912,299 @@ pre code {
 
 .status-label {
   font-family: var(--font-ui);
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .sidebar-credit {
-  padding: 8px var(--space-4);
-  font-size: 0.62rem;
+  padding: 5px var(--space-4) 7px;
+  font-size: 0.6rem;
   color: var(--text-muted);
-  opacity: 0.2;
+  opacity: 0.25;
   text-align: center;
   transition: opacity 0.2s ease;
   letter-spacing: 0.05em;
   font-family: var(--font-ui);
   border-top: 1px solid rgba(255, 255, 255, 0.03);
+  flex-shrink: 0;
 }
 
 .sidebar-credit:hover {
   opacity: 0.6;
+}
+
+/* ─── Compact Scaling for Small Screens & Low-Res Laptops ─── */
+@media (max-height: 780px) {
+  .sidebar-header {
+    padding: 8px 12px;
+  }
+  .atom-brand-title {
+    font-size: 1.35rem;
+  }
+  .atom-brand-sub {
+    font-size: 0.75rem;
+  }
+  .sidebar-nav {
+    padding: 4px 6px;
+  }
+  .sidebar-nav a {
+    padding: 5px 8px;
+    font-size: 0.82rem;
+    gap: 7px;
+    margin-bottom: 1px;
+  }
+  .sidebar-nav a .nav-icon {
+    font-size: 0.85rem;
+    width: 16px;
+  }
+  .sidebar-history-section {
+    max-height: 130px;
+    min-height: 60px;
+    padding: 4px 8px;
+  }
+  .history-section-header {
+    padding-bottom: 4px;
+  }
+  .history-title {
+    font-size: 0.68rem;
+  }
+  .session-item {
+    padding: 4px 6px;
+    font-size: 0.8rem;
+  }
+  .sidebar-status {
+    padding: 6px 10px;
+    gap: 3px;
+  }
+  .status-label {
+    font-size: 0.7rem;
+  }
+  .sidebar-credit {
+    padding: 3px 8px;
+    font-size: 0.58rem;
+  }
+}
+
+@media (max-height: 640px) {
+  .sidebar-header {
+    padding: 6px 10px;
+  }
+  .atom-brand-sub {
+    display: none;
+  }
+  .sidebar-nav a {
+    padding: 3px 6px;
+    font-size: 0.78rem;
+  }
+  .sidebar-history-section {
+    max-height: 90px;
+  }
+  .sidebar-status {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px 6px;
+    padding: 4px 8px;
+  }
+  .status-label {
+    font-size: 0.66rem;
+  }
+}
+
+/* ─── Generic Modal Popup (Settings & About) ─── */
+.atom-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  animation: fadeIn 0.2s ease;
+}
+
+.atom-modal-backdrop.open {
+  display: flex;
+}
+
+.atom-modal-container {
+  background: rgba(14, 18, 24, 0.95);
+  border: 1px solid rgba(235, 179, 56, 0.35);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(235, 179, 56, 0.15);
+  max-width: 480px;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.92); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.atom-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: var(--glass-border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.atom-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-ui);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--gold-light);
+}
+
+.atom-modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  transition: color var(--transition-fast);
+}
+
+.atom-modal-close:hover {
+  color: #ff5555;
+}
+
+.atom-modal-body {
+  padding: var(--space-5);
+  overflow-y: auto;
+  font-family: var(--font-chat);
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.setting-section-title {
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(235, 179, 56, 0.2);
+  margin-top: 4px;
+}
+
+.setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.setting-label {
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.setting-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.setting-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: var(--glass-border);
+  border-radius: var(--radius-md);
+}
+
+.setting-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.35);
+  border: var(--glass-border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.setting-input:focus {
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 0 2px var(--gold-glow);
+}
+
+.atom-toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.atom-toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.atom-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(255, 255, 255, 0.15);
+  transition: .3s;
+  border-radius: 24px;
+}
+
+.atom-toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #fff;
+  transition: .3s;
+  border-radius: 50%;
+}
+
+input:checked + .atom-toggle-slider {
+  background-color: var(--gold-primary);
+}
+
+input:checked + .atom-toggle-slider:before {
+  transform: translateX(20px);
+}
+
+.atom-modal-footer {
+  padding: var(--space-4) var(--space-5);
+  border-top: var(--glass-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 /* ─── Main Content ─── */

@@ -224,4 +224,74 @@ async function updateStatusIndicators() {
 
 updateStatusIndicators();
 
+// ─── Settings & Customization Application ───────────────────
+function applySavedPreferences() {
+  // UI Theme (Default, ChatGPT, Claude, WhatsApp, Retro)
+  const savedUiTheme = localStorage.getItem('atom_ui_theme') || 'default';
+  document.documentElement.setAttribute('data-ui-theme', savedUiTheme);
+
+  // Accent Color (for Default theme: gold, cyan, violet, emerald, crimson, monolith)
+  const savedAccent = localStorage.getItem('atom_accent') || localStorage.getItem('atom_theme') || 'gold';
+  document.documentElement.setAttribute('data-accent', savedAccent);
+  document.documentElement.setAttribute('data-theme', savedAccent);
+
+  // Layout density
+  const savedDensity = localStorage.getItem('atom_density') || 'normal';
+  document.documentElement.setAttribute('data-density', savedDensity);
+
+  // Atom spin animation
+  const savedSpin = localStorage.getItem('atom_spin');
+  if (savedSpin !== null) {
+    document.documentElement.setAttribute('data-atom-spin', savedSpin);
+  }
+
+  // Canvas particles
+  const savedParticles = localStorage.getItem('atom_setting_particles');
+  if (savedParticles === 'false') {
+    const canvas = document.getElementById('vapor-canvas');
+    if (canvas) canvas.style.display = 'none';
+  }
+
+  // Cursor flashlight glow
+  const savedGlow = localStorage.getItem('atom_setting_glow');
+  if (savedGlow === 'false' && cursorGlow) {
+    cursorGlow.style.display = 'none';
+  }
+}
+
+// Global functions for customization
+window.setAtomUiTheme = function(uiTheme) {
+  localStorage.setItem('atom_ui_theme', uiTheme);
+  document.documentElement.setAttribute('data-ui-theme', uiTheme);
+};
+
+window.setAtomAccent = function(accent) {
+  localStorage.setItem('atom_accent', accent);
+  localStorage.setItem('atom_theme', accent);
+  document.documentElement.setAttribute('data-accent', accent);
+  document.documentElement.setAttribute('data-theme', accent);
+};
+
+window.setAtomTheme = function(theme) {
+  window.setAtomAccent(theme);
+};
+
+window.setAtomDensity = function(density) {
+  localStorage.setItem('atom_density', density);
+  document.documentElement.setAttribute('data-density', density);
+};
+
+window.setAtomSpin = function(enabled) {
+  localStorage.setItem('atom_spin', enabled ? 'true' : 'false');
+  document.documentElement.setAttribute('data-atom-spin', enabled ? 'true' : 'false');
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  applySavedPreferences();
+});
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  applySavedPreferences();
+}
+
 console.log('%c⚛️ A.T.O.M. v4.0 CORTEX INITIALIZED', 'color:#C9A227;font-size:14px;font-weight:bold;');
+

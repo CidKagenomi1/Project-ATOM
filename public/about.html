@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A.T.O.M. — About</title>
+  <meta name="description" content="Tentang A.T.O.M. — Autonomous Task Orchestration Machine">
+  <link rel="stylesheet" href="assets/css/main.css?v=4.2">
+  <link rel="stylesheet" href="assets/css/components.css?v=4.2">
+  <style>
+    .about-layout {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: var(--space-6) var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+    }
+    .about-hero {
+      text-align: center;
+      background: rgba(14, 18, 24, 0.8);
+      border: var(--glass-border);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6) var(--space-4);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(235, 179, 56, 0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .about-hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(235, 179, 56, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .about-logo-wrapper {
+      width: 76px;
+      height: 76px;
+      margin-bottom: var(--space-3);
+      color: var(--gold-primary);
+    }
+    .about-title {
+      font-family: var(--font-brand);
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--gold-light);
+      letter-spacing: 0.12em;
+      text-shadow: 0 0 20px rgba(235, 179, 56, 0.3);
+    }
+    .about-subtitle {
+      font-size: 0.78rem;
+      color: var(--gold-dim);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .about-badges {
+      display: flex;
+      gap: 8px;
+      margin-top: var(--space-4);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .about-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 14px;
+    }
+    .about-quote {
+      margin-top: var(--space-4);
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-style: italic;
+      border-left: 2px solid var(--gold-primary);
+      padding: 8px 16px;
+      background: rgba(235, 179, 56, 0.03);
+      border-radius: var(--radius-sm);
+      max-width: 520px;
+    }
+    .about-card {
+      background: rgba(14, 18, 24, 0.75);
+      border: var(--glass-border);
+      border-radius: var(--radius-xl);
+      padding: var(--space-5) var(--space-6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--shadow-md);
+      transition: border-color var(--transition-fast);
+    }
+    .about-card:hover {
+      border-color: rgba(235, 179, 56, 0.35);
+    }
+    .about-card-title {
+      font-family: var(--font-ui);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--gold-light);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: var(--space-3);
+      padding-bottom: var(--space-3);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .about-card-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-md);
+      background: rgba(235, 179, 56, 0.1);
+      color: var(--gold-primary);
+      border: 1px solid rgba(235, 179, 56, 0.25);
+      flex-shrink: 0;
+    }
+    .about-card-icon svg {
+      width: 18px;
+      height: 18px;
+    }
+    .about-text {
+      font-family: var(--font-chat);
+      font-size: 0.88rem;
+      line-height: 1.7;
+      color: var(--text-secondary);
+    }
+    .pipeline-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: var(--space-4);
+    }
+    .pipeline-box {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .pipeline-step {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gold-primary);
+    }
+    .pipeline-name {
+      font-family: var(--font-ui);
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .pipeline-desc {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+    .specs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      margin-top: var(--space-3);
+    }
+    .specs-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .specs-table td:first-child {
+      color: var(--text-muted);
+      width: 35%;
+    }
+    .specs-table td:last-child {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+    @media (max-width: 768px) {
+      .about-layout {
+        padding: var(--space-4) var(--space-3);
+      }
+      .about-card {
+        padding: var(--space-4);
+      }
+      .about-hero {
+        padding: var(--space-5) var(--space-3);
+      }
+      .about-title {
+        font-size: 1.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <div class="sidebar-header">
+        <span class="atom-logo">
+          <svg class="svg-logo animated-atom" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="4" fill="currentColor" class="nucleus-glow"/>
+            <g class="orbit-group">
+              <path class="orbit-line" d="M 50,10 A 15,40 0 1,0 50,90 A 15,40 0 1,0 50,10" fill="none" stroke="currentColor"/>
+              <circle r="2" class="electron">
+                <animateMotion dur="4s" repeatCount="indefinite" path="M 50,10 A 15,40 0 1,0 50,90 A 15,40 0 1,0 50,10"/>
+              </circle>
+            </g>
+            <g class="orbit-group" transform="rotate(60 50 50)">
+              <path class="orbit-line" d="M 50,10 A 15,40 0 1,0 50,90 A 15,40 0 1,0 50,10" fill="none" stroke="currentColor"/>
+              <circle r="2" class="electron">
+                <animateMotion dur="3.2s" repeatCount="indefinite" path="M 50,10 A 15,40 0 1,0 50,90 A 15,40 0 1,0 50,10"/>
+              </circle>
+            </g>
+            <g class="orbit-group" transform="rotate(120 50 50)">
+              <path class="orbit-line" d="M 50,10 A 15,40 0 1,0 50,90 A 15,40 0 1,0 50,10" fill="none" stroke="currentColor"/>
+              <circle r="2" class="electron">
+                <animateMotion dur="4.8s" repeatCount="indefinite" path="M 50,10 A 15,40 0 1,0 50,90 A 15,40 0 1,0 50,10"/>
+              </circle>
+            </g>
+          </svg>
+        </span>
+        <div class="atom-brand">
+          <div class="atom-brand-title">A.T.O.M.</div>
+          <div class="atom-brand-sub">About</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="index.html" id="nav-chat">
+          <span class="nav-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </span>Chat
+        </a>
+        <a href="roleplay.html" id="nav-roleplay">
+          <span class="nav-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+          </span>RP Model
+        </a>
+        <a href="notes.html" id="nav-notes">
+          <span class="nav-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z"/>
+            </svg>
+          </span>Smart Notes
+        </a>
+        <a href="telemetry.html" id="nav-telemetry">
+          <span class="nav-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+              <line x1="18" y1="20" x2="18" y2="10"/>
+              <line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+          </span>Telemetry
+        </a>
+        <a href="settings.html" id="nav-settings">
+          <span class="nav-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </span>Settings
+        </a>
+        <a href="about.html" class="active" id="nav-about">
+          <span class="nav-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </span>About
+        </a>
+      </nav>
+      <div class="sidebar-status">
+        <div class="status-row">
+          <div class="status-dot offline" id="dot-local"></div>
+          <span class="status-label">Local AI (Ollama)</span>
+        </div>
+        <div class="status-row">
+          <div class="status-dot offline" id="dot-groq"></div>
+          <span class="status-label">Cloud AI (Groq)</span>
+        </div>
+        <div class="status-row">
+          <div class="status-dot offline" id="dot-crew"></div>
+          <span class="status-label">Agent CrewAI</span>
+        </div>
+        <div class="status-row">
+          <div class="status-dot offline" id="dot-gemini"></div>
+          <span class="status-label">Fallback (Gemini)</span>
+        </div>
+      </div>
+      <div class="sidebar-credit">initiate by alif rahmadi</div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- ============ MAIN ============ -->
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="flex items-center gap-3">
+          <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+          <span class="topbar-title">Tentang A.T.O.M.</span>
+        </div>
+      </header>
+
+      <div class="main-content" style="overflow-y: auto;">
+        <div class="about-layout">
+          <!-- HERO -->
+          <div class="about-hero">
+            <div class="about-logo-wrapper">
+              <svg class="svg-logo animated-atom" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2" style="width: 100%; height: 100%;">
+                <circle cx="50" cy="50" r="4" fill="currentColor" class="nucleus-glow"/>
+                <g class="orbit-group">
+                  <path class="orbit-line" d="M 50,10 A 15,40 0 1,0 50,90 A 15,40 0 1,0 50,10" fill="none" stroke="currentColor"/>
+                </g>
+                <g class="orbit-group" transform="rotate(60 50 50)">
+                  <path class="orbit-line" d="M 50,10 A 15,40 0 1,0 50,90 A 15,40 0 1,0 50,10" fill="none" stroke="currentColor"/>
+                </g>
+                <g class="orbit-group" transform="rotate(120 50 50)">
+                  <path class="orbit-line" d="M 50,10 A 15,40 0 1,0 50,90 A 15,40 0 1,0 50,10" fill="none" stroke="currentColor"/>
+                </g>
+              </svg>
+            </div>
+            <div class="about-title">A.T.O.M.</div>
+            <div class="about-subtitle">Autonomous Task Orchestration Machine</div>
+            <div class="about-badges">
+              <span class="about-badge" style="background: rgba(235,179,56,0.15); color: var(--gold-primary); border: 1px solid rgba(235,179,56,0.3);">v4.0 Hybrid Architecture</span>
+              <span class="about-badge" style="background: rgba(0,210,255,0.12); color: #00d2ff; border: 1px solid rgba(0,210,255,0.3);">Neural Cortex Router</span>
+              <span class="about-badge" style="background: rgba(46,213,115,0.12); color: #2ed573; border: 1px solid rgba(46,213,115,0.3);">Sliding Token Optimizer</span>
+            </div>
+            <div class="about-quote">
+              "I am not just a chatbot, Sir. I am a Neural Orchestrator."
+            </div>
+          </div>
+
+          <!-- CARD 1: Vision & Purpose -->
+          <div class="about-card">
+            <div class="about-card-title">
+              <span class="about-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <circle cx="12" cy="12" r="6"/>
+                  <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                </svg>
+              </span>
+              <span>Filosofi & Tujuan Sistem</span>
+            </div>
+            <div class="about-text">
+              <p style="margin-bottom: 10px;">
+                <strong>A.T.O.M.</strong> lahir dari visi untuk melampaui paradigma chatbot konvensional. Bukan sekadar menjawab pertanyaan secara statis, ATOM dirancang sebagai <strong>orkestrator mitra berpikir</strong> untuk mendukung eksplorasi ide-ide besar, perancangan inovasi strategis, dan stimulasi kreativitas otak secara terstruktur.
+              </p>
+              <p>
+                Dengan memadukan model kecerdasan buatan lokal berprivasi tinggi (Ollama) dan model akselerasi komputasi awan berkecepatan tinggi (Groq & Gemini), ATOM memberi kebebasan penuh dalam berimajinasi, menyusun rencana inovatif, dan memvalidasi hipotesis bisnis tanpa batas.
+              </p>
+            </div>
+          </div>
+
+          <!-- CARD 2: Architecture & Inference Pipeline -->
+          <div class="about-card">
+            <div class="about-card-title">
+              <span class="about-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-5.04z"/>
+                  <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-5.04z"/>
+                </svg>
+              </span>
+              <span>Arsitektur Neural Cortex Router</span>
+            </div>
+            <div class="about-text">
+              Sistem menggunakan pipeline berjenjang (Multi-Tier Failover) yang cerdas dan hemat token:
+            </div>
+            <div class="pipeline-grid">
+              <div class="pipeline-box">
+                <span class="pipeline-step">Tier 1 • Local Engine</span>
+                <span class="pipeline-name">Ollama (DeepSeek R1)</span>
+                <span class="pipeline-desc">Inferensi lokal tanpa biaya token, privasi data 100% di perangkat.</span>
+              </div>
+              <div class="pipeline-box">
+                <span class="pipeline-step">Tier 2 • Cloud Speed</span>
+                <span class="pipeline-name">Groq (LLaMA 3.3 70B)</span>
+                <span class="pipeline-desc">Komputasi awan LPU ultra cepat (~500 token/detik) untuk respon instan.</span>
+              </div>
+              <div class="pipeline-box">
+                <span class="pipeline-step">Tier 3 • Multi-Agent</span>
+                <span class="pipeline-name">CrewAI Agent Network</span>
+                <span class="pipeline-desc">Kolaborasi agen otonom untuk riset dan sintesis persoalan kompleks.</span>
+              </div>
+              <div class="pipeline-box">
+                <span class="pipeline-step">Tier 4 • Cloud Resilience</span>
+                <span class="pipeline-name">Google Gemini Flash</span>
+                <span class="pipeline-desc">Fallback handal berdaya nalar tinggi dengan jendela konteks luas.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 3: Core Features -->
+          <div class="about-card">
+            <div class="about-card-title">
+              <span class="about-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+                  <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
+                  <path d="M9 12H4s.55-3.03 2-4.5c1.45-1.45 4.5-2 4.5-2"/>
+                  <path d="M15 12v5s3.03-.55 4.5-2c1.45-1.45 2-4.5 2-4.5"/>
+                </svg>
+              </span>
+              <span>Modul Unggulan ATOM</span>
+            </div>
+            <div class="about-text">
+              <ul style="padding-left: 20px; display: flex; flex-direction: column; gap: 8px;">
+                <li><strong>Neural Chat:</strong> Obrolan interaktif dengan pelindung token <em>Sliding Context Window</em> dan manajemen multi-sesi peramban.</li>
+                <li><strong>RP Model (Roleplay Sandbox):</strong> Ruang simulasi peran kreatif (Strategic Architect, Engineering Director, Auto Discovery Guide) untuk memicu pemikiran inovatif.</li>
+                <li><strong>Smart Notes & Concept Bubbles:</strong> Pengorganisasian catatan pintar berbasis simpul dan kanvas visual.</li>
+                <li><strong>Telemetry Monitor:</strong> Pelacakan latensi inferensi, rute model, dan deteksi kegagalan secara real-time.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- CARD 4: System Specs & Credits -->
+          <div class="about-card">
+            <div class="about-card-title">
+              <span class="about-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+              </span>
+              <span>Spesifikasi & Pengembang</span>
+            </div>
+            <table class="specs-table">
+              <tr>
+                <td>Versi Sistem</td>
+                <td>v4.0 Hybrid (Web + Desktop API)</td>
+              </tr>
+              <tr>
+                <td>Core Backend</td>
+                <td>FastAPI, LangChain, Cortex Decision Engine</td>
+              </tr>
+              <tr>
+                <td>Frontend UI</td>
+                <td>Vanilla Cyber Glassmorphism (Nuclear Gold Theme)</td>
+              </tr>
+              <tr>
+                <td>Inisiator & Pembuat</td>
+                <td><span style="color: var(--gold-light);">Alif Rahmadi</span></td>
+              </tr>
+              <tr>
+                <td>Status Operasional</td>
+                <td><span style="color: #2ed573;">● Operational Active</span></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+  <script src="assets/js/app.js?v=4.2"></script>
+</body>
+</html>
