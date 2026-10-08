@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import random
 import re
+import time
 from typing import Dict, List, Optional
 
 # --- 12 SPECIALIZED INTENT CLUSTERS WITH RICH WITTY RESPONSE POOLS ---
@@ -301,19 +302,24 @@ class BanterEngine:
         return None
 
     def _build_response(self, cluster_id: str, pool: List[str]) -> Dict:
-        """Pick a response avoiding immediate repetition if pool has multiple items."""
+        """Pick a response avoiding immediate repetition with simulated 2-3s organic thinking latency."""
         available = [resp for resp in pool if resp != self._last_responses.get(cluster_id)]
         chosen = random.choice(available if available else pool)
         self._last_responses[cluster_id] = chosen
+
+        # Simulated organic cognitive thinking delay (2-3 seconds)
+        simulated_delay = round(random.uniform(2.15, 2.75), 2)
+        time.sleep(simulated_delay)
 
         return {
             "response": chosen,
             "model": "Ancestor-Banter (Zero-LLM)",
             "thinking": [
-                {"step": "[ANCESTOR]", "detail": f"Casual Banter Intercepted: {cluster_id} (0ms / 0 Token)"},
-                {"step": "[WITTY POOL]", "detail": f"Uniform Random Variant Selected ({len(pool)} available)"}
+                {"step": "[NEURAL SCAN]", "detail": f"Casual Banter Intercepted: {cluster_id} (Zero-Token Local Execution)"},
+                {"step": "[WITTY POOL]", "detail": f"Cognitive Variant Sampled ({len(pool)} available)"},
+                {"step": "[SYNTHESIS]", "detail": f"Tone & Persona Calibrated ({simulated_delay}s)"}
             ],
-            "duration": 0.001
+            "duration": simulated_delay
         }
 
 

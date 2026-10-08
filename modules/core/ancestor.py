@@ -10,6 +10,7 @@ Provides Dual-Mode Knowledge Retrieval:
 from __future__ import annotations
 
 import os
+import random
 import re
 import time
 from typing import Dict, List, Optional, Tuple
@@ -151,60 +152,28 @@ class AncestorEngine:
             "siapa dirimu", "apa peran utamamu", "siapa anda", "identitas atom", 
             "siapa kamu di atom", "peran utamamu di a.t.o.m."
         ]):
-            return {
-                "response": ECHO_TEMPLATES["identity"],
-                "model": "Ancestor-Echo (Zero-LLM)",
-                "thinking": [
-                    {"step": "[ANCESTOR]", "detail": "Instant Identity Echo (0ms / 0 Token)"},
-                    {"step": "[STATUS]", "detail": "Grounded from Ancestor Core"}
-                ],
-                "duration": 0.001
-            }
+            return self._build_echo_response("identity", "Identity Lore Grounded", "Founder & Orchestrator Verified")
 
         # 2. Creator match
         if any(kw in p for kw in [
             "siapa pembuatmu", "siapa inisiator", "pembuat atau inisiator", 
             "siapa pencipta", "siapa yang membuat atom", "alif rahmadi"
         ]) and len(p.split()) < 20:
-            return {
-                "response": ECHO_TEMPLATES["creator"],
-                "model": "Ancestor-Echo (Zero-LLM)",
-                "thinking": [
-                    {"step": "[ANCESTOR]", "detail": "Instant Creator Lore Echo (0ms / 0 Token)"},
-                    {"step": "[FOUNDER]", "detail": "Alif Rahmadi Otoritatif"}
-                ],
-                "duration": 0.001
-            }
+            return self._build_echo_response("creator", "Creator Lore Echo", "Alif Rahmadi Otoritatif")
 
         # 3. Cortex match
         if any(kw in p for kw in [
             "cara kerja cortex", "cortex neural router", "bagaimana cara kerja cortex",
             "mekanisme cortex", "failover multi-provider"
         ]):
-            return {
-                "response": ECHO_TEMPLATES["cortex"],
-                "model": "Ancestor-Echo (Zero-LLM)",
-                "thinking": [
-                    {"step": "[ANCESTOR]", "detail": "Instant Cortex Architecture Echo (0ms / 0 Token)"},
-                    {"step": "[ROUTER]", "detail": "Multi-Tier Dispatcher Verified"}
-                ],
-                "duration": 0.001
-            }
+            return self._build_echo_response("cortex", "Cortex Architecture Echo", "Multi-Tier Dispatcher Verified")
 
         # 4. CrewAI match
         if any(kw in p for kw in [
             "apa itu crewai", "peran multi-agent squad", "modul crewai", 
             "bagaimana peran multi-agent", "crewai di atom"
         ]):
-            return {
-                "response": ECHO_TEMPLATES["crewai"],
-                "model": "Ancestor-Echo (Zero-LLM)",
-                "thinking": [
-                    {"step": "[ANCESTOR]", "detail": "Instant CrewAI Squad Echo (0ms / 0 Token)"},
-                    {"step": "[SQUAD]", "detail": "Researcher + Writer Workflow Verified"}
-                ],
-                "duration": 0.001
-            }
+            return self._build_echo_response("crewai", "CrewAI Squad Echo", "Researcher + Writer Workflow Verified")
 
         # 5. Architecture match
         if any(kw in p for kw in [
@@ -212,17 +181,9 @@ class AncestorEngine:
             "arsitektur atom secara keseluruhan", "frontend hingga backend",
             "blueprint arsitektur sistem"
         ]):
-            return {
-                "response": ECHO_TEMPLATES["architecture"],
-                "model": "Ancestor-Echo (Zero-LLM)",
-                "thinking": [
-                    {"step": "[ANCESTOR]", "detail": "Instant Blueprint Architecture Echo (0ms / 0 Token)"},
-                    {"step": "[TOPOLOGY]", "detail": "Full-Stack Topology Verified"}
-                ],
-                "duration": 0.001
-            }
+            return self._build_echo_response("architecture", "Blueprint Architecture Echo", "Full-Stack Topology Verified")
 
-        # --- 6. CASUAL BANTER MATRIX (10 INTENT CLUSTERS & RANDOMIZED WITTY POOL) ---
+        # --- 6. CASUAL BANTER MATRIX (12 INTENT CLUSTERS & RANDOMIZED WITTY POOL) ---
         try:
             from modules.core.banter_matrix import get_banter_engine
             banter_resp = get_banter_engine().match(prompt)
@@ -232,6 +193,21 @@ class AncestorEngine:
             pass
 
         return None
+
+    def _build_echo_response(self, template_key: str, detail_lore: str, step_lore: str) -> Dict:
+        """Simulate 2-3s organic cognitive thinking latency for deterministic ancestor echoes."""
+        simulated_delay = round(random.uniform(2.10, 2.70), 2)
+        time.sleep(simulated_delay)
+        return {
+            "response": ECHO_TEMPLATES[template_key],
+            "model": "Ancestor-Echo (Zero-LLM)",
+            "thinking": [
+                {"step": "[NEURAL SCAN]", "detail": "Scanning Core Architecture & System Blueprints..."},
+                {"step": "[ANCESTOR ECHO]", "detail": f"{detail_lore} ({simulated_delay}s / 0 Token)"},
+                {"step": "[VERIFIED]", "detail": f"{step_lore}"}
+            ],
+            "duration": simulated_delay
+        }
 
     def get_relevant_context(self, prompt: str) -> str:
         """Select relevant volume sections based on prompt keywords to feed LangChain."""

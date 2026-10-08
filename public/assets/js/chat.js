@@ -337,17 +337,21 @@ function renderMessage(role, content, thinking = [], model = '', personaBadge = 
   // Reasoning steps
   let reasoningHtml = '';
   if (!isUser && thinking && thinking.length > 0) {
-    const stepsHtml = thinking.map(s => `
-      <div class="reasoning-step">
-        <span class="step-label">${escapeHtml(s.step || '')}</span>
-        <span class="step-detail">${escapeHtml(s.detail || '')}</span>
-      </div>
-    `).join('');
+    const hasDeepReasoning = thinking.some(s => s && s.step && (s.step.includes('REASONING') || s.step.includes('THINK')));
+    const stepsHtml = thinking.map(s => {
+      const isDeep = s && s.step && (s.step.includes('REASONING') || s.step.includes('THINK'));
+      return `
+        <div class="reasoning-step ${isDeep ? 'is-deep-reasoning' : ''}">
+          <span class="step-label">${escapeHtml(s.step || '')}</span>
+          <div class="step-detail">${escapeHtml(s.detail || '')}</div>
+        </div>
+      `;
+    }).join('');
 
     reasoningHtml = `
-      <button class="reasoning-toggle" onclick="toggleReasoning('${msgId}')">
+      <button class="reasoning-toggle ${hasDeepReasoning ? 'has-deep-reasoning' : ''}" onclick="toggleReasoning('${msgId}')">
         <span class="arrow">▶</span>
-        🧠 View Reasoning (${thinking.length} steps)
+        🧠 ${hasDeepReasoning ? 'View Deep Reasoning' : 'View Reasoning'} (${thinking.length} steps)
       </button>
       <div class="reasoning-steps" id="reasoning-${msgId}">
         ${stepsHtml}

@@ -142,7 +142,12 @@ def call_openai_compatible(url: str, api_key: str, model: str, messages: list) -
     
     with urllib.request.urlopen(req, timeout=15) as response:
         res = json.loads(response.read().decode("utf-8"))
-        return res["choices"][0]["message"]["content"]
+        msg = res.get("choices", [{}])[0].get("message", {})
+        content = msg.get("content") or ""
+        reasoning = msg.get("reasoning_content") or msg.get("reasoning")
+        if reasoning and "<think>" not in content:
+            content = f"<think>\n{reasoning}\n</think>\n{content}"
+        return content
 
 
 def call_ai(messages: list, model_preference: str = "auto", image_files: list = None) -> tuple[str, str]:
@@ -173,7 +178,14 @@ def call_ai(messages: list, model_preference: str = "auto", image_files: list = 
                         max_tokens=2048
                     )
                     response = llm.invoke(messages)
-                    return response.content, f"Groq-{m.split('/')[-1]}"
+                    raw_c = response.content
+                    extra_r = (
+                        getattr(response, "additional_kwargs", {}).get("reasoning_content") or
+                        getattr(response, "response_metadata", {}).get("reasoning_content")
+                    )
+                    if extra_r and "<think>" not in str(raw_c):
+                        raw_c = f"<think>\n{extra_r}\n</think>\n{raw_c}"
+                    return str(raw_c), f"Groq-{m.split('/')[-1]}"
                 except Exception as e:
                     last_err = e
                     continue
@@ -248,7 +260,12 @@ def call_ai(messages: list, model_preference: str = "auto", image_files: list = 
                     )
                     with urllib.request.urlopen(req, timeout=15) as response:
                         res = json.loads(response.read().decode("utf-8"))
-                        return res["choices"][0]["message"]["content"], f"OpenRouter-{model.split('/')[-1]}"
+                        msg = res.get("choices", [{}])[0].get("message", {})
+                        content = msg.get("content") or ""
+                        reasoning = msg.get("reasoning_content") or msg.get("reasoning")
+                        if reasoning and "<think>" not in content:
+                            content = f"<think>\n{reasoning}\n</think>\n{content}"
+                        return content, f"OpenRouter-{model.split('/')[-1]}"
                 except Exception as e:
                     last_err = e
                     continue
@@ -412,6 +429,16 @@ class handler(BaseHTTPRequestHandler):
 
         messages = build_messages(SYSTEM_PROMPT, history, prompt)
         response_text, model_name = call_ai(messages, model_preference, image_files)
+
+        # Extract Deep Reasoning / Chain of Thought tokens
+        try:
+            from modules.core.reasoning_parser import extract_reasoning
+            clean_resp, cot_steps = extract_reasoning(response_text)
+            response_text = clean_resp
+            if cot_steps:
+                thinking.extend(cot_steps)
+        except Exception as re_err:
+            pass
 
         duration = round(time.time() - start_time, 2)
         thinking.append({"step": "[LOG]", "detail": f"Time: {duration}s | Model: {model_name}"})

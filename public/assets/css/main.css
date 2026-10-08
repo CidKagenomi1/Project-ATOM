@@ -527,7 +527,7 @@
 html {
   font-size: 16px;
   scroll-behavior: smooth;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
@@ -548,7 +548,7 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   position: relative;
-  overflow-x: hidden;
+  overflow-x: clip;
   width: 100%;
 }
 
@@ -633,8 +633,9 @@ pre code {
   display: flex;
   min-height: 100vh;
   min-height: 100dvh;
-  overflow-x: hidden;
+  overflow-x: clip;
   width: 100%;
+  position: relative;
 }
 
 /* ─── Sidebar ─── */
@@ -1294,19 +1295,19 @@ input:checked + .atom-toggle-slider:before {
   flex-direction: column;
   min-height: 100vh;
   position: relative;
-  overflow: hidden;
+  overflow-x: clip;
 }
 
 .app-main.sidebar-collapsed {
   margin-left: 0;
 }
 
-/* ─── Topbar ─── */
+/* ─── Topbar (Permanent Sticky with Satin Glass Depth) ─── */
 .app-topbar {
   height: var(--topbar-height);
-  background: rgba(13, 17, 23, 0.4);
-  backdrop-filter: var(--glass-backdrop);
-  -webkit-backdrop-filter: var(--glass-backdrop);
+  background: rgba(10, 14, 20, 0.88);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
   border-bottom: var(--glass-border);
   display: flex;
   align-items: center;
@@ -1314,20 +1315,29 @@ input:checked + .atom-toggle-slider:before {
   padding: 0 var(--space-6);
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 100;
+  overflow: hidden;
+  gap: var(--space-3);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
 }
 
 .topbar-title {
   font-family: var(--font-ui);
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 6px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
 }
 
 /* ─── Buttons ─── */
@@ -1698,11 +1708,28 @@ input:checked + .atom-toggle-slider:before {
   .app-main {
     margin-left: 0 !important;
     width: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   .app-topbar {
     padding: 0 12px;
+    gap: 8px;
+  }
+
+  .topbar-actions {
+    gap: 4px;
+  }
+
+  .topbar-actions .btn {
+    padding: 3px 8px;
+    height: 26px;
+    font-size: 0.72rem;
+  }
+
+  @media (max-width: 640px) {
+    .topbar-actions .btn .btn-text {
+      display: none;
+    }
   }
 
   .mobile-menu-btn {

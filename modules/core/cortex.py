@@ -357,7 +357,12 @@ class ATOMCortex:
         
         with urllib.request.urlopen(req, timeout=15) as response:
             res = json.loads(response.read().decode("utf-8"))
-            return res["choices"][0]["message"]["content"]
+            msg = res.get("choices", [{}])[0].get("message", {})
+            content = msg.get("content") or ""
+            reasoning = msg.get("reasoning_content") or msg.get("reasoning")
+            if reasoning and "<think>" not in content:
+                content = f"<think>\n{reasoning}\n</think>\n{content}"
+            return content
     
     def _invoke_local(self, messages):
         """Call local Ollama model (blocking)."""
@@ -411,7 +416,14 @@ class ATOMCortex:
                     try:
                         llm = ChatGroq(model=m, api_key=os.getenv("GROQ_API_KEY"), temperature=0.7)
                         response = llm.invoke(get_text_messages(messages))
-                        return response.content, f"Groq-{m.split('/')[-1]}", False
+                        raw_c = response.content
+                        extra_r = (
+                            getattr(response, "additional_kwargs", {}).get("reasoning_content") or
+                            getattr(response, "response_metadata", {}).get("reasoning_content")
+                        )
+                        if extra_r and "<think>" not in str(raw_c):
+                            raw_c = f"<think>\n{extra_r}\n</think>\n{raw_c}"
+                        return str(raw_c), f"Groq-{m.split('/')[-1]}", False
                     except Exception as ge:
                         last_err = ge
                         continue
@@ -673,6 +685,16 @@ KONTEKS PERCAKAPAN:
                 messages = [system_prompt, HumanMessage(content=user_input)]
                 
             response, model_name, was_failover = self._call_ai_with_timeout(messages, model_preference)
+            
+            # Extract Deep Reasoning / Chain of Thought tokens
+            try:
+                from modules.core.reasoning_parser import extract_reasoning
+                clean_resp, cot_steps = extract_reasoning(response)
+                response = clean_resp
+                if cot_steps:
+                    thinking.extend(cot_steps)
+            except Exception as re_err:
+                print(f"[WARN] Reasoning parse skipped: {re_err}")
             
             # Add failover info to thinking
             if was_failover:
