@@ -35,12 +35,51 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
 sys.path.append(os.path.dirname(current_dir))
 
-from modules.core.database import db, MONGODB_CONNECTED
+try:
+    from modules.core.database import db, MONGODB_CONNECTED
+except Exception as e:
+    db = None
+    MONGODB_CONNECTED = False
+    print(f"[WARN] Database import fallback: {e}")
 
 try:
-    from api.notes_ai import refine_text, auto_tag, chat_with_context, generate_title, generate_metadata_pydantic
+    from api.notes_ai import refine_text, auto_tag, chat_with_context, generate_title, generate_metadata_pydantic, invoke_llm_safely
 except ImportError:
-    from notes_ai import refine_text, auto_tag, chat_with_context, generate_title, generate_metadata_pydantic
+    try:
+        from notes_ai import refine_text, auto_tag, chat_with_context, generate_title, generate_metadata_pydantic, invoke_llm_safely
+    except Exception as e:
+        print(f"[WARN] notes_ai import fallback: {e}")
+
+# Helper for read-only filesystem environments (e.g. Vercel)
+def safe_save_json(filepath: str, data: Any) -> bool:
+    """Safely save JSON file with fallback to /tmp if filesystem is read-only (e.g. Vercel)."""
+    try:
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        print(f"[WARN] Local save failed for {filepath}: {e}. Trying /tmp fallback...")
+        try:
+            tmp_path = os.path.join("/tmp", os.path.basename(filepath))
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            return True
+        except Exception as tmp_e:
+            print(f"[WARN] /tmp fallback save also failed: {tmp_e}")
+            return False
+
+def safe_load_json(filepath: str, default: Any = None) -> Any:
+    """Safely load JSON file with /tmp fallback."""
+    candidates = [filepath, os.path.join("/tmp", os.path.basename(filepath))]
+    for p in candidates:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+    return default if default is not None else {}
 
 app = FastAPI(
     title="A.T.O.M. API",
@@ -63,9 +102,35 @@ cortex_instance = None
 def get_cortex():
     global cortex_instance
     if cortex_instance is None:
-        from modules.core.cortex import ATOMCortex
-        cortex_instance = ATOMCortex()
+        try:
+            from modules.core.cortex import ATOMCortex
+            cortex_instance = ATOMCortex()
+        except Exception as e:
+            print(f"[CORTEX INIT ERROR] {e}. Using resilient FallbackCortex.")
+            class FallbackCortex:
+                class Librarian:
+                    def __init__(self):
+                        self.raw_history = []
+                    def clear(self):
+                        self.raw_history = []
+                def __init__(self):
+                    self.librarian = self.Librarian()
+                def process(self, user_input, model_preference="auto", image_files=None, status_callback=None):
+                    google_key = os.getenv("GOOGLE_API_KEY")
+                    if google_key:
+                        try:
+                            from langchain_google_genai import ChatGoogleGenerativeAI
+                            llm = ChatGoogleGenerativeAI(model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"), google_api_key=google_key, temperature=0.7)
+                            res = llm.invoke(user_input).content
+                            if isinstance(res, list):
+                                res = res[0].get('text', str(res[0])) if res else ""
+                            return str(res), [{"step": "[ROUTER]", "detail": "Fallback Gemini"}, {"step": "[LOG]", "detail": "Model: Gemini-Flash"}]
+                        except Exception as ge:
+                            return f"Cortex error: {ge}", [{"step": "[ERROR]", "detail": str(ge)}]
+                    return "Sistem AI sedang offline. Silakan tambahkan API key di environment.", [{"step": "[ERROR]", "detail": "No API key"}]
+            cortex_instance = FallbackCortex()
     return cortex_instance
+
 
 
 # --- Pydantic Models ---
@@ -181,6 +246,22 @@ async def chat_endpoint(request: ChatRequest):
             file_context_parts.append(f"[FILE: {f['name']}]\n{f['content']}\n[END FILE]")
         prompt = "\n\n".join(file_context_parts) + f"\n\nQuery: {prompt}"
 
+    # --- ANCESTOR ECHO (Deterministic Zero-LLM) for Quick Actions ---
+    if not image_files:
+        try:
+            from modules.core.ancestor import get_ancestor
+            ancestor = get_ancestor()
+            echo_match = ancestor.match_echo(prompt)
+            if echo_match:
+                return ChatResponse(
+                    response=echo_match["response"],
+                    model=echo_match["model"],
+                    thinking=echo_match["thinking"],
+                    duration=echo_match["duration"]
+                )
+        except Exception as ae:
+            print(f"[WARN] Ancestor Echo check skipped: {ae}")
+
     # Process using shared ATOMCortex
     cortex = get_cortex()
     
@@ -209,19 +290,32 @@ async def chat_endpoint(request: ChatRequest):
     # Find resulting model name from thinking logs
     model_name = "Cortex Route"
     for step in reversed(thinking):
-        if "[LOG]" in step.get("step", ""):
+        if isinstance(step, dict) and "[LOG]" in step.get("step", ""):
             parts = step.get("detail", "").split("|")
             for p in parts:
                 if "Model:" in p:
                     model_name = p.split(":", 1)[1].strip()
                     break
 
+    # Sanitize thinking steps so every field is guaranteed to be a string
+    sanitized_thinking = []
+    for step in thinking:
+        if isinstance(step, dict):
+            sanitized_thinking.append({
+                "step": str(step.get("step", "")),
+                "detail": str(step.get("detail", ""))
+            })
+        else:
+            sanitized_thinking.append({"step": "[INFO]", "detail": str(step)})
+
     return ChatResponse(
         response=response_text,
         model=model_name,
-        thinking=thinking,
+        thinking=sanitized_thinking,
         duration=duration
     )
+
+
 
 
 @app.post("/api/notes_ai", response_model=NotesAIResponse)
@@ -323,21 +417,11 @@ async def delete_existing_note(id: int):
 BUBBLES_FILE = "data/atom_bubbles.json"
 
 def load_bubbles() -> dict:
-    if os.path.exists(BUBBLES_FILE):
-        try:
-            with open(BUBBLES_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
-            pass
-    return {"bubbles": [], "last_id": 0}
+    return safe_load_json(BUBBLES_FILE, {"bubbles": [], "last_id": 0})
 
 def save_bubbles(data: dict) -> None:
-    try:
-        os.makedirs(os.path.dirname(BUBBLES_FILE), exist_ok=True)
-        with open(BUBBLES_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        print(f"[SAVE BUBBLES ERROR] {e}")
+    safe_save_json(BUBBLES_FILE, data)
+
 
 # === BUBBLES AUTO-MIGRATION TO MONGODB ===
 if MONGODB_CONNECTED:
@@ -458,21 +542,25 @@ async def expand_bubble(id: int):
         
     content = ""
     if not CREW_AVAILABLE:
-        from api.notes_ai import get_llm
-        llm = get_llm(0.3)
-        if not llm:
-            raise HTTPException(status_code=500, detail="No AI provider configured for bubble expansion")
-        prompt = f"Tulis sebuah artikel terstruktur dan mendalam dalam bahasa Indonesia (menggunakan format Markdown) berdasarkan ide singkat berikut: '{bubble['text']}'"
         try:
-            response = llm.invoke(prompt)
-            content = response.content
+            from api.notes_ai import invoke_llm_safely
+            prompt = f"Tulis sebuah artikel terstruktur dan mendalam dalam bahasa Indonesia (menggunakan format Markdown) berdasarkan ide singkat berikut: '{bubble['text']}'"
+            response = invoke_llm_safely(prompt, 0.3)
+            content = response.content if hasattr(response, 'content') else str(response)
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"AI expansion failed: {e}")
+            content = f"# {bubble['text']}\n\nIde singkat: {bubble['text']}\n\n*(Catatan: Ekspansi AI otomatis dialihkan: {e})*"
     else:
         try:
             content = run_research_crew(f"Research and write about: {bubble['text']}")
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"CrewAI research failed: {e}")
+            try:
+                from api.notes_ai import invoke_llm_safely
+                prompt = f"Tulis sebuah artikel terstruktur dan mendalam dalam bahasa Indonesia (menggunakan format Markdown) berdasarkan ide singkat berikut: '{bubble['text']}'"
+                response = invoke_llm_safely(prompt, 0.3)
+                content = response.content if hasattr(response, 'content') else str(response)
+            except Exception as fe:
+                content = f"# {bubble['text']}\n\nIde singkat: {bubble['text']}\n\n*(Catatan: Riset otomatis dialihkan: {fe})*"
+
             
     from modules.notes.note_storage import create_note
     try:
@@ -673,25 +761,18 @@ async def mark_bulletin(news: MarkedNews):
         except Exception as e:
             print(f"[DB ERROR] mark_bulletin failed: {e}. Writing locally.")
             
-    try:
-        os.makedirs(os.path.dirname(MARKED_NEWS_FILE), exist_ok=True)
+    data = safe_load_json(MARKED_NEWS_FILE, {"marked_news": []})
+    if not isinstance(data, dict):
         data = {"marked_news": []}
-        if os.path.exists(MARKED_NEWS_FILE):
-            try:
-                with open(MARKED_NEWS_FILE, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-            except:
-                pass
-        
-        # Check if already marked
-        if not any(item.get("id") == news.id for item in data["marked_news"]):
-            data["marked_news"].append(news_entry)
-            with open(MARKED_NEWS_FILE, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
-        
-        return {"status": "success"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error marking news: {e}")
+    if "marked_news" not in data:
+        data["marked_news"] = []
+    
+    # Check if already marked
+    if not any(item.get("id") == news.id for item in data["marked_news"]):
+        data["marked_news"].append(news_entry)
+        safe_save_json(MARKED_NEWS_FILE, data)
+    
+    return {"status": "success"}
 
 
 # --- Chat & Roleplay Sessions Storage ---
@@ -709,13 +790,7 @@ async def get_chat_sessions():
         except Exception as e:
             print(f"[DB ERROR] get_chat_sessions failed: {e}")
             
-    if os.path.exists(CHAT_SESSIONS_FILE):
-        try:
-            with open(CHAT_SESSIONS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception as e:
-            print(f"[LOCAL READ ERROR] {e}")
-    return {"sessions": [], "active_id": None}
+    return safe_load_json(CHAT_SESSIONS_FILE, {"sessions": [], "active_id": None})
 
 
 @app.post("/api/sessions/chat")
@@ -729,13 +804,8 @@ async def save_chat_sessions(payload: SessionsPayload):
         except Exception as e:
             print(f"[DB ERROR] save_chat_sessions failed: {e}")
 
-    try:
-        os.makedirs(os.path.dirname(CHAT_SESSIONS_FILE), exist_ok=True)
-        with open(CHAT_SESSIONS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        return {"status": "success", "count": len(payload.sessions)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save chat sessions: {e}")
+    safe_save_json(CHAT_SESSIONS_FILE, data)
+    return {"status": "success", "count": len(payload.sessions)}
 
 
 @app.get("/api/sessions/roleplay")
@@ -749,13 +819,7 @@ async def get_rp_sessions():
         except Exception as e:
             print(f"[DB ERROR] get_rp_sessions failed: {e}")
             
-    if os.path.exists(RP_SESSIONS_FILE):
-        try:
-            with open(RP_SESSIONS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception as e:
-            print(f"[LOCAL READ ERROR] {e}")
-    return {"sessions": [], "active_id": None}
+    return safe_load_json(RP_SESSIONS_FILE, {"sessions": [], "active_id": None})
 
 
 @app.post("/api/sessions/roleplay")
@@ -769,10 +833,6 @@ async def save_rp_sessions(payload: SessionsPayload):
         except Exception as e:
             print(f"[DB ERROR] save_rp_sessions failed: {e}")
 
-    try:
-        os.makedirs(os.path.dirname(RP_SESSIONS_FILE), exist_ok=True)
-        with open(RP_SESSIONS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        return {"status": "success", "count": len(payload.sessions)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save roleplay sessions: {e}")
+    safe_save_json(RP_SESSIONS_FILE, data)
+    return {"status": "success", "count": len(payload.sessions)}
+

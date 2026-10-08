@@ -35,27 +35,36 @@ from modules.core.database import db, MONGODB_CONNECTED
 
 # Local file database fallback
 NOTES_DB = "data/atom_smart_notes.json"
+TMP_NOTES_DB = "/tmp/atom_smart_notes.json"
 
 
 def _load_local_db() -> Dict[str, Any]:
-    """Load notes database from local file."""
-    if os.path.exists(NOTES_DB):
-        try:
-            with open(NOTES_DB, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
-            pass
+    """Load notes database from local file or /tmp fallback."""
+    for path in [NOTES_DB, TMP_NOTES_DB]:
+        if os.path.exists(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except:
+                pass
     return {"notes": [], "last_id": 0}
 
 
 def _save_local_db(data: Dict[str, Any]) -> None:
-    """Save notes database to local file."""
+    """Save notes database to local file with /tmp fallback."""
     try:
         os.makedirs(os.path.dirname(NOTES_DB), exist_ok=True)
         with open(NOTES_DB, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+        return
     except Exception as e:
-        print(f"[SAVE LOCAL ERROR] {e}")
+        print(f"[SAVE LOCAL ERROR] {e}. Trying /tmp fallback...")
+        try:
+            with open(TMP_NOTES_DB, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except Exception as tmp_e:
+            print(f"[SAVE TMP ERROR] {tmp_e}")
+
 
 
 # === AUTO-MIGRATION TO MONGODB ===

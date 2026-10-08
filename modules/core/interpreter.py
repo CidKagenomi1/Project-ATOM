@@ -25,8 +25,9 @@ def execute_system_action(user_command):
     
     # 1. ANALISIS NIAT (INTENT) PAKAI GROQ
     try:
+        groq_model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
         llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
+            model=groq_model,
             api_key=os.getenv("GROQ_API_KEY"),
             temperature=0.1
         )

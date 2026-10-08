@@ -291,7 +291,10 @@ async function sendMessage() {
 async function callChatAPI(prompt, history, files, signal) {
   const isAdvance = document.getElementById('mode-btn-advance')?.classList.contains('active');
   const modelSelectEl = document.getElementById('model-select');
-  const selectedModel = (isAdvance && modelSelectEl) ? modelSelectEl.value : 'auto';
+  let selectedModel = (isAdvance && modelSelectEl) ? modelSelectEl.value : 'groq';
+  if (!selectedModel || (!selectedModel.startsWith('groq') && !selectedModel.startsWith('openrouter'))) {
+    selectedModel = 'groq';
+  }
 
   const body = {
     prompt,
@@ -308,9 +311,10 @@ async function callChatAPI(prompt, history, files, signal) {
   });
 
   if (!resp.ok) {
-    const err = await resp.json().catch(() => ({ error: `HTTP ${resp.status}` }));
-    throw new Error(err.error || `HTTP ${resp.status}`);
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.detail || err.error || err.message || `HTTP ${resp.status}`);
   }
+
 
   return resp.json();
 }
@@ -960,31 +964,28 @@ function clearChat() {
 // ─── Model Selector (Auto vs Advance categorized by API) ───
 const ADVANCE_MODELS_BY_API = {
   groq: [
-    { value: 'groq', label: '⚡ Llama 3.3 70B Versatile' }
+    { value: 'groq:openai/gpt-oss-120b', label: '⚡ GPT-OSS 120B (Groq Turbo)' },
+    { value: 'groq:openai/gpt-oss-20b', label: '⚡ GPT-OSS 20B (Groq Fast)' },
+    { value: 'groq:qwen/qwen3.8-27b', label: '⚡ Qwen 3.8 27B (Groq Turbo)' }
   ],
   openrouter: [
-    { value: 'openrouter', label: '🌐 OpenRouter (Fallback List)' },
-    { value: 'openrouter:meta-llama/llama-3.3-70b-instruct:free', label: '🦙 Llama 3.3 70B Instruct (Free)' },
-    { value: 'openrouter:qwen/qwen-3-coder-480b:free', label: '💻 Qwen3 Coder 480B (Free)' },
-    { value: 'openrouter:nousresearch/hermes-3-405b-instruct:free', label: '🏛️ Hermes 3 405B Instruct (Free)' },
-    { value: 'openrouter:google/gemma-4-31b:free', label: '💎 Gemma 4 31B (Free)' },
-    { value: 'openrouter:nvidia/nemotron-3-nano-30b:free', label: '🟢 Nemotron 3 Nano 30B (Free)' },
-    { value: 'openrouter:nvidia/nemotron-3-nano-omni:free', label: '🔮 Nemotron 3 Nano Omni (Free)' },
-    { value: 'openrouter:qwen/qwen-3-next-80b:free', label: '🚀 Qwen3 Next 80B (Free)' },
-    { value: 'openrouter:liquid/lfm2.5-1.2b-thinking:free', label: '🧠 LFM 2.5 1.2B Thinking (Free)' },
-    { value: 'openrouter:poolside/laguna-xs-2:free', label: '🌊 Laguna XS.2 (Free)' },
-    { value: 'openrouter:venice/uncensored:free', label: '🎭 Venice Uncensored (Free)' }
+    { value: 'openrouter:nvidia/nemotron-3-super-120b-a12b:free', label: '🟢 Nemotron 3 Super 120B (Free)' },
+    { value: 'openrouter:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', label: '🧠 Nemotron 3 Nano Omni 30B Reasoning (Free)' },
+    { value: 'openrouter:nvidia/nemotron-3-ultra-550b-a55b:free', label: '⚡ Nemotron 3 Ultra 550B (Free)' },
+    { value: 'openrouter:nvidia/nemotron-3.5-lightning:free', label: '⚡ Nemotron 3.5 Lightning (Free)' },
+    { value: 'openrouter:cohere/north-mini-code:free', label: '💻 Cohere North Mini Code (Free)' }
   ],
   gemini: [
-    { value: 'gemini', label: '♊ Gemini Flash 2.5 (Multimodal)' }
+    { value: 'gemini', label: '♊ Gemini Flash 2.5 (Disabled)', disabled: true }
   ],
   deepseek: [
-    { value: 'deepseek', label: '🐳 DeepSeek V3 (Cloud)' }
+    { value: 'deepseek', label: '🐳 DeepSeek V3 (Disabled)', disabled: true }
   ],
   ollama: [
-    { value: 'ollama', label: '🧠 DeepSeek V4 (Local/Cloud)' }
+    { value: 'ollama', label: '🧠 DeepSeek V4 (Disabled)', disabled: true }
   ]
 };
+
 
 function initModelModeSwitch() {
   const modeBtnAuto = document.getElementById('mode-btn-auto');
@@ -998,13 +999,17 @@ function initModelModeSwitch() {
 
   function populateModels(providerKey, selectedModelValue = null) {
     if (!modelSelect) return;
-    const models = ADVANCE_MODELS_BY_API[providerKey] || ADVANCE_MODELS_BY_API.groq;
+    const safeProvider = (providerKey === 'openrouter') ? 'openrouter' : 'groq';
+    const models = ADVANCE_MODELS_BY_API[safeProvider] || ADVANCE_MODELS_BY_API.groq;
     modelSelect.innerHTML = models.map(m => `
-      <option value="${m.value}">${m.label}</option>
+      <option value="${m.value}" ${m.disabled ? 'disabled class="disabled-option"' : ''}>${m.label}</option>
     `).join('');
 
-    if (selectedModelValue && models.some(m => m.value === selectedModelValue)) {
+    const availableModels = models.filter(m => !m.disabled);
+    if (selectedModelValue && availableModels.some(m => m.value === selectedModelValue)) {
       modelSelect.value = selectedModelValue;
+    } else if (availableModels.length > 0) {
+      modelSelect.value = availableModels[0].value;
     } else {
       modelSelect.value = models[0].value;
     }
@@ -1018,7 +1023,7 @@ function initModelModeSwitch() {
       advanceControls?.classList.remove('hidden');
       localStorage.setItem('atom_chat_model_mode', 'advance');
 
-      const provider = apiProviderSelect?.value || 'groq';
+      const provider = (apiProviderSelect?.value === 'openrouter') ? 'openrouter' : 'groq';
       const savedModel = localStorage.getItem('atom_advance_model');
       populateModels(provider, savedModel);
     } else {
@@ -1030,17 +1035,32 @@ function initModelModeSwitch() {
     }
   }
 
-  // Restore saved state
+  // Restore saved state - allow Groq or OpenRouter
   const savedMode = localStorage.getItem('atom_chat_model_mode') || 'auto';
-  const savedProvider = localStorage.getItem('atom_advance_provider') || 'groq';
-  const savedModel = localStorage.getItem('atom_advance_model');
+  let savedProvider = localStorage.getItem('atom_advance_provider') || 'groq';
+  if (savedProvider !== 'groq' && savedProvider !== 'openrouter') {
+    savedProvider = 'groq';
+    localStorage.setItem('atom_advance_provider', 'groq');
+  }
+  let savedModel = localStorage.getItem('atom_advance_model');
+  if (savedModel && !savedModel.startsWith('groq') && !savedModel.startsWith('openrouter')) {
+    savedModel = 'groq:openai/gpt-oss-120b';
+    localStorage.setItem('atom_advance_model', savedModel);
+  }
 
   if (apiProviderSelect) {
     apiProviderSelect.value = savedProvider;
     populateModels(savedProvider, savedModel);
 
     apiProviderSelect.addEventListener('change', () => {
-      const provider = apiProviderSelect.value;
+      let provider = apiProviderSelect.value;
+      if (provider !== 'groq' && provider !== 'openrouter') {
+        apiProviderSelect.value = 'groq';
+        provider = 'groq';
+        if (typeof showToast === 'function') {
+          showToast('Provider ini dinonaktifkan. Hanya Groq dan OpenRouter yang aktif.', 'warning');
+        }
+      }
       localStorage.setItem('atom_advance_provider', provider);
       populateModels(provider);
       if (modelSelect) {
@@ -1051,6 +1071,9 @@ function initModelModeSwitch() {
 
   if (modelSelect) {
     modelSelect.addEventListener('change', () => {
+      if (modelSelect.value && !modelSelect.value.startsWith('groq') && !modelSelect.value.startsWith('openrouter')) {
+        modelSelect.value = 'groq:openai/gpt-oss-120b';
+      }
       localStorage.setItem('atom_advance_model', modelSelect.value);
     });
   }

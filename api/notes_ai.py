@@ -44,27 +44,59 @@ class NoteMetadata(BaseModel):
 def get_llm(temperature: float = 0.3):
     """Get best available LLM."""
     if HAS_GROQ and os.environ.get("GROQ_API_KEY"):
-        return ChatGroq(
-            model="llama-3.3-70b-versatile",
-            api_key=os.environ.get("GROQ_API_KEY"),
-            temperature=temperature
-        )
+        groq_model = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
+        try:
+            return ChatGroq(
+                model=groq_model,
+                api_key=os.environ.get("GROQ_API_KEY"),
+                temperature=temperature
+            )
+        except Exception:
+            pass
     if HAS_GEMINI and os.environ.get("GOOGLE_API_KEY"):
         gemini_model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
-        return ChatGoogleGenerativeAI(
-            model=gemini_model,
-            google_api_key=os.environ.get("GOOGLE_API_KEY"),
-            temperature=temperature
-        )
+        try:
+            return ChatGoogleGenerativeAI(
+                model=gemini_model,
+                google_api_key=os.environ.get("GOOGLE_API_KEY"),
+                temperature=temperature
+            )
+        except Exception:
+            pass
     return None
+
+
+def invoke_llm_safely(prompt_or_messages, temperature: float = 0.3):
+    """Invoke LLM with multi-tier failover (Groq -> Gemini)."""
+    # 1. Try Groq
+    if HAS_GROQ and os.environ.get("GROQ_API_KEY"):
+        groq_models = [os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"), "openai/gpt-oss-120b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b"]
+        for m in groq_models:
+            try:
+                llm = ChatGroq(model=m, api_key=os.environ.get("GROQ_API_KEY"), temperature=temperature)
+                return llm.invoke(prompt_or_messages)
+            except Exception as e:
+                print(f"[NOTES AI GROQ FAIL] {m}: {e}")
+                continue
+
+    # 2. Try Gemini fallback
+    if HAS_GEMINI and os.environ.get("GOOGLE_API_KEY"):
+        try:
+            gemini_model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+            llm = ChatGoogleGenerativeAI(
+                model=gemini_model,
+                google_api_key=os.environ.get("GOOGLE_API_KEY"),
+                temperature=temperature
+            )
+            return llm.invoke(prompt_or_messages)
+        except Exception as e:
+            print(f"[NOTES AI GEMINI FAIL] {e}")
+
+    raise RuntimeError("Tidak ada AI provider yang aktif atau kuota habis.")
 
 
 def refine_text(raw_text: str) -> str:
     """Clean up messy text into structured markdown article."""
-    llm = get_llm(0.3)
-    if not llm:
-        return raw_text
-
     system = SystemMessage(content="""Kamu adalah Editor Artikel Profesional.
 Tugasmu: terima teks mentah → susun ulang menjadi Artikel Markdown rapi (Heading, Bullet points).
 ATURAN:
@@ -78,7 +110,7 @@ ATURAN:
     user = HumanMessage(content=f"TEKS MENTAH:\n---\n{raw_text[:4000]}\n---\nRapihkan menjadi artikel Markdown terstruktur:")
     
     try:
-        response = llm.invoke([system, user])
+        response = invoke_llm_safely([system, user], 0.3)
         return response.content
     except Exception as e:
         return f"[ERROR] Gagal merapihkan: {str(e)}"
@@ -86,10 +118,6 @@ ATURAN:
 
 def auto_tag(text: str) -> list:
     """Generate 3-5 relevant tags from text."""
-    llm = get_llm(0.1)
-    if not llm:
-        return []
-    
     prompt = f"""Analyze this text and generate 3-5 relevant tags/keywords.
 TEXT: {text[:2000]}
 RULES:
@@ -99,7 +127,7 @@ RULES:
 TAGS:"""
     
     try:
-        response = llm.invoke(prompt)
+        response = invoke_llm_safely(prompt, 0.1)
         tags = []
         for line in response.content.strip().split('\n'):
             tag = line.strip().strip('-').strip('•').strip()
@@ -113,10 +141,6 @@ TAGS:"""
 
 def chat_with_context(context_text: str, question: str) -> str:
     """Answer question based ONLY on provided note content."""
-    llm = get_llm(0.2)
-    if not llm:
-        return "AI tidak tersedia saat ini."
-    
     system = SystemMessage(content="""Kamu adalah ATOM Knowledge Assistant.
 RULES:
 1. Jawab pertanyaan HANYA berdasarkan CONTEXT yang diberikan
@@ -133,7 +157,7 @@ PERTANYAAN: {question}
 Jawab berdasarkan CONTEXT di atas:""")
     
     try:
-        response = llm.invoke([system, user])
+        response = invoke_llm_safely([system, user], 0.2)
         return response.content
     except Exception as e:
         return f"[ERROR] Gagal memproses: {str(e)}"
@@ -141,10 +165,6 @@ Jawab berdasarkan CONTEXT di atas:""")
 
 def generate_title(content: str) -> str:
     """Generate concise title for note content."""
-    llm = get_llm(0.2)
-    if not llm:
-        return "Untitled Note"
-    
     prompt = f"""Generate a short, descriptive title (max 6 words) for this content:
 {content[:500]}
 Return ONLY the title, no quotes or extra formatting.
@@ -152,7 +172,7 @@ Use Indonesian if content is in Indonesian.
 TITLE:"""
     
     try:
-        response = llm.invoke(prompt)
+        response = invoke_llm_safely(prompt, 0.2)
         title = response.content.strip().strip('"').strip("'")
         return title[:60] if title else "Untitled Note"
     except:
@@ -164,15 +184,17 @@ def generate_metadata_pydantic(content: str) -> dict:
     try:
         from pydantic_ai import Agent
         
+        groq_model = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
         if os.environ.get("GROQ_API_KEY"):
             os.environ["GROQ_API_KEY"] = os.environ.get("GROQ_API_KEY")
-            agent = Agent('groq:llama-3.3-70b-versatile', result_type=NoteMetadata)
+            agent = Agent(f'groq:{groq_model}', result_type=NoteMetadata)
         elif os.environ.get("GOOGLE_API_KEY"):
             os.environ["GEMINI_API_KEY"] = os.environ.get("GOOGLE_API_KEY")
             gemini_model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
             agent = Agent(gemini_model, result_type=NoteMetadata)
         else:
             raise ValueError("No API key configured for metadata generation")
+
             
         result = agent.run_sync(f"Ekstrak metadata untuk konten berikut:\n\n{content[:4000]}")
         return {

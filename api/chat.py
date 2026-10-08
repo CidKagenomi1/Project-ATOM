@@ -153,17 +153,34 @@ def call_ai(messages: list, model_preference: str = "auto", image_files: list = 
     """
     
     # 1. Define call functions for each provider for clean execution
-    def try_groq():
+    def try_groq(pref_model=None):
         if HAS_GROQ and os.environ.get("GROQ_API_KEY"):
-            llm = ChatGroq(
-                model="llama-3.3-70b-versatile",
-                api_key=os.environ.get("GROQ_API_KEY"),
-                temperature=0.7,
-                max_tokens=2048
-            )
-            response = llm.invoke(messages)
-            return response.content, "Groq-Llama-70B"
+            groq_models = []
+            if pref_model:
+                groq_models.append(pref_model)
+            groq_models.extend([os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"), "openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"])
+            seen = set()
+            last_err = None
+            for m in groq_models:
+                if m in seen:
+                    continue
+                seen.add(m)
+                try:
+                    llm = ChatGroq(
+                        model=m,
+                        api_key=os.environ.get("GROQ_API_KEY"),
+                        temperature=0.7,
+                        max_tokens=2048
+                    )
+                    response = llm.invoke(messages)
+                    return response.content, f"Groq-{m.split('/')[-1]}"
+                except Exception as e:
+                    last_err = e
+                    continue
+            if last_err:
+                raise last_err
         raise ValueError("Groq not configured")
+
 
     def try_fireworks(pref_model=None):
         if os.environ.get("FIREWORKS_API_KEY"):
@@ -186,8 +203,11 @@ def call_ai(messages: list, model_preference: str = "auto", image_files: list = 
             if pref_model:
                 models = [pref_model]
             else:
-                models_str = os.environ.get("OPENROUTER_MODEL", "meta-llama/llama-3.1-8b-instruct")
+                models_str = os.environ.get("OPENROUTER_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
                 models = [m.strip() for m in models_str.split(",") if m.strip()]
+            for fallback in ["nvidia/nemotron-3-super-120b-a12b:free", "google/gemma-4-31b-it:free", "liquid/lfm-2.5-2.6b:free"]:
+                if fallback not in models:
+                    models.append(fallback)
             
             import urllib.request
             import json
@@ -212,29 +232,29 @@ def call_ai(messages: list, model_preference: str = "auto", image_files: list = 
                 else:
                     formatted_messages.append({"role": role, "content": msg.content})
                 
-            payload = {"messages": formatted_messages}
-            if len(models) > 1:
-                payload["models"] = models
-                display_name = f"OpenRouter-{models[0].split('/')[-1]}-Multi"
-            else:
-                payload["model"] = models[0] if models else "meta-llama/llama-3.1-8b-instruct"
-                display_name = f"OpenRouter-{payload['model'].split('/')[-1]}"
-                
-            data = json.dumps(payload).encode("utf-8")
-            
-            req = urllib.request.Request(
-                "https://openrouter.ai/api/v1/chat/completions",
-                data=data,
-                headers={
-                    "Authorization": f"Bearer {os.environ.get('OPENROUTER_API_KEY')}",
-                    "Content-Type": "application/json"
-                },
-                method="POST"
-            )
-            
-            with urllib.request.urlopen(req, timeout=15) as response:
-                res = json.loads(response.read().decode("utf-8"))
-                return res["choices"][0]["message"]["content"], display_name
+            last_err = None
+            for model in models:
+                try:
+                    payload = {"messages": formatted_messages, "model": model}
+                    data = json.dumps(payload).encode("utf-8")
+                    req = urllib.request.Request(
+                        "https://openrouter.ai/api/v1/chat/completions",
+                        data=data,
+                        headers={
+                            "Authorization": f"Bearer {os.environ.get('OPENROUTER_API_KEY')}",
+                            "Content-Type": "application/json"
+                        },
+                        method="POST"
+                    )
+                    with urllib.request.urlopen(req, timeout=15) as response:
+                        res = json.loads(response.read().decode("utf-8"))
+                        return res["choices"][0]["message"]["content"], f"OpenRouter-{model.split('/')[-1]}"
+                except Exception as e:
+                    last_err = e
+                    continue
+            if last_err:
+                raise last_err
+
         raise ValueError("OpenRouter not configured")
 
     def try_deepseek():
@@ -365,6 +385,18 @@ class handler(BaseHTTPRequestHandler):
             for f in text_files:
                 file_context_parts.append(f"[FILE: {f['name']}]\n{f['content']}\n[END FILE]")
             prompt = "\n\n".join(file_context_parts) + f"\n\nQuery: {prompt}"
+
+        # --- ANCESTOR ECHO (Deterministic Zero-LLM) for Quick Actions ---
+        if not image_files:
+            try:
+                from modules.core.ancestor import get_ancestor
+                ancestor = get_ancestor()
+                echo_match = ancestor.match_echo(prompt)
+                if echo_match:
+                    self._send_json(echo_match, 200)
+                    return
+            except Exception as ae:
+                pass
 
         thinking = []
 

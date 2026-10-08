@@ -2272,9 +2272,24 @@
 }
 
 .api-provider-select option,
-.advance-model-controls .model-select option {
+.advance-model-controls .model-select option,
+.model-select option,
+.api-model-select option {
   background: #11141b;
   color: var(--text-primary);
+}
+
+.api-provider-select option:disabled,
+.advance-model-controls .model-select option:disabled,
+.model-select option:disabled,
+.api-model-select option:disabled,
+select option:disabled,
+select option[disabled],
+.disabled-option {
+  color: rgba(148, 163, 184, 0.35) !important;
+  background-color: #0b0e14 !important;
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
 }
 
 .advance-select-box:hover,

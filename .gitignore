@@ -37,3 +37,6 @@ Thumbs.db
 
 # Vercel
 .vercel/
+
+# Temporary / Scratch docs
+temporary.md

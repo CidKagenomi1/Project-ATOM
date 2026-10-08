@@ -111,6 +111,22 @@ function init() {
   updateSendButton();
   renderRpSessionsSidebar();
 
+  const modelSelectEl = document.getElementById('model-select');
+  if (modelSelectEl) {
+    if (!modelSelectEl.value || (!modelSelectEl.value.startsWith('groq') && !modelSelectEl.value.startsWith('openrouter'))) {
+      modelSelectEl.value = 'groq:openai/gpt-oss-120b';
+    }
+    modelSelectEl.addEventListener('change', () => {
+      const val = modelSelectEl.value;
+      if (!val.startsWith('groq') && !val.startsWith('openrouter')) {
+        modelSelectEl.value = 'groq:openai/gpt-oss-120b';
+        if (typeof showToast === 'function') {
+          showToast('Model ini dinonaktifkan. Hanya Groq dan OpenRouter yang aktif.', 'warning');
+        }
+      }
+    });
+  }
+
   btnNewRpSession?.addEventListener('click', () => {
     createNewRpSession();
   });
@@ -291,7 +307,10 @@ async function sendRpMessage() {
     ];
 
     const modelSelectEl = document.getElementById('model-select');
-    const selectedModel = modelSelectEl ? modelSelectEl.value : 'auto';
+    let selectedModel = modelSelectEl ? modelSelectEl.value : 'groq:openai/gpt-oss-120b';
+    if (!selectedModel || (!selectedModel.startsWith('groq') && !selectedModel.startsWith('openrouter'))) {
+      selectedModel = 'groq:openai/gpt-oss-120b';
+    }
 
     const resp = await fetch('/api/chat', {
       method: 'POST',
@@ -306,9 +325,10 @@ async function sendRpMessage() {
     });
 
     if (!resp.ok) {
-      const err = await resp.json().catch(() => ({ error: `HTTP ${resp.status}` }));
-      throw new Error(err.error || `HTTP ${resp.status}`);
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.detail || err.error || err.message || `HTTP ${resp.status}`);
     }
+
 
     const data = await resp.json();
     typingEl?.remove();

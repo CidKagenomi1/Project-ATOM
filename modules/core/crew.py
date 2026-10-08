@@ -22,16 +22,34 @@ from langchain_groq import ChatGroq
 
 
 def _get_llm():
-    """Get Groq LLM untuk CrewAI agents."""
+    """Get Groq or Gemini LLM untuk CrewAI agents."""
     api_key = os.getenv("GROQ_API_KEY")
-    if not api_key:
-        raise ValueError("GROQ_API_KEY tidak ditemukan!")
-    
-    return ChatGroq(
-        model="llama-3.3-70b-versatile",
-        api_key=api_key,
-        temperature=0.7
-    )
+    groq_model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+    if api_key:
+        try:
+            return ChatGroq(
+                model=groq_model,
+                api_key=api_key,
+                temperature=0.7
+            )
+        except Exception:
+            pass
+            
+    google_key = os.getenv("GOOGLE_API_KEY")
+    if google_key:
+        try:
+            from langchain_google_genai import ChatGoogleGenerativeAI
+            gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+            return ChatGoogleGenerativeAI(
+                model=gemini_model,
+                google_api_key=google_key,
+                temperature=0.7
+            )
+        except Exception:
+            pass
+            
+    raise ValueError("Tidak ada LLM yang tersedia untuk CrewAI.")
+
 
 
 def run_research_crew(topic: str) -> str:

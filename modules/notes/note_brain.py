@@ -43,7 +43,7 @@ def _get_llm(temperature: float = 0.3):
         raise ValueError("GROQ_API_KEY not found in environment")
     
     return ChatGroq(
-        model="llama-3.3-70b-versatile",
+        model=os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"),
         api_key=api_key,
         temperature=temperature
     )

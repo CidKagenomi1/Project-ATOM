@@ -178,15 +178,17 @@ class NeuralRouter:
     """Router berbasis keyword untuk kecepatan maksimal."""
     
     def decide_route(self, user_input):
-        txt = user_input.lower()
+        txt = user_input.lower().strip()
         
-        action_kw = ["buka", "open", "jalankan", "run", "cek", "check", 
-                     "folder", "file", "baterai", "battery", "youtube",
-                     "browser", "notepad", "calculator", "spotify"]
-        if any(kw in txt for kw in action_kw):
-            return "ACTION"
+        # Jika berupa pertanyaan atau eksplorasi konsep, selalu arahkan ke rute AI / Knowledge
+        is_question = any(q in txt for q in ["bagaimana", "jelaskan", "apa itu", "mengapa", "kenapa", "ceritakan", "siapa", "how", "what is", "why"]) or txt.endswith("?")
         
-        crew_kw = ["riset", "research", "analisis mendalam", "investigasi", "pelajari"]
+        if not is_question:
+            action_kw = ["buka notepad", "buka calculator", "buka spotify", "buka browser", "buka youtube", "cek baterai", "matikan laptop", "restart"]
+            if any(kw in txt for kw in action_kw):
+                return "ACTION"
+        
+        crew_kw = ["riset mendalam:", "deep research:", "investigasi komprehensif:"]
         if CREW_AVAILABLE and any(kw in txt for kw in crew_kw):
             return "CREW"
         
@@ -262,16 +264,18 @@ class ATOMCortex:
         
         # OTAK CLOUD: GROQ (Rescue)
         self.groq_brain = None
+        self.groq_model_name = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
         if GROQ_AVAILABLE:
             try:
                 self.groq_brain = ChatGroq(
-                    model="llama-3.3-70b-versatile",
+                    model=self.groq_model_name,
                     api_key=os.getenv("GROQ_API_KEY"),
                     temperature=0.7
                 )
-                print("[OK] CLOUD: Groq Llama-70B")
+                print(f"[OK] CLOUD: Groq {self.groq_model_name}")
             except Exception as e:
-                print(f"[WARN] Groq failed: {e}")
+                print(f"[WARN] Groq init failed: {e}")
+
         
         # OTAK CLOUD: FIREWORKS
         if FIREWORKS_AVAILABLE:
@@ -391,12 +395,30 @@ class ATOMCortex:
                     text_msgs.append(m)
             return text_msgs
 
-        def try_groq():
-            if self.groq_brain:
-                self._update_status("🚀 Cloud Turbo (Groq Llama-70B)...")
-                response = self.groq_brain.invoke(get_text_messages(messages))
-                return response.content, "Groq-Llama-70B-Cloud", False
+        def try_groq(model_override=None):
+            if GROQ_AVAILABLE:
+                self._update_status("🚀 Cloud Turbo (Groq)...")
+                candidate_models = []
+                if model_override:
+                    candidate_models.append(model_override)
+                candidate_models.extend([self.groq_model_name, "openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"])
+                seen = set()
+                last_err = None
+                for m in candidate_models:
+                    if m in seen:
+                        continue
+                    seen.add(m)
+                    try:
+                        llm = ChatGroq(model=m, api_key=os.getenv("GROQ_API_KEY"), temperature=0.7)
+                        response = llm.invoke(get_text_messages(messages))
+                        return response.content, f"Groq-{m.split('/')[-1]}", False
+                    except Exception as ge:
+                        last_err = ge
+                        continue
+                if last_err:
+                    raise last_err
             raise ValueError("Groq not configured")
+
 
         def try_fireworks(model_override=None):
             if FIREWORKS_AVAILABLE:
@@ -414,15 +436,29 @@ class ATOMCortex:
         def try_openrouter(model_override=None):
             if OPENROUTER_AVAILABLE:
                 self._update_status("🌐 Cloud (OpenRouter)...")
-                model = model_override if model_override else os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.1-8b-instruct")
-                content = self._call_openai_compatible(
-                    "https://openrouter.ai/api/v1/chat/completions",
-                    os.getenv("OPENROUTER_API_KEY"),
-                    model,
-                    messages
-                )
-                return content, f"OpenRouter-{model.split('/')[-1]}-Cloud", False
+                raw_model = model_override if model_override else os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
+                models = [m.strip() for m in raw_model.split(",") if m.strip()]
+                # Add reliable fallback free models if none specified or if custom failed
+                for fallback in ["nvidia/nemotron-3-super-120b-a12b:free", "google/gemma-4-31b-it:free", "liquid/lfm-2.5-2.6b:free"]:
+                    if fallback not in models:
+                        models.append(fallback)
+                last_err = None
+                for model in models:
+                    try:
+                        content = self._call_openai_compatible(
+                            "https://openrouter.ai/api/v1/chat/completions",
+                            os.getenv("OPENROUTER_API_KEY"),
+                            model,
+                            messages
+                        )
+                        return content, f"OpenRouter-{model.split('/')[-1]}-Cloud", False
+                    except Exception as oe:
+                        last_err = oe
+                        continue
+                if last_err:
+                    raise last_err
             raise ValueError("OpenRouter not configured")
+
 
         def try_deepseek():
             if DEEPSEEK_AVAILABLE:
@@ -457,7 +493,8 @@ class ATOMCortex:
         if pref_provider in ["groq", "fireworks", "openrouter", "deepseek", "gemini", "ollama"]:
             try:
                 if pref_provider == "groq":
-                    return try_groq()
+                    return try_groq(pref_model)
+
                 elif pref_provider == "fireworks":
                     return try_fireworks(pref_model)
                 elif pref_provider == "openrouter":
@@ -498,11 +535,10 @@ class ATOMCortex:
             self._update_status("☁️ No local model. Using Cloud...")
         
         # === PHASE 2: CLOUD RESCUE (GROQ) ===
-        if self.groq_brain:
-            self._update_status("🚀 Cloud Turbo (Groq Llama-70B)...")
+        if GROQ_AVAILABLE:
             try:
-                response = self.groq_brain.invoke(get_text_messages(messages))
-                return response.content, "Groq-Llama-70B-Cloud", True
+                res, model_label, _ = try_groq()
+                return res, f"{model_label}-Cloud", True
             except Exception as e:
                 print(f"   [!] Groq error: {e}")
                 self._update_status("⚠️ Groq error. Trying Fireworks...")
@@ -525,19 +561,13 @@ class ATOMCortex:
 
         # === PHASE 2.2: CLOUD RESCUE (OPENROUTER) ===
         if OPENROUTER_AVAILABLE:
-            self._update_status("🌐 Cloud (OpenRouter)...")
             try:
-                model = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.1-8b-instruct")
-                content = self._call_openai_compatible(
-                    "https://openrouter.ai/api/v1/chat/completions",
-                    os.getenv("OPENROUTER_API_KEY"),
-                    model,
-                    messages
-                )
-                return content, f"OpenRouter-{model.split('/')[-1]}-Cloud", True
+                res, model_label, _ = try_openrouter()
+                return res, f"{model_label}", True
             except Exception as e:
                 print(f"   [!] OpenRouter error: {e}")
                 self._update_status("⚠️ OpenRouter error. Trying DeepSeek...")
+
 
         # === PHASE 2.3: CLOUD RESCUE (DEEPSEEK) ===
         if DEEPSEEK_AVAILABLE:
@@ -615,7 +645,18 @@ class ATOMCortex:
         else:  # AI route with timeout failover
             thinking.append({"step": "[AI]", "detail": "Local First, Cloud Rescue mode"})
             
-            system_prompt = SystemMessage(content=f"""{ATOM_SYSTEM_PROMPT}
+            # Grounding dari Ancestor Knowledge Repository
+            ancestor_block = ""
+            try:
+                from modules.core.ancestor import get_ancestor
+                anc_ctx = get_ancestor().get_relevant_context(user_input)
+                if anc_ctx:
+                    ancestor_block = f"\n\nANCESTOR GROUNDING KNOWLEDGE (SINGLE SOURCE OF TRUTH):\n{anc_ctx}\n"
+                    thinking.append({"step": "[ANCESTOR]", "detail": "Sectional Knowledge Grounded"})
+            except Exception:
+                pass
+
+            system_prompt = SystemMessage(content=f"""{ATOM_SYSTEM_PROMPT}{ancestor_block}
 
 KONTEKS PERCAKAPAN:
 {context}""")

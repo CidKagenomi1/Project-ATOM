@@ -19,5 +19,6 @@ if __name__ == "__main__":
     port = 8000
     print(f"Starting dev server on port {port}...")
     print(f"[*] ATOM Local Dev Server ready at http://localhost:{port}")
-    print(f"[*] Swagger UI documentation available at http://localhost:{port}/docs")
-    uvicorn.run(app, host="127.0.0.1", port=port)
+    host = os.getenv("HOST", "0.0.0.0")
+    uvicorn.run(app, host=host, port=port)
+
