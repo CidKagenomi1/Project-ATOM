@@ -883,6 +883,10 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
+.suggestion-chip.suggestion-card.card-wide {
+  grid-column: 1 / -1;
+}
+
 /* Card Header */
 .suggestion-card-header {
   display: flex;
