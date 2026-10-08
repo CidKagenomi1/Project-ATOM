@@ -316,7 +316,7 @@
             <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
             </svg>
-          </span>RP Model
+          </span>RP Model <span class="beta-pill">BETA</span>
         </a>
         <a href="notes.html" id="nav-notes">
           <span class="nav-icon">
@@ -324,7 +324,7 @@
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
               <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z"/>
             </svg>
-          </span>Smart Notes
+          </span>Magic Notes <span class="beta-pill">BETA</span>
         </a>
         <a href="telemetry.html" id="nav-telemetry">
           <span class="nav-icon">
@@ -734,6 +734,60 @@
               </div>
             </div>
           </div>
+
+          <!-- CARD 6: Keamanan & Peringatan Privasi (Privacy Disclaimer) -->
+          <div class="settings-card" id="settings-privacy-card">
+            <div class="settings-card-header">
+              <span class="settings-card-icon" style="color:var(--gold-primary);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </span>
+              <div>
+                <div class="settings-card-title">Keamanan & Peringatan Privasi (Privacy Notice)</div>
+                <div class="settings-card-desc">Pedoman kerahasiaan data obrolan dan manajemen pop-up disclaimer saat awal buka web</div>
+              </div>
+            </div>
+
+            <!-- Banner Disclaimer Peringatan Bilingual -->
+            <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-4);">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #fca5a5; font-size: 0.9rem;">
+                  <span>⚠️</span>
+                  <span id="settings-disclaimer-heading">Jangan Kirim Informasi Sensitif atau Data Penting ke Chat</span>
+                </div>
+                <!-- Mini Tab Switcher -->
+                <div class="disclaimer-lang-tabs" style="margin: 0;">
+                  <button type="button" class="disclaimer-tab-btn active" id="settings-tab-id" onclick="switchSettingsDisclaimerLang('id')">🇮🇩 Indonesia</button>
+                  <button type="button" class="disclaimer-tab-btn" id="settings-tab-en" onclick="switchSettingsDisclaimerLang('en')">🇬🇧 English</button>
+                </div>
+              </div>
+              
+              <div id="settings-disclaimer-content" style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.55;">
+                Demi keamanan privasi Anda, mohon untuk <b>TIDAK</b> memasukkan informasi rahasia, nomor identitas pribadi (KTP/NIK), kata sandi akun, token API, dokumen rahasia, atau data perbankan penting ke dalam ruang obrolan. Seluruh percakapan diproses oleh model kecerdasan buatan (Cloud LPU & Local Engine).
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-info">
+                <span class="settings-name">Status Pop-up di Awal Masuk Web</span>
+                <span class="settings-detail" id="privacy-disclaimer-status-text">Memeriksa status preferensi pop-up...</span>
+              </div>
+              <div class="settings-control" style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-secondary btn-sm" onclick="previewPrivacyDisclaimer()" title="Buka modal pop-up disclaimer sekarang">
+                  <svg class="svg-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                  Tampilkan Pop-up
+                </button>
+                <button class="btn btn-secondary btn-sm" id="btn-reset-disclaimer" onclick="resetPrivacyDisclaimerPreference()" title="Aktifkan kembali pop-up saat pertama buka web">
+                  🔄 Reset (Aktifkan Pop-up)
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -811,6 +865,7 @@
       }
 
       updateStorageStats();
+      updatePrivacyDisclaimerStatusText();
     });
 
     function selectUiTheme(uiTheme) {
@@ -955,6 +1010,50 @@
       } finally {
         if (btn) btn.disabled = false;
       }
+    }
+
+    // ─── Privacy Disclaimer Management (Settings) ─────────
+    function switchSettingsDisclaimerLang(lang) {
+      const heading = document.getElementById('settings-disclaimer-heading');
+      const content = document.getElementById('settings-disclaimer-content');
+      const btnId = document.getElementById('settings-tab-id');
+      const btnEn = document.getElementById('settings-tab-en');
+
+      if (lang === 'id') {
+        if (heading) heading.textContent = 'Jangan Kirim Informasi Sensitif atau Data Penting ke Chat';
+        if (content) content.innerHTML = 'Demi keamanan privasi Anda, mohon untuk <b>TIDAK</b> memasukkan informasi rahasia, nomor identitas pribadi (KTP/NIK), kata sandi akun, token API, dokumen rahasia, atau data perbankan penting ke dalam ruang obrolan. Seluruh percakapan diproses oleh model kecerdasan buatan (Cloud LPU & Local Engine).';
+        btnId?.classList.add('active');
+        btnEn?.classList.remove('active');
+      } else {
+        if (heading) heading.textContent = 'Do Not Send Sensitive Information or Important Data to the Chat';
+        if (content) content.innerHTML = 'For your security and privacy, please <b>DO NOT</b> enter confidential secrets, personal identification numbers, account passwords, API tokens, confidential files, or critical banking/financial data into the chat. All conversations are processed by Artificial Intelligence models (Cloud LPU & Local Engine).';
+        btnEn?.classList.add('active');
+        btnId?.classList.remove('active');
+      }
+    }
+
+    function updatePrivacyDisclaimerStatusText() {
+      const statusEl = document.getElementById('privacy-disclaimer-status-text');
+      const isHidden = localStorage.getItem('atom_hide_privacy_disclaimer') === 'true';
+      if (statusEl) {
+        if (isHidden) {
+          statusEl.innerHTML = '<span style="color:#f87171;font-weight:600;">Disembunyikan (Do Not Show Again aktif)</span> — Pop-up tidak akan muncul saat awal membuka web.';
+        } else {
+          statusEl.innerHTML = '<span style="color:#4ade80;font-weight:600;">Aktif</span> — Pop-up disclaimer akan menyambut pengguna saat awal membuka web.';
+        }
+      }
+    }
+
+    function previewPrivacyDisclaimer() {
+      if (typeof window.showPrivacyDisclaimerModal === 'function') {
+        window.showPrivacyDisclaimerModal(true);
+      }
+    }
+
+    function resetPrivacyDisclaimerPreference() {
+      localStorage.removeItem('atom_hide_privacy_disclaimer');
+      updatePrivacyDisclaimerStatusText();
+      showToast('Preferensi direset. Pop-up disclaimer akan muncul saat membuka web kembali.', 'success');
     }
   </script>
 </body>

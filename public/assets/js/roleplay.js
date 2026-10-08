@@ -88,6 +88,7 @@ let currentRpSessionId = null;
 let rpChatHistory  = [];
 let contextFiles   = [];
 let isProcessing   = false;
+let activeRpAbortController = null;
 
 // ─── DOM Elements ─────────────────────────────────────────
 const messagesArea     = document.getElementById('rp-messages-area');
@@ -135,7 +136,13 @@ chatInputEl?.addEventListener('keydown', (e) => {
   }
 });
 
-btnSend?.addEventListener('click', sendRpMessage);
+btnSend?.addEventListener('click', () => {
+  if (isProcessing) {
+    abortRpProcess();
+  } else {
+    sendRpMessage();
+  }
+});
 
 // File attachment
 btnAttach?.addEventListener('click', () => fileUploadEl?.click());
@@ -221,9 +228,22 @@ function selectRolePersona(personaId) {
   showToast(`Role aktif: ${selected.title}`, 'info');
 }
 
+// ─── Abort Process ─────────────────────────────────────────
+function abortRpProcess() {
+  if (activeRpAbortController) {
+    activeRpAbortController.abort();
+    activeRpAbortController = null;
+  }
+  isProcessing = false;
+  updateSendButton();
+}
+
 // ─── Sending Message ──────────────────────────────────────
 async function sendRpMessage() {
-  if (isProcessing) return;
+  if (isProcessing) {
+    abortRpProcess();
+    return;
+  }
   const prompt = chatInputEl?.value.trim();
   const hasFiles = contextFiles.length > 0;
   if (!prompt && !hasFiles) return;
@@ -240,6 +260,7 @@ async function sendRpMessage() {
   scrollToBottom(messagesArea);
 
   const typingEl = showTypingIndicator();
+  activeRpAbortController = new AbortController();
 
   try {
     const currentPersona = RP_PERSONAS.find(p => p.id === activePersonaId) || RP_PERSONAS[0];
@@ -263,7 +284,8 @@ async function sendRpMessage() {
         history: apiHistory,
         files: contextFiles.map(f => ({ name: f.name, content: f.content })),
         model_preference: selectedModel
-      })
+      }),
+      signal: activeRpAbortController.signal
     });
 
     if (!resp.ok) {
@@ -297,13 +319,35 @@ async function sendRpMessage() {
 
   } catch (err) {
     typingEl?.remove();
-    const errMsg = `[ERROR] ${err.message || 'Gagal menghubungi API.'}`;
-    renderMessage('assistant', errMsg);
-  }
+    if (err.name === 'AbortError') {
+      const abortMsg = '_⚠️ Respon Roleplay dihentikan oleh pengguna (Request aborted)._';
+      renderMessage('assistant', abortMsg, [], 'Aborted');
+      rpChatHistory.push({
+        role: 'assistant',
+        content: abortMsg,
+        thinking: [],
+        model: 'Aborted'
+      });
+      saveRpHistory();
 
-  isProcessing = false;
-  updateSendButton();
-  scrollToBottom(messagesArea);
+      logTelemetry({
+        user_input: '[RP] ' + displayPrompt,
+        model_used: 'Aborted',
+        response_time: 0,
+        status: 'ABORTED',
+        ai_response: abortMsg
+      });
+      showToast('Proses Roleplay dibatalkan oleh pengguna.', 'warning');
+    } else {
+      const errMsg = `[ERROR] ${err.message || 'Gagal menghubungi API.'}`;
+      renderMessage('assistant', errMsg);
+    }
+  } finally {
+    isProcessing = false;
+    activeRpAbortController = null;
+    updateSendButton();
+    scrollToBottom(messagesArea);
+  }
 }
 
 // ─── Render Message ────────────────────────────────────────
@@ -325,19 +369,166 @@ function renderMessage(role, content, thinking = [], model = '', personaBadge = 
     ? `<span class="persona-badge-tag">🎭 ${escapeHtml(personaBadge)}</span>`
     : '';
 
+  // Message Action Buttons for Assistant (Copy, Repeat, Like, Dislike)
+  let actionsBarHtml = '';
+  if (!isUser) {
+    actionsBarHtml = `
+      <div class="message-actions-bar" id="actions-${msgId}">
+        <button type="button" class="msg-action-btn btn-copy" title="Salin teks jawaban" onclick="copyAssistantMessage('${msgId}')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          <span class="action-btn-text">Salin</span>
+        </button>
+        <button type="button" class="msg-action-btn btn-repeat" title="Ulangi generasi respon ini" onclick="repeatRpAssistantMessage('${msgId}')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+          <span>Ulangi</span>
+        </button>
+        <button type="button" class="msg-action-btn btn-like" title="Bagus / Puas (Like)" onclick="rateAssistantMessage('${msgId}', 'like')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
+        </button>
+        <button type="button" class="msg-action-btn btn-dislike" title="Kurang Bagus / Kritik (Dislike)" onclick="rateAssistantMessage('${msgId}', 'dislike')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>
+        </button>
+      </div>
+    `;
+  }
+
   const msgEl = document.createElement('div');
   msgEl.className = `chat-message ${role}`;
   msgEl.id = msgId;
+  msgEl.dataset.rawContent = content;
+  msgEl.dataset.model = model;
   msgEl.innerHTML = `
     <div class="message-avatar">${avatar}</div>
     <div class="message-body">
       ${personaTag}
       <div class="message-bubble">${bubbleContent}</div>
-      ${modelBadge}
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;width:100%;">
+        ${modelBadge}
+        ${actionsBarHtml}
+      </div>
     </div>
   `;
   messagesArea.appendChild(msgEl);
 }
+
+// ─── Roleplay Message Action Handlers ──────────────────────
+window.copyAssistantMessage = function(msgId) {
+  const msgEl = document.getElementById(msgId);
+  if (!msgEl) return;
+  const content = msgEl.dataset.rawContent || msgEl.querySelector('.message-bubble')?.innerText || '';
+  navigator.clipboard.writeText(content).then(() => {
+    const btn = msgEl.querySelector('.btn-copy');
+    if (btn) {
+      btn.classList.add('copied');
+      const textSpan = btn.querySelector('.action-btn-text');
+      if (textSpan) textSpan.textContent = '✓ Tersalin!';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        if (textSpan) textSpan.textContent = 'Salin';
+      }, 2000);
+    }
+    showToast('Teks respon berhasil disalin ke clipboard.', 'success');
+  }).catch(() => {
+    showToast('Gagal menyalin teks ke clipboard.', 'error');
+  });
+};
+
+window.repeatRpAssistantMessage = function(msgId) {
+  if (isProcessing) {
+    showToast('Harap tunggu atau hentikan proses saat ini terlebih dahulu.', 'warning');
+    return;
+  }
+  const msgEl = document.getElementById(msgId);
+  if (!msgEl) return;
+
+  // Cari prompt user sebelum pesan ini
+  let promptText = '';
+  let prevEl = msgEl.previousElementSibling;
+  while (prevEl) {
+    if (prevEl.classList.contains('user')) {
+      promptText = prevEl.dataset.rawContent || prevEl.querySelector('.message-bubble')?.innerText || '';
+      break;
+    }
+    prevEl = prevEl.previousElementSibling;
+  }
+
+  if (!promptText && rpChatHistory.length > 0) {
+    const lastUser = [...rpChatHistory].reverse().find(m => m.role === 'user');
+    if (lastUser) promptText = lastUser.content;
+  }
+
+  if (promptText) {
+    if (chatInputEl) {
+      chatInputEl.value = promptText;
+      autoResize(chatInputEl);
+    }
+    sendRpMessage();
+  } else {
+    showToast('Tidak dapat menemukan prompt user sebelumnya.', 'info');
+  }
+};
+
+window.rateAssistantMessage = function(msgId, ratingType) {
+  const msgEl = document.getElementById(msgId);
+  if (!msgEl) return;
+
+  const modelUsed = msgEl.dataset.model || 'Roleplay Model';
+  const responseExcerpt = (msgEl.dataset.rawContent || '').slice(0, 150);
+
+  // Cari prompt user terkait
+  let promptText = '';
+  let prevEl = msgEl.previousElementSibling;
+  while (prevEl) {
+    if (prevEl.classList.contains('user')) {
+      promptText = prevEl.dataset.rawContent || prevEl.querySelector('.message-bubble')?.innerText || '';
+      break;
+    }
+    prevEl = prevEl.previousElementSibling;
+  }
+
+  const btnLike = msgEl.querySelector('.btn-like');
+  const btnDislike = msgEl.querySelector('.btn-dislike');
+
+  if (ratingType === 'like') {
+    btnLike?.classList.add('active-like');
+    btnDislike?.classList.remove('active-dislike');
+
+    logTelemetry({
+      user_input: promptText,
+      model_used: modelUsed,
+      response_time: 0,
+      status: 'FEEDBACK_LIKE',
+      feedback_type: 'LIKE',
+      ai_response: responseExcerpt
+    });
+
+    showToast('Terima kasih atas apresiasi Anda! (Dicatat ke Telemetry)', 'success');
+  } else if (ratingType === 'dislike') {
+    if (typeof window.openCritiqueModal === 'function') {
+      window.openCritiqueModal({
+        modelUsed,
+        promptText,
+        responseExcerpt,
+        onSubmitted: () => {
+          btnDislike?.classList.add('active-dislike');
+          btnLike?.classList.remove('active-like');
+        }
+      });
+    } else {
+      btnDislike?.classList.add('active-dislike');
+      btnLike?.classList.remove('active-like');
+      logTelemetry({
+        user_input: promptText,
+        model_used: modelUsed,
+        response_time: 0,
+        status: 'FEEDBACK_DISLIKE',
+        feedback_type: 'DISLIKE',
+        ai_response: responseExcerpt
+      });
+      showToast('Kritik dicatat ke Telemetry.', 'info');
+    }
+  }
+};
 
 function showTypingIndicator() {
   const el = document.createElement('div');
@@ -644,9 +835,30 @@ function updateEmptyState() {
 
 function updateSendButton() {
   if (!btnSend || !chatInputEl) return;
-  const hasText = chatInputEl.value.trim().length > 0;
-  const hasFiles = contextFiles.length > 0;
-  btnSend.disabled = !(hasText || hasFiles) || isProcessing;
+  if (isProcessing) {
+    btnSend.disabled = false;
+    btnSend.classList.add('btn-abort');
+    btnSend.setAttribute('title', 'Hentikan proses respon (Stop / Abort)');
+    btnSend.setAttribute('aria-label', 'Stop generating');
+    btnSend.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+        <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+      </svg>
+    `;
+  } else {
+    btnSend.classList.remove('btn-abort');
+    btnSend.setAttribute('title', 'Kirim Pesan (Enter)');
+    btnSend.setAttribute('aria-label', 'Send message');
+    btnSend.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    `;
+    const hasText = chatInputEl.value.trim().length > 0;
+    const hasFiles = contextFiles.length > 0;
+    btnSend.disabled = !(hasText || hasFiles);
+  }
 }
 
 // ─── Start ─────────────────────────────────────────────────

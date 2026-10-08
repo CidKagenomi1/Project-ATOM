@@ -234,13 +234,13 @@ class BubblesFog {
   }
 
   createParticle(randomY = false) {
-    const w = this.canvas.width || window.innerWidth;
-    const h = this.canvas.height || window.innerHeight;
+    const w = Math.max(100, this.canvas.width || window.innerWidth);
+    const h = Math.max(100, this.canvas.height || window.innerHeight);
     
     // Position primarily at the bottom half of the container, but drift up
     const minY = h * 0.4;
     const maxY = h;
-    const y = randomY ? (minY + Math.random() * (maxY - minY)) : (h + 100);
+    const y = randomY ? (minY + Math.random() * Math.max(10, maxY - minY)) : (h + 100);
     
     return {
       x: Math.random() * w,
@@ -260,7 +260,7 @@ class BubblesFog {
   update() {
     const w = this.canvas.width;
     const h = this.canvas.height;
-    if (w === 0 || h === 0) return;
+    if (w <= 0 || h <= 0) return;
 
     // Maintain around 15-30 active fog puffs
     const targetCount = Math.max(15, Math.floor(h / 80));
@@ -295,10 +295,13 @@ class BubblesFog {
       }
 
       // Extra fade out if it gets near the top 30% of canvas
-      if (p.y < h * 0.3) {
+      if (h > 0 && p.y < h * 0.3) {
         const topFade = Math.max(0, p.y / (h * 0.3));
         p.opacity *= topFade;
       }
+
+      // Ensure opacity is a valid finite positive number
+      p.opacity = Math.max(0, Math.min(1, isNaN(p.opacity) ? 0 : p.opacity));
 
       // Remove out of bounds or dead particles
       if (p.age >= p.maxAge || p.y < -p.radius || p.opacity <= 0) {
@@ -308,24 +311,29 @@ class BubblesFog {
   }
 
   draw() {
+    if (this.canvas.width <= 0 || this.canvas.height <= 0) return;
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     for (const p of this.particles) {
+      const op = Math.max(0, Math.min(1, isNaN(p.opacity) ? 0 : p.opacity));
+      if (op <= 0) continue;
+      const r = Math.max(1, isNaN(p.radius) ? 10 : p.radius);
+
       this.ctx.beginPath();
-      const grad = this.ctx.createRadialGradient(p.x, p.y, p.radius * 0.1, p.x, p.y, p.radius);
+      const grad = this.ctx.createRadialGradient(p.x, p.y, Math.max(0.1, r * 0.1), p.x, p.y, r);
       
       if (p.colorType === 'gold') {
-        grad.addColorStop(0, `rgba(201, 162, 39, ${p.opacity})`);
-        grad.addColorStop(0.5, `rgba(201, 162, 39, ${p.opacity * 0.4})`);
+        grad.addColorStop(0, `rgba(201, 162, 39, ${op})`);
+        grad.addColorStop(0.5, `rgba(201, 162, 39, ${op * 0.4})`);
         grad.addColorStop(1, 'rgba(201, 162, 39, 0)');
       } else {
-        grad.addColorStop(0, `rgba(255, 255, 255, ${p.opacity})`);
-        grad.addColorStop(0.5, `rgba(255, 255, 255, ${p.opacity * 0.3})`);
+        grad.addColorStop(0, `rgba(255, 255, 255, ${op})`);
+        grad.addColorStop(0.5, `rgba(255, 255, 255, ${op * 0.3})`);
         grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
       }
       
       this.ctx.fillStyle = grad;
-      this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      this.ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
       this.ctx.fill();
     }
   }

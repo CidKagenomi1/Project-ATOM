@@ -218,6 +218,9 @@ async function loadAndRender() {
   // 5. Setup Filter Pills & Table
   setupFilterPills(modelMap);
   renderActivityTable(currentFilter);
+
+  // 6. Render Feedback & Critique Intelligence
+  renderFeedbackCritique(allTelemetryLogs);
 }
 
 // ─── Render Individual Model Usage Cards ─────────────────────────
@@ -504,6 +507,95 @@ document.getElementById('btn-clear-telemetry')?.addEventListener('click', async 
 function setText(id, text) {
   const el = document.getElementById(id);
   if (el) el.textContent = text;
+}
+
+// ─── Render Feedback & Critique Intelligence Feed ────────────────
+function renderFeedbackCritique(logs) {
+  const badgeEl = document.getElementById('feedback-stat-badge');
+  const totalEl = document.getElementById('fb-total');
+  const likesEl = document.getElementById('fb-likes');
+  const dislikesEl = document.getElementById('fb-dislikes');
+  const ratioEl = document.getElementById('fb-ratio');
+  const critiqueContainer = document.getElementById('critique-list-container');
+
+  if (!logs) return;
+
+  // Saring semua feedback likes & dislikes
+  const feedbackEntries = logs.filter(l => 
+    l.feedback_type === 'LIKE' || 
+    l.feedback_type === 'DISLIKE' || 
+    l.status === 'FEEDBACK_LIKE' || 
+    l.status === 'FEEDBACK_DISLIKE' ||
+    Boolean(l.critique_category || l.critique_note)
+  );
+
+  const likes = feedbackEntries.filter(l => l.feedback_type === 'LIKE' || l.status === 'FEEDBACK_LIKE');
+  const dislikes = feedbackEntries.filter(l => l.feedback_type === 'DISLIKE' || l.status === 'FEEDBACK_DISLIKE' || Boolean(l.critique_category || l.critique_note));
+
+  const totalReactions = likes.length + dislikes.length;
+  const ratio = totalReactions > 0 ? Math.round((likes.length / totalReactions) * 100) : 100;
+
+  if (badgeEl) badgeEl.textContent = `${totalReactions} Reaksi`;
+  if (totalEl) totalEl.textContent = totalReactions.toLocaleString();
+  if (likesEl) likesEl.textContent = likes.length.toLocaleString();
+  if (dislikesEl) dislikesEl.textContent = dislikes.length.toLocaleString();
+  if (ratioEl) ratioEl.textContent = totalReactions > 0 ? `${ratio}%` : '100%';
+
+  if (!critiqueContainer) return;
+
+  if (dislikes.length === 0) {
+    critiqueContainer.innerHTML = `
+      <div style="text-align:center;padding:var(--space-6);color:var(--text-muted);background:rgba(255,255,255,0.02);border-radius:var(--radius-md);border:var(--glass-border);">
+        <div style="font-size:1.5rem;margin-bottom:6px;">✨</div>
+        <div style="font-size:0.85rem;color:var(--text-secondary);font-weight:600;">Belum Ada Catatan Kritik Pengguna</div>
+        <div style="font-size:0.75rem;margin-top:4px;">Semua respon yang dinilai mendapatkan Like. Jika tombol Dislike ditekan, kritik & masukan akan muncul di sini.</div>
+      </div>
+    `;
+    return;
+  }
+
+  critiqueContainer.innerHTML = dislikes.slice(0, 20).map(item => {
+    const ts = formatDate(item.timestamp);
+    const cat = getModelCategory(item.model_used);
+    const categoryName = item.critique_category || 'Kritik Umum / Kualitas';
+    const note = item.critique_note ? escapeHtml(item.critique_note) : '<i style="color:var(--text-muted);">Tidak ada catatan teks tambahan</i>';
+    const promptSnippet = escapeHtml((item.user_input || '-').slice(0, 140));
+    const respSnippet = escapeHtml((item.ai_response || '-').slice(0, 180));
+
+    return `
+      <div style="background:rgba(18, 22, 30, 0.6);border:1px solid rgba(239, 68, 68, 0.25);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="background:rgba(239, 68, 68, 0.15);color:#fca5a5;border:1px solid rgba(239, 68, 68, 0.4);padding:2px 8px;border-radius:var(--radius-full);font-size:0.68rem;font-weight:700;">
+              👎 ${escapeHtml(categoryName)}
+            </span>
+            <span class="model-badge" style="color:${cat.color};border-color:${cat.color}44;">
+              ${cat.icon} ${escapeHtml(item.model_used || 'AI Model')}
+            </span>
+          </div>
+          <span style="font-size:0.72rem;color:var(--text-muted);font-family:var(--font-mono);">${ts}</span>
+        </div>
+
+        <div style="background:rgba(0,0,0,0.25);padding:8px 12px;border-radius:var(--radius-sm);border-left:3px solid #ef4444;">
+          <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;">Kritik / Catatan Pengguna:</div>
+          <div style="font-size:0.84rem;color:var(--text-primary);font-family:var(--font-ui);line-height:1.45;">
+            ${note}
+          </div>
+        </div>
+
+        <div style="grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));display:grid;gap:8px;font-size:0.75rem;color:var(--text-muted);">
+          <div>
+            <span style="font-weight:600;color:var(--gold-light);">Prompt: </span>
+            <span>${promptSnippet}${item.user_input && item.user_input.length > 140 ? '...' : ''}</span>
+          </div>
+          <div>
+            <span style="font-weight:600;color:var(--text-secondary);">Cuplikan Jawaban: </span>
+            <span>${respSnippet}${item.ai_response && item.ai_response.length > 180 ? '...' : ''}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 function escapeHtml(str) {
