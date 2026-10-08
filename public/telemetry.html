@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>A.T.O.M. — Telemetry</title>
+  <title>A.T.O.M. — Telemetry & Model Usage</title>
   <meta name="description" content="ATOM Telemetry — Monitor AI usage and performance">
   <link rel="stylesheet" href="assets/css/main.css?v=4.6">
   <link rel="stylesheet" href="assets/css/components.css?v=4.6">
@@ -118,24 +118,40 @@
       <header class="app-topbar">
         <div class="flex items-center gap-3">
           <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
-          <span class="topbar-title">Telemetry</span>
+          <span class="topbar-title">Telemetry & Model Usage</span>
         </div>
         <div class="topbar-actions">
-          <button class="btn btn-secondary btn-sm" onclick="loadAndRender()">🔄 Refresh</button>
-          <button class="btn btn-danger btn-sm" id="btn-clear-telemetry">🗑 Clear</button>
+          <div class="sync-status-pill" id="sync-status-pill" title="Arsitektur Client-First: Zero network drops">
+            <span>●</span>
+            <span id="sync-status-text">Client-First Store</span>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btn-export-telemetry" title="Ekspor data telemetri dalam format JSON">📥 Export</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadAndRender()" title="Segarkan data">🔄 Refresh</button>
+          <button class="btn btn-danger btn-sm" id="btn-clear-telemetry" title="Reset semua data penggunaan model">🗑 Clear</button>
         </div>
       </header>
 
-      <div style="padding:var(--space-6);max-width:1100px;margin:0 auto;width:100%;">
+      <div style="padding:var(--space-6);max-width:1150px;margin:0 auto;width:100%;">
 
         <!-- Header -->
         <div style="margin-bottom:var(--space-6);">
-          <h1 style="font-size:1.75rem;font-weight:800;letter-spacing:0.05em;">📊 TELEMETRY</h1>
-          <p style="color:var(--text-muted);font-size:0.85rem;letter-spacing:0.1em;text-transform:uppercase;">SYSTEM MONITORING · ATOM v4.0</p>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div>
+              <h1 style="font-size:1.75rem;font-weight:800;letter-spacing:0.05em;display:flex;align-items:center;gap:10px;">
+                <span>📊</span> MODEL USAGE & TELEMETRY
+              </h1>
+              <p style="color:var(--text-muted);font-size:0.8rem;letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;">
+                MONITORING KONSUMSI TOKEN, PANGSA API MODEL & LATENSI INFERENSI
+              </p>
+            </div>
+            <div id="telem-badge-count" style="font-size:0.75rem;color:var(--gold-light);background:rgba(235,179,56,0.1);border:1px solid rgba(235,179,56,0.25);padding:4px 12px;border-radius:14px;font-family:var(--font-mono);">
+              Memuat data...
+            </div>
+          </div>
         </div>
 
         <!-- No data state -->
-        <div id="no-data" style="text-align:center;padding:var(--space-12);color:var(--text-muted);">
+        <div id="no-data" style="text-align:center;padding:var(--space-12);color:var(--text-muted);display:none;">
           <div style="margin-bottom:var(--space-3); opacity:0.45; display:flex; align-items:center; justify-content:center;">
             <svg class="svg-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width: 3.5rem; height: 3.5rem;">
               <line x1="18" y1="20" x2="18" y2="10"/>
@@ -143,92 +159,287 @@
               <line x1="6" y1="20" x2="6" y2="14"/>
             </svg>
           </div>
-          <p>Belum ada data telemetri.</p>
-          <p style="font-size:0.8rem;margin-top:var(--space-2);">Mulai chat dengan ATOM untuk generate data.</p>
+          <p style="font-size:1.1rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Belum Ada Riwayat Penggunaan Model</p>
+          <p style="font-size:0.85rem;max-width:460px;margin:0 auto 16px;">Mulai bercakap dengan ATOM di Chat atau Roleplay untuk mencatat metrik latensi, token, dan penggunaan model.</p>
+          <a href="index.html" class="btn btn-primary btn-sm">Mulai Chatting Sekarang</a>
         </div>
 
         <!-- Data content -->
-        <div id="telem-content" style="display:none;">
+        <div id="telem-content">
 
           <!-- Metrics Row -->
           <section style="margin-bottom:var(--space-6);">
-            <h2 style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:var(--space-4);">OVERVIEW</h2>
             <div class="metrics-grid">
               <div class="metric-card">
-                <div class="metric-label">Total Queries</div>
+                <div class="metric-label">Total Permintaan</div>
                 <div class="metric-value" id="m-total">0</div>
+                <div class="metric-sub" id="m-total-sub">0 dari chat & RP</div>
               </div>
               <div class="metric-card">
-                <div class="metric-label">Avg Response</div>
+                <div class="metric-label">Konsumsi Token</div>
+                <div class="metric-value text-gold" id="m-tokens">0</div>
+                <div class="metric-sub" id="m-tokens-sub">Estimasi prompt + response</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Rata-Rata Respons</div>
                 <div class="metric-value" id="m-avg">0s</div>
+                <div class="metric-sub" id="m-avg-sub">Latensi per inference</div>
               </div>
               <div class="metric-card">
-                <div class="metric-label">Success Rate</div>
+                <div class="metric-label">Tingkat Keberhasilan</div>
                 <div class="metric-value text-success" id="m-success">100%</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-label">Top Model</div>
-                <div class="metric-value" id="m-top" style="font-size:1.1rem;"></div>
+                <div class="metric-sub" id="m-success-sub">0 errors tercatat</div>
               </div>
             </div>
           </section>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-5);margin-bottom:var(--space-5);">
+          <!-- Chat System Pipeline Flowchart Section -->
+          <section class="pipeline-flow-container" id="pipeline-flowchart">
+            <div class="flow-header">
+              <div class="flow-header-title">
+                <span>⚡</span> ALUR KERJA SISTEM CHAT (PIPELINE FLOWCHART)
+              </div>
+              <div class="flow-header-actions">
+                <div class="flow-slider-nav">
+                  <button class="flow-nav-btn" id="flow-slide-prev" title="Tahap Sebelumnya" aria-label="Tahap Sebelumnya">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                  </button>
+                  <span class="flow-step-counter" id="flow-step-counter">1 / 7</span>
+                  <button class="flow-nav-btn" id="flow-slide-next" title="Tahap Berikutnya" aria-label="Tahap Berikutnya">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  </button>
+                </div>
+                <button class="btn btn-secondary btn-sm" id="btn-simulate-flow" style="font-size:0.72rem;padding:4px 10px;background:rgba(235,179,56,0.15);border-color:rgba(235,179,56,0.4);color:var(--gold-light);">
+                  ▶ Jalankan Simulasi Alur
+                </button>
+              </div>
+            </div>
 
-            <!-- Model Usage -->
+            <div class="flow-guide-bar">
+              <span class="flow-guide-hint">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16l-4-4m0 0l4-4m-4 4h18m-4 4l4-4m0 0l-4-4"></path></svg>
+                Geser slider ke samping (swipe/drag) atau klik tahapan untuk detail alur:
+              </span>
+              <span class="flow-badge">ATOM v4.0 CORTEX</span>
+            </div>
+
+            <div class="flow-viewport-scroll" id="flow-viewport">
+              <div class="flow-steps-track" id="flow-steps-track">
+
+                <!-- Step 1: Input & Injection -->
+                <div class="flow-step-node active" data-step="1">
+                  <div class="flow-node-num">
+                    <span>STEP 01</span>
+                    <span>💬</span>
+                  </div>
+                  <div class="flow-node-title">Input & Injeksi Konteks</div>
+                  <div class="flow-node-desc">Prompt teks, lampiran file (.txt/.py), Persona Roleplay & riwayat 6 chat terakhir.</div>
+                  <span class="flow-node-tag">chat.js / roleplay.js</span>
+                </div>
+
+                <div class="flow-connector">➔</div>
+
+                <!-- Step 2: Optimistic UI & Local Buffer -->
+                <div class="flow-step-node" data-step="2">
+                  <div class="flow-node-num">
+                    <span>STEP 02</span>
+                    <span>⚡</span>
+                  </div>
+                  <div class="flow-node-title">Optimistic Buffer</div>
+                  <div class="flow-node-desc">Estimasi token instan, render gelembung obrolan seketika & buffering lokal 0ms.</div>
+                  <span class="flow-node-tag">localStorage cache</span>
+                </div>
+
+                <div class="flow-connector">➔</div>
+
+                <!-- Step 3: ATOM Cortex Router -->
+                <div class="flow-step-node" data-step="3">
+                  <div class="flow-node-num">
+                    <span>STEP 03</span>
+                    <span>🧠</span>
+                  </div>
+                  <div class="flow-node-title">ATOM Cortex Router</div>
+                  <div class="flow-node-desc">Evaluasi model preference (auto / provider), deteksi query & inisialisasi fallback.</div>
+                  <span class="flow-node-tag">modules/core/cortex.py</span>
+                </div>
+
+                <div class="flow-connector">➔</div>
+
+                <!-- Step 4: Multi-Model Inference Hub (Mini-Hub) -->
+                <div class="flow-hub-box" id="flow-hub-node" data-step="4" style="cursor:pointer;">
+                  <div class="hub-title">STEP 04: AI INFERENCE HUB</div>
+                  <div class="hub-models-mini">
+                    <div class="hub-model-chip">
+                      <span style="color:#a78bfa;font-weight:700;">⚡ Groq LPU</span>
+                      <span style="color:var(--text-muted);">Llama 3.3 70B (~0.8s)</span>
+                    </div>
+                    <div class="hub-model-chip">
+                      <span style="color:#38bdf8;font-weight:700;">🐳 DeepSeek</span>
+                      <span style="color:var(--text-muted);">Reasoning V3 Cloud</span>
+                    </div>
+                    <div class="hub-model-chip">
+                      <span style="color:#60a5fa;font-weight:700;">♊ Gemini</span>
+                      <span style="color:var(--text-muted);">Flash 2.5 Multi-Modal</span>
+                    </div>
+                    <div class="hub-model-chip">
+                      <span style="color:#f472b6;font-weight:700;">🌐 OpenRouter</span>
+                      <span style="color:var(--text-muted);">Free Tier Pool</span>
+                    </div>
+                    <div class="hub-model-chip">
+                      <span style="color:#34d399;font-weight:700;">🧠 Ollama</span>
+                      <span style="color:var(--text-muted);">Offline Local LLM</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flow-connector">➔</div>
+
+                <!-- Step 5: Failover Engine -->
+                <div class="flow-step-node" data-step="5">
+                  <div class="flow-node-num">
+                    <span>STEP 05</span>
+                    <span>🛡️</span>
+                  </div>
+                  <div class="flow-node-title">Auto Failover</div>
+                  <div class="flow-node-desc">Deteksi kegagalan API/rate-limit; seamless fallback otomatis ke provider cadangan.</div>
+                  <span class="flow-node-tag">cortex.py (Failover)</span>
+                </div>
+
+                <div class="flow-connector">➔</div>
+
+                <!-- Step 6: Thinking & Parser -->
+                <div class="flow-step-node" data-step="6">
+                  <div class="flow-node-num">
+                    <span>STEP 06</span>
+                    <span>⚙️</span>
+                  </div>
+                  <div class="flow-node-title">Parsing & Thinking</div>
+                  <div class="flow-node-desc">Ekstraksi penalaran [THINKING], Markdown rendering, syntax code & latency timer.</div>
+                  <span class="flow-node-tag">marked.js + chat.js</span>
+                </div>
+
+                <div class="flow-connector">➔</div>
+
+                <!-- Step 7: Dual-Tier Persistence -->
+                <div class="flow-step-node" data-step="7">
+                  <div class="flow-node-num">
+                    <span>STEP 07</span>
+                    <span>💾</span>
+                  </div>
+                  <div class="flow-node-title">Dual Persistence</div>
+                  <div class="flow-node-desc">Sinkronisasi file disk proyek (Git-tracked) + Telemetry logging real-time.</div>
+                  <span class="flow-node-tag">data/atom_chat_sessions.json</span>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Slider Pagination Dots Indicator -->
+            <div class="flow-pagination-row" id="flow-pagination-row">
+              <div class="flow-dots-list" id="flow-dots-list">
+                <button class="flow-dot-btn active" data-step="1" title="Tahap 1: Input & Injeksi Konteks" aria-label="Tahap 1"><span>1</span></button>
+                <button class="flow-dot-btn" data-step="2" title="Tahap 2: Optimistic Buffer" aria-label="Tahap 2"><span>2</span></button>
+                <button class="flow-dot-btn" data-step="3" title="Tahap 3: ATOM Cortex Router" aria-label="Tahap 3"><span>3</span></button>
+                <button class="flow-dot-btn" data-step="4" title="Tahap 4: AI Inference Hub" aria-label="Tahap 4"><span>4</span></button>
+                <button class="flow-dot-btn" data-step="5" title="Tahap 5: Auto Failover Engine" aria-label="Tahap 5"><span>5</span></button>
+                <button class="flow-dot-btn" data-step="6" title="Tahap 6: Parsing & Thinking" aria-label="Tahap 6"><span>6</span></button>
+                <button class="flow-dot-btn" data-step="7" title="Tahap 7: Dual Persistence" aria-label="Tahap 7"><span>7</span></button>
+              </div>
+            </div>
+
+            <!-- Interactive Inspector Box -->
+            <div class="flow-inspector-panel" id="flow-inspector">
+              <div class="inspector-header">
+                <div class="inspector-title" id="inspector-title">
+                  <span>💬</span> Tahap 1: Input & Injeksi Konteks Pengguna
+                </div>
+                <div class="inspector-file" id="inspector-file">
+                  File Terkait: public/assets/js/chat.js · roleplay.js
+                </div>
+              </div>
+              <div class="inspector-body" id="inspector-body">
+                Ketika pengguna mengetik pesan di kotak input dan menekan kirim (atau Enter), sistem membaca teks prompt, mengekstrak dokumen lampiran (jika ada), menyisipkan persona/karakter roleplay yang sedang aktif, serta mengambil riwayat 6 percakapan terakhir (sliding window) dari sesi saat ini untuk dikirimkan sebagai memori kontekstual.
+              </div>
+            </div>
+          </section>
+
+          <!-- API Model Usage Breakdown Cards -->
+          <section style="margin-bottom:var(--space-6);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4);">
+              <h2 style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);">
+                RINGKASAN PENGGUNAAN SETIAP API MODEL
+              </h2>
+              <span style="font-size:0.72rem;color:var(--text-muted);">Data real-time lokal</span>
+            </div>
+            <div class="model-cards-grid" id="model-cards-container">
+              <!-- Dynamically populated model cards -->
+            </div>
+          </section>
+
+          <!-- Analytics Two Column Row -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:var(--space-5);margin-bottom:var(--space-6);">
+
+            <!-- Model Usage Share Breakdown -->
             <section class="card">
               <div class="card-header">
-                <span class="card-title">Model Usage</span>
+                <span class="card-title">Pangsa Penggunaan Model (% Share)</span>
               </div>
               <div id="model-usage-list" style="display:flex;flex-direction:column;gap:var(--space-3);">
               </div>
             </section>
 
-            <!-- Response Time -->
+            <!-- Response Time Comparison -->
             <section class="card">
               <div class="card-header">
-                <span class="card-title">Response Time</span>
+                <span class="card-title">Performa Kecepatan (Latensi)</span>
               </div>
               <div style="display:flex;flex-direction:column;gap:var(--space-3);">
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-2);">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-2);background:rgba(0,0,0,0.25);padding:10px;border-radius:var(--radius-md);">
                   <div style="text-align:center;">
-                    <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">FASTEST</div>
-                    <div id="t-fastest" style="font-size:1.25rem;font-weight:700;color:var(--success);">-</div>
+                    <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">TERCEPAT</div>
+                    <div id="t-fastest" style="font-size:1.15rem;font-weight:700;color:var(--success);">-</div>
                   </div>
                   <div style="text-align:center;">
-                    <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">AVG</div>
-                    <div id="t-avg" style="font-size:1.25rem;font-weight:700;color:var(--gold-primary);">-</div>
+                    <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">RATA-RATA</div>
+                    <div id="t-avg" style="font-size:1.15rem;font-weight:700;color:var(--gold-primary);">-</div>
                   </div>
                   <div style="text-align:center;">
-                    <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">SLOWEST</div>
-                    <div id="t-slowest" style="font-size:1.25rem;font-weight:700;color:var(--error);">-</div>
+                    <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">TERLAMBAT</div>
+                    <div id="t-slowest" style="font-size:1.15rem;font-weight:700;color:var(--error);">-</div>
                   </div>
                 </div>
 
-                <!-- Bar Chart (canvas) -->
                 <div>
-                  <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:var(--space-2);">By Model (avg seconds):</div>
-                  <div id="model-time-bars" style="display:flex;flex-direction:column;gap:6px;">
+                  <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:var(--space-2);">Rata-rata waktu per model:</div>
+                  <div id="model-time-bars" style="display:flex;flex-direction:column;gap:8px;">
                   </div>
                 </div>
               </div>
             </section>
           </div>
 
-          <!-- Activity Log -->
+          <!-- Activity Log with Interactive Model Filter -->
           <section class="card">
-            <div class="card-header">
-              <span class="card-title">Activity Log (Last 20)</span>
+            <div class="card-header" style="flex-wrap:wrap;gap:10px;">
+              <span class="card-title">Riwayat Interaksi & Permintaan</span>
+              <span style="font-size:0.75rem;color:var(--text-muted);">Klik baris untuk melihat prompt & respons lengkap</span>
             </div>
+
+            <!-- Filter Pills -->
+            <div class="filter-pills-row" id="filter-pills-container" style="padding:12px 14px 4px;">
+              <button class="filter-pill active" data-filter="all">Semua Model</button>
+            </div>
+
             <div style="overflow-x:auto;">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>Time</th>
-                    <th>Model</th>
-                    <th>Duration</th>
+                    <th>Waktu</th>
+                    <th>Model AI</th>
+                    <th>Durasi</th>
+                    <th>Est. Tokens</th>
                     <th>Status</th>
-                    <th>Query</th>
+                    <th>Kueri / Prompt</th>
                   </tr>
                 </thead>
                 <tbody id="activity-tbody">
@@ -245,8 +456,8 @@
 
   <div class="toast-container" id="toast-container"></div>
 
-  <script src="assets/js/app.js"></script>
-  <script src="assets/js/telemetry.js"></script>
+  <script src="assets/js/app.js?v=4.7"></script>
+  <script src="assets/js/telemetry.js?v=4.7"></script>
   <script src="assets/js/mobile-ui.js"></script>
 </body>
 </html>

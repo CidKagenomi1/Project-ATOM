@@ -113,6 +113,10 @@ class TelemetryEntry(BaseModel):
     status: str
     ai_response: Optional[str] = ""
 
+class SessionsPayload(BaseModel):
+    sessions: List[Dict[str, Any]] = []
+    active_id: Optional[str] = None
+
 
 # --- Core Endpoints ---
 
@@ -688,3 +692,87 @@ async def mark_bulletin(news: MarkedNews):
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error marking news: {e}")
+
+
+# --- Chat & Roleplay Sessions Storage ---
+CHAT_SESSIONS_FILE = "data/atom_chat_sessions.json"
+RP_SESSIONS_FILE = "data/atom_rp_sessions.json"
+
+@app.get("/api/sessions/chat")
+async def get_chat_sessions():
+    """Retrieve chat history and sessions from database or local project file."""
+    if MONGODB_CONNECTED:
+        try:
+            doc = db["sessions"].find_one({"type": "chat"}, {"_id": 0})
+            if doc:
+                return doc
+        except Exception as e:
+            print(f"[DB ERROR] get_chat_sessions failed: {e}")
+            
+    if os.path.exists(CHAT_SESSIONS_FILE):
+        try:
+            with open(CHAT_SESSIONS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"[LOCAL READ ERROR] {e}")
+    return {"sessions": [], "active_id": None}
+
+
+@app.post("/api/sessions/chat")
+async def save_chat_sessions(payload: SessionsPayload):
+    """Persist chat sessions to local file (and MongoDB if configured) so Git tracks it."""
+    data = payload.model_dump()
+    data["type"] = "chat"
+    if MONGODB_CONNECTED:
+        try:
+            db["sessions"].update_one({"type": "chat"}, {"$set": data}, upsert=True)
+        except Exception as e:
+            print(f"[DB ERROR] save_chat_sessions failed: {e}")
+
+    try:
+        os.makedirs(os.path.dirname(CHAT_SESSIONS_FILE), exist_ok=True)
+        with open(CHAT_SESSIONS_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return {"status": "success", "count": len(payload.sessions)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save chat sessions: {e}")
+
+
+@app.get("/api/sessions/roleplay")
+async def get_rp_sessions():
+    """Retrieve roleplay history and sessions from database or local project file."""
+    if MONGODB_CONNECTED:
+        try:
+            doc = db["sessions"].find_one({"type": "roleplay"}, {"_id": 0})
+            if doc:
+                return doc
+        except Exception as e:
+            print(f"[DB ERROR] get_rp_sessions failed: {e}")
+            
+    if os.path.exists(RP_SESSIONS_FILE):
+        try:
+            with open(RP_SESSIONS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"[LOCAL READ ERROR] {e}")
+    return {"sessions": [], "active_id": None}
+
+
+@app.post("/api/sessions/roleplay")
+async def save_rp_sessions(payload: SessionsPayload):
+    """Persist roleplay sessions to local file (and MongoDB if configured) so Git tracks it."""
+    data = payload.model_dump()
+    data["type"] = "roleplay"
+    if MONGODB_CONNECTED:
+        try:
+            db["sessions"].update_one({"type": "roleplay"}, {"$set": data}, upsert=True)
+        except Exception as e:
+            print(f"[DB ERROR] save_rp_sessions failed: {e}")
+
+    try:
+        os.makedirs(os.path.dirname(RP_SESSIONS_FILE), exist_ok=True)
+        with open(RP_SESSIONS_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return {"status": "success", "count": len(payload.sessions)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save roleplay sessions: {e}")

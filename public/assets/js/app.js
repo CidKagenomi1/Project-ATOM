@@ -145,20 +145,141 @@ function showToast(message, type = 'info', duration = 3500) {
 window.showToast = showToast;
 
 
-// ─── Telemetry Logger (localStorage) ────────────────────
-async function logTelemetry(entry) {
+// ─── Resilient Telemetry Logger (Client-First + Background Sync) ────
+const TELEM_STORAGE_KEY = 'atom_telemetry_logs';
+
+function logTelemetry(entry) {
   try {
-    await fetch('/api/telemetry', {
+    const timestampStr = new Date().toISOString();
+    const promptLen = (entry.user_input || '').length;
+    const respLen = (entry.ai_response || '').length;
+    
+    // Estimasi token standar (~4 chars/token)
+    const promptTokens = Math.max(1, Math.ceil(promptLen / 4));
+    const completionTokens = Math.max(1, Math.ceil(respLen / 4));
+    const totalTokens = promptTokens + completionTokens;
+
+    const fullEntry = {
+      id: 'telem_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      timestamp: timestampStr,
+      user_input: entry.user_input || '',
+      model_used: entry.model_used || 'Cortex Route',
+      response_time: parseFloat(entry.response_time) || 0,
+      status: entry.status || 'SUCCESS',
+      ai_response: entry.ai_response || '',
+      tokens: {
+        prompt: promptTokens,
+        completion: completionTokens,
+        total: totalTokens
+      }
+    };
+
+    // 1. Simpan langsung ke localStorage (Instan 0ms, zero-latency, anti-putus!)
+    let logs = [];
+    try {
+      const raw = localStorage.getItem(TELEM_STORAGE_KEY);
+      logs = raw ? JSON.parse(raw) : [];
+    } catch {}
+
+    logs.unshift(fullEntry);
+    if (logs.length > 500) logs = logs.slice(0, 500);
+    localStorage.setItem(TELEM_STORAGE_KEY, JSON.stringify(logs));
+
+    // 2. Kirim ke backend secara asinkron tanpa memblokir UI
+    fetch('/api/telemetry', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(entry)
+      body: JSON.stringify({
+        user_input: fullEntry.user_input,
+        model_used: fullEntry.model_used,
+        response_time: fullEntry.response_time,
+        status: fullEntry.status,
+        ai_response: fullEntry.ai_response
+      })
+    }).catch(() => {
+      // Disconnect-safe: tidak pernah memicu error di frontend
     });
-  } catch (e) {
-    console.warn('[ATOM] Telemetry log failed:', e);
+  } catch (err) {
+    console.warn('[ATOM] Local telemetry save error:', err);
   }
 }
 
+// Ekstrak telemetri dari riwayat percakapan yang ada (Auto Backfill jika log kosong)
+function backfillTelemetryFromSessions() {
+  const syntheticLogs = [];
+  try {
+    // 1. Ambil dari chat sessions
+    const rawChat = localStorage.getItem('atom_chat_sessions');
+    if (rawChat) {
+      const sessions = JSON.parse(rawChat);
+      sessions.forEach(sess => {
+        const msgs = sess.messages || [];
+        for (let i = 0; i < msgs.length; i++) {
+          if (msgs[i].role === 'user' && msgs[i + 1] && msgs[i + 1].role === 'assistant') {
+            const userMsg = msgs[i];
+            const aiMsg = msgs[i + 1];
+            const pLen = (userMsg.content || '').length;
+            const rLen = (aiMsg.content || '').length;
+            const model = aiMsg.model || 'Groq (Llama 3.3 70B)';
+            syntheticLogs.push({
+              id: 'bf_' + (userMsg.timestamp || sess.updatedAt || Date.now()) + '_' + i,
+              timestamp: new Date(sess.updatedAt || Date.now()).toISOString(),
+              user_input: userMsg.content || '',
+              model_used: model,
+              response_time: 1.15,
+              status: 'SUCCESS',
+              ai_response: aiMsg.content || '',
+              tokens: {
+                prompt: Math.max(1, Math.ceil(pLen / 4)),
+                completion: Math.max(1, Math.ceil(rLen / 4)),
+                total: Math.max(2, Math.ceil((pLen + rLen) / 4))
+              }
+            });
+          }
+        }
+      });
+    }
+
+    // 2. Ambil dari roleplay sessions
+    const rawRp = localStorage.getItem('atom_rp_sessions');
+    if (rawRp) {
+      const rpSessions = JSON.parse(rawRp);
+      rpSessions.forEach(sess => {
+        const msgs = sess.messages || [];
+        for (let i = 0; i < msgs.length; i++) {
+          if (msgs[i].role === 'user' && msgs[i + 1] && msgs[i + 1].role === 'assistant') {
+            const userMsg = msgs[i];
+            const aiMsg = msgs[i + 1];
+            const pLen = (userMsg.content || '').length;
+            const rLen = (aiMsg.content || '').length;
+            const model = aiMsg.model || 'DeepSeek V3 (Cloud)';
+            syntheticLogs.push({
+              id: 'bfrp_' + (userMsg.timestamp || sess.updatedAt || Date.now()) + '_' + i,
+              timestamp: new Date(sess.updatedAt || Date.now()).toISOString(),
+              user_input: userMsg.content || '',
+              model_used: model,
+              response_time: 1.65,
+              status: 'SUCCESS',
+              ai_response: aiMsg.content || '',
+              tokens: {
+                prompt: Math.max(1, Math.ceil(pLen / 4)),
+                completion: Math.max(1, Math.ceil(rLen / 4)),
+                total: Math.max(2, Math.ceil((pLen + rLen) / 4))
+              }
+            });
+          }
+        }
+      });
+    }
+  } catch (e) {
+    console.warn('[ATOM] Backfill calculation error:', e);
+  }
+  return syntheticLogs;
+}
+
 window.logTelemetry = logTelemetry;
+window.backfillTelemetryFromSessions = backfillTelemetryFromSessions;
+window.TELEM_STORAGE_KEY = TELEM_STORAGE_KEY;
 
 
 // ─── Auto-resize Textarea ────────────────────────────────

@@ -374,6 +374,59 @@ function loadRpSessions() {
   }
 
   renderCurrentMessages();
+  syncRpSessionsWithBackend();
+}
+
+let rpSyncTimer = null;
+
+async function syncRpSessionsWithBackend() {
+  try {
+    const res = await fetch('/api/sessions/roleplay');
+    if (!res.ok) return;
+    const data = await res.json();
+    const serverSessions = data.sessions || [];
+    
+    if (serverSessions.length > 0) {
+      const isClientEmpty = rpSessions.length === 0 || 
+        (rpSessions.length === 1 && rpSessions[0].title.includes('Sesi Baru') && (!rpSessions[0].messages || rpSessions[0].messages.length === 0));
+        
+      if (isClientEmpty || serverSessions.length >= rpSessions.length) {
+        rpSessions = serverSessions;
+        currentRpSessionId = data.active_id || serverSessions[0].id;
+        const active = rpSessions.find(s => s.id === currentRpSessionId) || rpSessions[0];
+        rpChatHistory = active.messages || [];
+        if (active.personaId) selectRolePersona(active.personaId);
+        try {
+          localStorage.setItem('atom_rp_sessions', JSON.stringify(rpSessions));
+          localStorage.setItem('atom_rp_active_session_id', currentRpSessionId);
+        } catch {}
+        renderCurrentMessages();
+        renderRpSessionsSidebar();
+        updateEmptyState();
+        return;
+      }
+    }
+
+    if (rpSessions.length > 0 && serverSessions.length === 0) {
+      saveRpSessionsToBackend();
+    }
+  } catch {}
+}
+
+function saveRpSessionsToBackend() {
+  clearTimeout(rpSyncTimer);
+  rpSyncTimer = setTimeout(async () => {
+    try {
+      await fetch('/api/sessions/roleplay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessions: rpSessions,
+          active_id: currentRpSessionId
+        })
+      });
+    } catch {}
+  }, 400);
 }
 
 function saveRpSessions() {
@@ -383,6 +436,7 @@ function saveRpSessions() {
       localStorage.setItem('atom_rp_active_session_id', currentRpSessionId);
     }
   } catch {}
+  saveRpSessionsToBackend();
 }
 
 function saveRpHistory() {

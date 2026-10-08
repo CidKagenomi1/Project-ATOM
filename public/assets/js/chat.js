@@ -415,6 +415,60 @@ function loadSessionsFromStorage() {
   }
 
   renderCurrentSessionMessages();
+  syncSessionsWithBackend();
+}
+
+let chatSyncTimer = null;
+
+async function syncSessionsWithBackend() {
+  try {
+    const res = await fetch('/api/sessions/chat');
+    if (!res.ok) return;
+    const data = await res.json();
+    const serverSessions = data.sessions || [];
+    
+    if (serverSessions.length > 0) {
+      const isClientEmpty = chatSessions.length === 0 || 
+        (chatSessions.length === 1 && chatSessions[0].title === 'Percakapan Baru' && (!chatSessions[0].messages || chatSessions[0].messages.length === 0));
+      
+      if (isClientEmpty || serverSessions.length >= chatSessions.length) {
+        chatSessions = serverSessions;
+        currentSessionId = data.active_id || serverSessions[0].id;
+        const active = chatSessions.find(s => s.id === currentSessionId) || chatSessions[0];
+        chatHistory = active.messages || [];
+        try {
+          localStorage.setItem('atom_chat_sessions', JSON.stringify(chatSessions));
+          localStorage.setItem('atom_active_session_id', currentSessionId);
+        } catch {}
+        renderCurrentSessionMessages();
+        renderSessionsSidebar();
+        updateEmptyState();
+        return;
+      }
+    }
+    
+    if (chatSessions.length > 0 && serverSessions.length === 0) {
+      saveSessionsToBackend();
+    }
+  } catch {
+    // Offline / fallback to localStorage
+  }
+}
+
+function saveSessionsToBackend() {
+  clearTimeout(chatSyncTimer);
+  chatSyncTimer = setTimeout(async () => {
+    try {
+      await fetch('/api/sessions/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessions: chatSessions,
+          active_id: currentSessionId
+        })
+      });
+    } catch {}
+  }, 400);
 }
 
 function saveSessionsToStorage() {
@@ -426,6 +480,7 @@ function saveSessionsToStorage() {
     // Backward compatibility
     localStorage.setItem('atom_chat_history', JSON.stringify(chatHistory.slice(-50)));
   } catch { /* quota limit handling */ }
+  saveSessionsToBackend();
 }
 
 function saveHistory() {
