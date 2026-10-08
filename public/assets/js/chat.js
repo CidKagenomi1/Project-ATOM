@@ -28,7 +28,7 @@ function init() {
   loadSessionsFromStorage();
   updateEmptyState();
   updateSendButton();
-  buildCustomModelSelect();
+  initModelModeSwitch();
   renderSessionsSidebar();
 
   btnNewChat?.addEventListener('click', () => {
@@ -289,8 +289,9 @@ async function sendMessage() {
 
 // ─── API Call ──────────────────────────────────────────────
 async function callChatAPI(prompt, history, files, signal) {
+  const isAdvance = document.getElementById('mode-btn-advance')?.classList.contains('active');
   const modelSelectEl = document.getElementById('model-select');
-  const selectedModel = modelSelectEl ? modelSelectEl.value : 'auto';
+  const selectedModel = (isAdvance && modelSelectEl) ? modelSelectEl.value : 'auto';
 
   const body = {
     prompt,
@@ -533,18 +534,55 @@ window.toggleReasoning = function(msgId) {
   btn.classList.toggle('open', !isOpen);
 };
 
-// ─── Typing Indicator ──────────────────────────────────────
+// ─── Thinking / Loading Phrases (Proses Berpikir Bertahap yang Jelas) ───
+const THINKING_PHRASES = [
+  'Membaca pesan Anda...',
+  'Menganalisis pertanyaan...',
+  'Memproses informasi...',
+  'Menyusun jawaban...',
+  'Memeriksa detail jawaban...',
+  'Menyelesaikan respons...'
+];
+
+// ─── Typing Indicator with Dynamic Progressive Loading Text ──
 function showTypingIndicator() {
   const el = document.createElement('div');
   el.className = 'typing-indicator';
   el.innerHTML = `
     <div class="message-avatar">⚛️</div>
-    <div class="typing-dots">
-      <span></span><span></span><span></span>
+    <div class="typing-bubble">
+      <div class="typing-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="typing-status-text">${THINKING_PHRASES[0]}</div>
     </div>
   `;
   messagesArea?.appendChild(el);
   scrollToBottom(messagesArea);
+
+  const statusTextEl = el.querySelector('.typing-status-text');
+  let phraseIndex = 0;
+
+  // Progressive thinking text rotator (rotasi dinamis setiap 2.4 detik)
+  const intervalId = setInterval(() => {
+    phraseIndex = (phraseIndex + 1) % THINKING_PHRASES.length;
+    if (statusTextEl) {
+      statusTextEl.classList.add('fade-out');
+      setTimeout(() => {
+        statusTextEl.textContent = THINKING_PHRASES[phraseIndex];
+        statusTextEl.classList.remove('fade-out');
+        scrollToBottom(messagesArea);
+      }, 250);
+    }
+  }, 2400);
+
+  // Hook remove method to safely clear interval timer
+  const originalRemove = el.remove.bind(el);
+  el.remove = () => {
+    clearInterval(intervalId);
+    originalRemove();
+  };
+
   return el;
 }
 
@@ -915,66 +953,108 @@ function clearChat() {
   }
 }
 
-// ─── Custom Model Select Dropdown Generator ────────────────
-function buildCustomModelSelect() {
-  const select = document.getElementById('model-select');
-  const wrapper = document.querySelector('.model-select-wrapper');
-  if (!select || !wrapper) return;
+// ─── Model Selector (Auto vs Advance categorized by API) ───
+const ADVANCE_MODELS_BY_API = {
+  groq: [
+    { value: 'groq', label: '⚡ Llama 3.3 70B Versatile' }
+  ],
+  openrouter: [
+    { value: 'openrouter', label: '🌐 OpenRouter (Fallback List)' },
+    { value: 'openrouter:meta-llama/llama-3.3-70b-instruct:free', label: '🦙 Llama 3.3 70B Instruct (Free)' },
+    { value: 'openrouter:qwen/qwen-3-coder-480b:free', label: '💻 Qwen3 Coder 480B (Free)' },
+    { value: 'openrouter:nousresearch/hermes-3-405b-instruct:free', label: '🏛️ Hermes 3 405B Instruct (Free)' },
+    { value: 'openrouter:google/gemma-4-31b:free', label: '💎 Gemma 4 31B (Free)' },
+    { value: 'openrouter:nvidia/nemotron-3-nano-30b:free', label: '🟢 Nemotron 3 Nano 30B (Free)' },
+    { value: 'openrouter:nvidia/nemotron-3-nano-omni:free', label: '🔮 Nemotron 3 Nano Omni (Free)' },
+    { value: 'openrouter:qwen/qwen-3-next-80b:free', label: '🚀 Qwen3 Next 80B (Free)' },
+    { value: 'openrouter:liquid/lfm2.5-1.2b-thinking:free', label: '🧠 LFM 2.5 1.2B Thinking (Free)' },
+    { value: 'openrouter:poolside/laguna-xs-2:free', label: '🌊 Laguna XS.2 (Free)' },
+    { value: 'openrouter:venice/uncensored:free', label: '🎭 Venice Uncensored (Free)' }
+  ],
+  gemini: [
+    { value: 'gemini', label: '♊ Gemini Flash 2.5 (Multimodal)' }
+  ],
+  deepseek: [
+    { value: 'deepseek', label: '🐳 DeepSeek V3 (Cloud)' }
+  ],
+  ollama: [
+    { value: 'ollama', label: '🧠 DeepSeek V4 (Local/Cloud)' }
+  ]
+};
 
-  // Hide native select
-  select.style.display = 'none';
+function initModelModeSwitch() {
+  const modeBtnAuto = document.getElementById('mode-btn-auto');
+  const modeBtnAdvance = document.getElementById('mode-btn-advance');
+  const autoBadge = document.getElementById('auto-mode-badge');
+  const advanceControls = document.getElementById('advance-model-controls');
+  const apiProviderSelect = document.getElementById('api-provider-select');
+  const modelSelect = document.getElementById('model-select');
 
-  // Create trigger button
-  const trigger = document.createElement('button');
-  trigger.className = 'custom-select-trigger';
-  trigger.type = 'button';
-  trigger.textContent = select.options[select.selectedIndex]?.textContent || 'Select Model';
+  if (!modeBtnAuto || !modeBtnAdvance) return;
 
-  // Create options container
-  const optionsContainer = document.createElement('div');
-  optionsContainer.className = 'custom-select-options';
+  function populateModels(providerKey, selectedModelValue = null) {
+    if (!modelSelect) return;
+    const models = ADVANCE_MODELS_BY_API[providerKey] || ADVANCE_MODELS_BY_API.groq;
+    modelSelect.innerHTML = models.map(m => `
+      <option value="${m.value}">${m.label}</option>
+    `).join('');
 
-  // Create option elements
-  Array.from(select.options).forEach((opt, idx) => {
-    const customOpt = document.createElement('div');
-    customOpt.className = `custom-select-option${idx === select.selectedIndex ? ' selected' : ''}`;
-    customOpt.textContent = opt.textContent;
-    customOpt.dataset.value = opt.value;
-
-    customOpt.addEventListener('click', (e) => {
-      e.stopPropagation();
-      select.value = opt.value;
-      trigger.textContent = opt.textContent;
-      
-      // Update active option styles
-      optionsContainer.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
-      customOpt.classList.add('selected');
-
-      // Close dropdown
-      wrapper.classList.remove('open');
-      
-      // Trigger native change event if needed
-      select.dispatchEvent(new Event('change'));
-    });
-
-    optionsContainer.appendChild(customOpt);
-  });
-
-  // Toggle trigger click
-  trigger.addEventListener('click', (e) => {
-    e.stopPropagation();
-    wrapper.classList.toggle('open');
-  });
-
-  // Close when clicking outside wrapper
-  document.addEventListener('click', (e) => {
-    if (!wrapper.contains(e.target)) {
-      wrapper.classList.remove('open');
+    if (selectedModelValue && models.some(m => m.value === selectedModelValue)) {
+      modelSelect.value = selectedModelValue;
+    } else {
+      modelSelect.value = models[0].value;
     }
-  });
+  }
 
-  wrapper.appendChild(trigger);
-  wrapper.appendChild(optionsContainer);
+  function setMode(mode) {
+    if (mode === 'advance') {
+      modeBtnAuto.classList.remove('active');
+      modeBtnAdvance.classList.add('active');
+      autoBadge?.classList.add('hidden');
+      advanceControls?.classList.remove('hidden');
+      localStorage.setItem('atom_chat_model_mode', 'advance');
+
+      const provider = apiProviderSelect?.value || 'groq';
+      const savedModel = localStorage.getItem('atom_advance_model');
+      populateModels(provider, savedModel);
+    } else {
+      modeBtnAdvance.classList.remove('active');
+      modeBtnAuto.classList.add('active');
+      autoBadge?.classList.remove('hidden');
+      advanceControls?.classList.add('hidden');
+      localStorage.setItem('atom_chat_model_mode', 'auto');
+    }
+  }
+
+  // Restore saved state
+  const savedMode = localStorage.getItem('atom_chat_model_mode') || 'auto';
+  const savedProvider = localStorage.getItem('atom_advance_provider') || 'groq';
+  const savedModel = localStorage.getItem('atom_advance_model');
+
+  if (apiProviderSelect) {
+    apiProviderSelect.value = savedProvider;
+    populateModels(savedProvider, savedModel);
+
+    apiProviderSelect.addEventListener('change', () => {
+      const provider = apiProviderSelect.value;
+      localStorage.setItem('atom_advance_provider', provider);
+      populateModels(provider);
+      if (modelSelect) {
+        localStorage.setItem('atom_advance_model', modelSelect.value);
+      }
+    });
+  }
+
+  if (modelSelect) {
+    modelSelect.addEventListener('change', () => {
+      localStorage.setItem('atom_advance_model', modelSelect.value);
+    });
+  }
+
+  modeBtnAuto.addEventListener('click', () => setMode('auto'));
+  modeBtnAdvance.addEventListener('click', () => setMode('advance'));
+
+  setMode(savedMode);
 }
 
 // ─── Start ─────────────────────────────────────────────────

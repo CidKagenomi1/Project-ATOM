@@ -250,25 +250,48 @@
 
         <!-- Input Area -->
         <div class="input-area">
-          <div class="model-select-wrapper">
-            <select class="model-select" id="model-select" aria-label="Pilih Model AI">
-              <option value="auto">🤖 Auto (Cortex Route)</option>
-              <option value="groq">⚡ Groq (Llama 3.3 70B)</option>
-              <option value="ollama">🧠 Ollama (DeepSeek V4 Cloud)</option>
-              <option value="openrouter">🌐 OpenRouter (Fallback List)</option>
-              <option value="openrouter:poolside/laguna-xs-2:free">🧩 OR: Laguna XS.2 (Free)</option>
-              <option value="openrouter:google/gemma-4-31b:free">🧩 OR: Gemma 4 31B (Free)</option>
-              <option value="openrouter:nvidia/nemotron-3-nano-30b:free">🧩 OR: Nemotron 3 Nano 30B (Free)</option>
-              <option value="openrouter:nvidia/nemotron-3-nano-omni:free">🧩 OR: Nemotron 3 Nano Omni (Free)</option>
-              <option value="openrouter:liquid/lfm2.5-1.2b-thinking:free">🧩 OR: LFM 2.5 1.2B Thinking (Free)</option>
-              <option value="openrouter:qwen/qwen-3-next-80b:free">🧩 OR: Qwen3 Next 80B (Free)</option>
-              <option value="openrouter:meta-llama/llama-3.3-70b-instruct:free">🧩 OR: Llama 3.3 70B Instruct (Free)</option>
-              <option value="openrouter:venice/uncensored:free">🧩 OR: Venice Uncensored (Free)</option>
-              <option value="openrouter:nousresearch/hermes-3-405b-instruct:free">🧩 OR: Hermes 3 405B Instruct (Free)</option>
-              <option value="openrouter:qwen/qwen-3-coder-480b:free">🧩 OR: Qwen3 Coder 480B (Free)</option>
-              <option value="deepseek">🐳 DeepSeek (V3)</option>
-              <option value="gemini">♊ Gemini (Flash 2.5)</option>
-            </select>
+          <!-- Model Mode Bar: Auto | Advance -->
+          <div class="chat-model-bar" id="chat-model-bar">
+            <!-- Saklar Auto | Advance -->
+            <div class="model-mode-switch" id="model-mode-switch" role="tablist" aria-label="Mode Pemilihan Model AI">
+              <button type="button" class="mode-switch-btn active" data-mode="auto" id="mode-btn-auto" title="Mode Otomatis — Cortex Neural Router memilih model AI terbaik">
+                <span class="mode-switch-icon">🤖</span>
+                <span class="mode-switch-text">Auto</span>
+              </button>
+              <button type="button" class="mode-switch-btn" data-mode="advance" id="mode-btn-advance" title="Mode Advance — Pilih provider API & model spesifik">
+                <span class="mode-switch-icon">⚡</span>
+                <span class="mode-switch-text">Advance</span>
+              </button>
+            </div>
+
+            <!-- Auto Mode Info Badge -->
+            <div class="auto-mode-badge" id="auto-mode-badge" title="Cortex Router aktif otomatis">
+              <span class="auto-badge-dot">●</span>
+              <span>Cortex Router</span>
+            </div>
+
+            <!-- Advance Mode Controls (Hidden when Auto) -->
+            <div class="advance-model-controls hidden" id="advance-model-controls">
+              <!-- Selector API / Provider -->
+              <div class="advance-select-box">
+                <span class="advance-mini-label">API</span>
+                <select class="api-provider-select" id="api-provider-select" aria-label="Pilih Provider API">
+                  <option value="groq">⚡ Groq Cloud</option>
+                  <option value="openrouter">🌐 OpenRouter</option>
+                  <option value="gemini">♊ Google Gemini</option>
+                  <option value="deepseek">🐳 DeepSeek</option>
+                  <option value="ollama">🧠 Local Ollama</option>
+                </select>
+              </div>
+
+              <!-- Selector Model Spesifik -->
+              <div class="advance-select-box">
+                <span class="advance-mini-label">Model</span>
+                <select class="model-select" id="model-select" aria-label="Pilih Model AI">
+                  <!-- Populated dinamis via chat.js -->
+                </select>
+              </div>
+            </div>
           </div>
           <div class="input-row" id="input-row">
             <div class="input-main-wrapper" style="display: flex; flex-direction: column; flex: 1; width: 100%;">
