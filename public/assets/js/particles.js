@@ -7,6 +7,11 @@ class VaporChamber {
   constructor(canvasId) {
     this.canvas = document.getElementById(canvasId);
     if (!this.canvas) return;
+    const isEnabled = localStorage.getItem('atom_setting_particles') === 'true';
+    if (!isEnabled) {
+      this.canvas.style.display = 'none';
+      return;
+    }
     this.ctx = this.canvas.getContext('2d');
     this.tracks = [];
     this.animationFrameId = null;

@@ -488,7 +488,7 @@
 
 /* ─── Atom Animation Toggle ─── */
 [data-atom-spin="false"] .electron {
-  animation: none !important;
+  display: none !important;
 }
 [data-atom-spin="false"] .orbit-line {
   animation: none !important;

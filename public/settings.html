@@ -555,7 +555,7 @@
             <div class="settings-row">
               <div class="settings-info">
                 <span class="settings-name">Animasi Rotasi Atom (Electron Spin)</span>
-                <span class="settings-detail">Animasi orbit elektron berputar di logo ATOM. Matikan jika ingin tampilan statis dan menghemat penggunaan GPU/baterai laptop.</span>
+                <span class="settings-detail">Animasi orbit elektron berputar di logo ATOM. Matikan jika ingin tampilan logo statis.</span>
               </div>
               <div class="settings-control">
                 <label class="atom-toggle-switch">
@@ -568,11 +568,11 @@
             <div class="settings-row">
               <div class="settings-info">
                 <span class="settings-name">Latar Partikel (Vapor Chamber)</span>
-                <span class="settings-detail">Simulasi jejak peluruhan partikel radioaktif di kanvas latar belakang. Matikan untuk menghemat daya.</span>
+                <span class="settings-detail">Simulasi jejak peluruhan partikel radioaktif di kanvas latar belakang. Dinonaktifkan untuk menghemat daya.</span>
               </div>
               <div class="settings-control">
                 <label class="atom-toggle-switch">
-                  <input type="checkbox" id="setting-particles-toggle" checked>
+                  <input type="checkbox" id="setting-particles-toggle">
                   <span class="atom-toggle-slider"></span>
                 </label>
               </div>
@@ -820,7 +820,7 @@
         });
       }
 
-      // 4. Atom Spin toggle
+      // 4. Atom Spin toggle (default aktif)
       const sToggle = document.getElementById('setting-spin-toggle');
       if (sToggle) {
         const savedSpin = localStorage.getItem('atom_spin') !== 'false';
@@ -834,8 +834,8 @@
       // 5. Particles toggle
       const pToggle = document.getElementById('setting-particles-toggle');
       if (pToggle) {
-        const savedP = localStorage.getItem('atom_setting_particles');
-        if (savedP !== null) pToggle.checked = savedP === 'true';
+        const savedP = localStorage.getItem('atom_setting_particles') === 'true';
+        pToggle.checked = savedP;
         pToggle.addEventListener('change', (e) => {
           localStorage.setItem('atom_setting_particles', e.target.checked);
           showToast(e.target.checked ? 'Partikel kanvas diaktifkan' : 'Partikel kanvas dimatikan', 'info');
