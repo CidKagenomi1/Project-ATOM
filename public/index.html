@@ -184,139 +184,239 @@
         <!-- Messages -->
         <div class="messages-area" id="messages-area">
 
-          <!-- Grand Header -->
+          <!-- Grand Header (Hero Welcome Screen) -->
           <div class="atom-header">
+            <div class="hero-badge">
+              <span class="hero-badge-dot"></span>
+              <span>Cortex Neural Router v4.0</span>
+            </div>
             <h1 class="atom-title">A.T.O.M.</h1>
-            <p class="atom-subtitle">Autonomous Task Orchestration Machine · v4.0 Cortex</p>
-            <div class="atom-status-row" id="status-pills">
-              <span class="status-pill offline" id="pill-local">
-                <span>●</span> Local AI
-              </span>
-              <span class="status-pill offline" id="pill-groq">
-                <span>●</span> Cloud AI
-              </span>
-              <span class="status-pill offline" id="pill-crew">
-                <span>●</span> CrewAI
-              </span>
-              <span class="status-pill offline" id="pill-gemini">
-                <span>●</span> Fallback
-              </span>
+            <p class="atom-subtitle">Autonomous Task Orchestration Machine · Neural Multi-Provider Architecture</p>
+            <div class="atom-status-bar" id="status-pills" role="region" aria-label="System Capabilities">
+              <div class="status-pill offline" id="pill-local" title="Local AI Inference via Ollama">
+                <span class="status-dot-indicator"></span>
+                <span class="status-pill-label">Local AI</span>
+                <span class="status-pill-sub">Ollama</span>
+              </div>
+              <div class="status-pill offline" id="pill-groq" title="Cloud AI Ultra-Low Latency via Groq">
+                <span class="status-dot-indicator"></span>
+                <span class="status-pill-label">Cloud AI</span>
+                <span class="status-pill-sub">Groq</span>
+              </div>
+              <div class="status-pill offline" id="pill-crew" title="Autonomous Multi-Agent Orchestration">
+                <span class="status-dot-indicator"></span>
+                <span class="status-pill-label">CrewAI</span>
+                <span class="status-pill-sub">Agents</span>
+              </div>
+              <div class="status-pill offline" id="pill-gemini" title="Multimodal Vision Fallback">
+                <span class="status-dot-indicator"></span>
+                <span class="status-pill-label">Fallback</span>
+                <span class="status-pill-sub">Gemini</span>
+              </div>
             </div>
           </div>
 
-          <!-- Empty state (shown when no messages) -->
+          <!-- Empty state / Quick Action Cards (Vercel & Linear Style) -->
           <div class="empty-chat" id="empty-chat">
-            <div class="icon">
-              <svg class="svg-logo animated-atom" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="50" cy="50" r="4" fill="currentColor" class="nucleus-glow"/>
-                <g class="orbit-group">
-                  <path class="orbit-line" d="M 50,10 A 15,40 0 1,0 50,90 A 15,40 0 1,0 50,10" fill="none" stroke="currentColor"/>
-                  <circle r="2" class="electron">
-                    <animateMotion dur="4s" repeatCount="indefinite" path="M 50,10 A 15,40 0 1,0 50,90 A 15,40 0 1,0 50,10"/>
-                  </circle>
-                </g>
-                <g class="orbit-group" transform="rotate(60 50 50)">
-                  <path class="orbit-line" d="M 50,10 A 15,40 0 1,0 50,90 A 15,40 0 1,0 50,10" fill="none" stroke="currentColor"/>
-                  <circle r="2" class="electron">
-                    <animateMotion dur="3.2s" repeatCount="indefinite" path="M 50,10 A 15,40 0 1,0 50,90 A 15,40 0 1,0 50,10"/>
-                  </circle>
-                </g>
-                <g class="orbit-group" transform="rotate(120 50 50)">
-                  <path class="orbit-line" d="M 50,10 A 15,40 0 1,0 50,90 A 15,40 0 1,0 50,10" fill="none" stroke="currentColor"/>
-                  <circle r="2" class="electron">
-                    <animateMotion dur="4.8s" repeatCount="indefinite" path="M 50,10 A 15,40 0 1,0 50,90 A 15,40 0 1,0 50,10"/>
-                  </circle>
-                </g>
-              </svg>
-            </div>
-            <p>ATOM siap. Tanyakan apa saja.</p>
-            <div class="suggestions">
-              <button class="suggestion-chip" data-suggestion="Jelaskan konsep machine learning dalam bahasa sederhana">
-                💡 Jelaskan machine learning
+            <div class="suggestions-grid" id="suggestions-grid">
+              <button type="button" class="suggestion-chip suggestion-card" data-suggestion="Jelaskan konsep machine learning dalam bahasa sederhana">
+                <div class="suggestion-card-header">
+                  <span class="suggestion-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                    </svg>
+                  </span>
+                  <span class="suggestion-tag">Fundamental AI</span>
+                  <svg class="suggestion-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </div>
+                <div class="suggestion-title">Jelaskan Machine Learning</div>
+                <div class="suggestion-desc">Konsep dasar, algoritma umum, dan analogi sederhana untuk pemula</div>
               </button>
-              <button class="suggestion-chip" data-suggestion="Bantu saya menulis kode Python untuk scraping web">
-                🐍 Python web scraping
+
+              <button type="button" class="suggestion-chip suggestion-card" data-suggestion="Bantu saya menulis kode Python untuk scraping web">
+                <div class="suggestion-card-header">
+                  <span class="suggestion-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="16 18 22 12 16 6"></polyline>
+                      <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                  </span>
+                  <span class="suggestion-tag">Coding & Scripts</span>
+                  <svg class="suggestion-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </div>
+                <div class="suggestion-title">Python Web Scraping</div>
+                <div class="suggestion-desc">Template skrip BeautifulSoup/Requests lengkap dengan penanganan error</div>
               </button>
-              <button class="suggestion-chip" data-suggestion="Buatkan saya jadwal belajar pemrograman 30 hari">
-                📅 Jadwal belajar 30 hari
+
+              <button type="button" class="suggestion-chip suggestion-card" data-suggestion="Buatkan saya jadwal belajar pemrograman 30 hari">
+                <div class="suggestion-card-header">
+                  <span class="suggestion-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="16" y1="2" x2="16" y2="6"></line>
+                      <line x1="8" y1="2" x2="8" y2="6"></line>
+                      <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                  </span>
+                  <span class="suggestion-tag">Learning Roadmap</span>
+                  <svg class="suggestion-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </div>
+                <div class="suggestion-title">Roadmap 30 Hari Belajar</div>
+                <div class="suggestion-desc">Kurikulum mingguan terstruktur dari sintaks dasar hingga proyek mini</div>
               </button>
-              <button class="suggestion-chip" data-suggestion="Apa perbedaan antara AI, ML, dan Deep Learning?">
-                🧠 AI vs ML vs Deep Learning
+
+              <button type="button" class="suggestion-chip suggestion-card" data-suggestion="Apa perbedaan antara AI, ML, dan Deep Learning?">
+                <div class="suggestion-card-header">
+                  <span class="suggestion-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                  </span>
+                  <span class="suggestion-tag">Deep Research</span>
+                  <svg class="suggestion-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </div>
+                <div class="suggestion-title">AI vs ML vs Deep Learning</div>
+                <div class="suggestion-desc">Perbandingan komprehensif arsitektur, kapabilitas, dan skenario penggunaan</div>
               </button>
             </div>
           </div>
 
         </div>
 
-        <!-- Input Area -->
+        <!-- Floating Capsule Input Area -->
         <div class="input-area">
-          <!-- Model Mode Bar: Auto | Advance -->
-          <div class="chat-model-bar" id="chat-model-bar">
-            <!-- Saklar Auto | Advance -->
-            <div class="model-mode-switch" id="model-mode-switch" role="tablist" aria-label="Mode Pemilihan Model AI">
-              <button type="button" class="mode-switch-btn active" data-mode="auto" id="mode-btn-auto" title="Mode Otomatis — Cortex Neural Router memilih model AI terbaik">
-                <span class="mode-switch-icon">🤖</span>
-                <span class="mode-switch-text">Auto</span>
-              </button>
-              <button type="button" class="mode-switch-btn" data-mode="advance" id="mode-btn-advance" title="Mode Advance — Pilih provider API & model spesifik">
-                <span class="mode-switch-icon">⚡</span>
-                <span class="mode-switch-text">Advance</span>
-              </button>
-            </div>
+          <div class="chat-input-wrapper input-row" id="input-row">
+            <!-- Attached Files Display inside the input area box -->
+            <div class="attached-files" id="attached-files"></div>
 
-            <!-- Auto Mode Info Badge -->
-            <div class="auto-mode-badge" id="auto-mode-badge" title="Cortex Router aktif otomatis">
-              <span class="auto-badge-dot">●</span>
-              <span>Cortex Router</span>
-            </div>
+            <!-- Textarea for message input -->
+            <textarea
+              class="chat-input"
+              id="chat-input"
+              placeholder="Ask A.T.O.M. anything..."
+              rows="1"
+              aria-label="Chat message input"
+            ></textarea>
 
-            <!-- Advance Mode Controls (Hidden when Auto) -->
-            <div class="advance-model-controls hidden" id="advance-model-controls">
-              <!-- Selector API / Provider -->
-              <div class="advance-select-box">
-                <span class="advance-mini-label">API</span>
-                <select class="api-provider-select" id="api-provider-select" aria-label="Pilih Provider API">
-                  <option value="groq">⚡ Groq Cloud</option>
-                  <option value="openrouter">🌐 OpenRouter</option>
-                  <option value="gemini">♊ Google Gemini</option>
-                  <option value="deepseek">🐳 DeepSeek</option>
-                  <option value="ollama">🧠 Local Ollama</option>
-                </select>
+            <!-- Bottom Action & Control Bar inside the capsule frame -->
+            <div class="input-bottom-bar">
+              <div class="input-bottom-left">
+                <!-- Attach Button -->
+                <button type="button" class="btn-attach" id="btn-attach" title="Attach file" aria-label="Attach file">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 17px; height: 17px;">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                  </svg>
+                </button>
+
+                <!-- Model Mode Bar: Auto | Advance -->
+                <div class="chat-model-bar" id="chat-model-bar">
+                  <!-- Saklar Auto | Advance -->
+                  <div class="model-mode-switch" id="model-mode-switch" role="tablist" aria-label="Mode Pemilihan Model AI">
+                    <button type="button" class="mode-switch-btn active" data-mode="auto" id="mode-btn-auto" title="Mode Otomatis — Cortex Neural Router memilih model AI terbaik">
+                      <span class="mode-switch-icon">
+                        <svg class="mode-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z"/>
+                        </svg>
+                      </span>
+                      <span class="mode-switch-text">Auto</span>
+                    </button>
+                    <button type="button" class="mode-switch-btn" data-mode="advance" id="mode-btn-advance" title="Mode Advance — Pilih provider API & model spesifik">
+                      <span class="mode-switch-icon">
+                        <svg class="mode-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <line x1="21" x2="14" y1="4" y2="4"/>
+                          <line x1="10" x2="3" y1="4" y2="4"/>
+                          <line x1="21" x2="12" y1="12" y2="12"/>
+                          <line x1="8" x2="3" y1="12" y2="12"/>
+                          <line x1="21" x2="16" y1="20" y2="20"/>
+                          <line x1="12" x2="3" y1="20" y2="20"/>
+                          <line x1="14" x2="14" y1="2" y2="6"/>
+                          <line x1="8" x2="8" y1="10" y2="14"/>
+                          <line x1="16" x2="16" y1="18" y2="22"/>
+                        </svg>
+                      </span>
+                      <span class="mode-switch-text">Advance</span>
+                    </button>
+                  </div>
+
+                  <!-- Auto Mode Info Badge -->
+                  <div class="auto-mode-badge" id="auto-mode-badge" title="Cortex Router aktif otomatis">
+                    <span class="auto-badge-dot">●</span>
+                    <svg class="auto-badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M12 2v3m0 14v3M2 12h3m14 0h3"/>
+                    </svg>
+                    <span>Cortex Router</span>
+                  </div>
+
+                  <!-- Advance Mode Controls (Hidden when Auto) -->
+                  <div class="advance-model-controls hidden" id="advance-model-controls">
+                    <!-- Selector API / Provider -->
+                    <div class="advance-select-box">
+                      <span class="advance-mini-label">
+                        <svg class="select-label-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
+                          <rect width="20" height="8" x="2" y="14" rx="2" ry="2"/>
+                          <line x1="6" x2="6.01" y1="6" y2="6"/>
+                          <line x1="6" x2="6.01" y1="18" y2="18"/>
+                        </svg>
+                        API
+                      </span>
+                      <select class="api-provider-select" id="api-provider-select" aria-label="Pilih Provider API">
+                        <option value="groq">Groq Cloud</option>
+                        <option value="openrouter">OpenRouter</option>
+                        <option value="gemini">Google Gemini</option>
+                        <option value="deepseek">DeepSeek</option>
+                        <option value="ollama">Local Ollama</option>
+                      </select>
+                      <svg class="select-chevron-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m6 9 6 6 6-6"/>
+                      </svg>
+                    </div>
+
+                    <!-- Selector Model Spesifik -->
+                    <div class="advance-select-box">
+                      <span class="advance-mini-label">
+                        <svg class="select-label-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <rect width="16" height="16" x="4" y="4" rx="2"/>
+                          <rect width="6" height="6" x="9" y="9"/>
+                          <path d="M15 2v2M9 2v2M15 20v2M9 20v2M2 15h2M2 9h2M20 15h2M20 9h2"/>
+                        </svg>
+                        Model
+                      </span>
+                      <select class="model-select" id="model-select" aria-label="Pilih Model AI">
+                        <!-- Populated dinamis via chat.js -->
+                      </select>
+                      <svg class="select-chevron-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m6 9 6 6 6-6"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <!-- Selector Model Spesifik -->
-              <div class="advance-select-box">
-                <span class="advance-mini-label">Model</span>
-                <select class="model-select" id="model-select" aria-label="Pilih Model AI">
-                  <!-- Populated dinamis via chat.js -->
-                </select>
+              <!-- Send Button -->
+              <div class="input-bottom-right">
+                <button type="button" class="btn-send" id="btn-send" title="Send message" aria-label="Send message" disabled>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; margin-left: 2px;">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
+                </button>
               </div>
-            </div>
-          </div>
-          <div class="input-row" id="input-row">
-            <div class="input-main-wrapper" style="display: flex; flex-direction: column; flex: 1; width: 100%;">
-              <!-- Attached Files Display inside the input area box -->
-              <div class="attached-files" id="attached-files"></div>
-              <textarea
-                class="chat-input"
-                id="chat-input"
-                placeholder="Ask A.T.O.M. anything..."
-                rows="1"
-                aria-label="Chat message input"
-              ></textarea>
-            </div>
-            <div class="input-actions">
-              <button class="btn-attach" id="btn-attach" title="Attach file" aria-label="Attach file">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
-                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                </svg>
-              </button>
-              <button class="btn-send" id="btn-send" title="Send message" aria-label="Send message" disabled>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 17px; height: 17px; margin-left: 2px;">
-                  <line x1="22" y1="2" x2="11" y2="13"/>
-                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                </svg>
-              </button>
             </div>
           </div>
           <!-- Hidden file input -->

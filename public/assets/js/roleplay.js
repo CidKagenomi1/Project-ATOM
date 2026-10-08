@@ -117,6 +117,23 @@ function init() {
 
   btnClearRp?.addEventListener('click', clearCurrentRpChat);
 
+  // Persona Quick Action Cards
+  document.querySelectorAll('.rp-card-trigger').forEach(card => {
+    card.addEventListener('click', () => {
+      const persona = card.dataset.persona;
+      const prompt = card.dataset.prompt;
+      if (persona) {
+        selectRolePersona(persona);
+      }
+      if (prompt && chatInputEl) {
+        chatInputEl.value = prompt;
+        autoResize(chatInputEl);
+        updateSendButton();
+        chatInputEl.focus();
+      }
+    });
+  });
+
   // Scroll to bottom
   setTimeout(() => scrollToBottom(messagesArea), 100);
 }
@@ -830,7 +847,12 @@ function clearCurrentRpChat() {
 
 function updateEmptyState() {
   if (!emptyChatDiv) return;
-  emptyChatDiv.style.display = rpChatHistory.length > 0 ? 'none' : '';
+  const hasMessages = rpChatHistory.length > 0;
+  emptyChatDiv.style.display = hasMessages ? 'none' : '';
+  const atomHeader = messagesArea ? messagesArea.querySelector('.atom-header') : document.querySelector('.atom-header');
+  if (atomHeader) {
+    atomHeader.style.display = hasMessages ? 'none' : '';
+  }
 }
 
 function updateSendButton() {

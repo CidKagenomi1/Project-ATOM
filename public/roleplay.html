@@ -170,83 +170,133 @@
         <!-- Messages Area -->
         <div class="messages-area" id="rp-messages-area">
           <div class="atom-header">
-            <div class="atom-title" style="font-size: clamp(2rem, 5vw, 2.8rem);">ROLEPLAY INCUBATOR</div>
-            <div class="atom-subtitle">Creative Simulation & Strategic Co-Thinking</div>
+            <div class="hero-badge">
+              <span class="hero-badge-dot"></span>
+              <span>Ideation & Roleplay Simulator</span>
+            </div>
+            <h1 class="atom-title" style="font-size: clamp(2.4rem, 5vw, 3.4rem);">ROLEPLAY INCUBATOR</h1>
+            <p class="atom-subtitle">Creative Simulation & Strategic Co-Thinking · Multi-Persona AI</p>
           </div>
 
-          <!-- Empty State -->
+          <!-- Empty state / Quick Action Persona Cards (Vercel & Linear Style) -->
           <div class="empty-chat" id="rp-empty-chat">
-            <div class="icon" style="color: var(--gold-primary);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width: 56px; height: 56px;">
-                <path d="M2 10s3-3 7-3 7 3 7 3-3 7-7 7-7-7-7-7z"/>
-                <circle cx="6" cy="9" r="1" fill="currentColor"/>
-                <circle cx="12" cy="9" r="1" fill="currentColor"/>
-                <path d="M7 13a3 3 0 0 0 4 0"/>
-                <path d="M15 7s2-2 5-2 5 2 5 2-2 5-5 5-5-5-5-5z"/>
-                <circle cx="18" cy="7" r="0.8" fill="currentColor"/>
-                <circle cx="22" cy="7" r="0.8" fill="currentColor"/>
-              </svg>
+            <div class="suggestions-grid" id="rp-suggestions-grid">
+              <button type="button" class="suggestion-chip suggestion-card rp-card-trigger" data-persona="co_founder" data-prompt="Saya punya visi produk baru, bantu saya validasi keunikan pasarnya dan susun USP-nya">
+                <div class="suggestion-card-header">
+                  <span class="suggestion-icon">🚀</span>
+                  <span class="suggestion-tag">Co-Founder Mode</span>
+                  <svg class="suggestion-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </div>
+                <div class="suggestion-title">Chief Innovation Officer</div>
+                <div class="suggestion-desc">Mitra visioner untuk memvalidasi ide gila, keunikan pasar, dan roadmap produk</div>
+              </button>
+
+              <button type="button" class="suggestion-chip suggestion-card rp-card-trigger" data-persona="operations_director" data-prompt="Bagaimana alur kerja eksekusi (SOP), mitigasi risiko, dan timeline sprint proyek ini?">
+                <div class="suggestion-card-header">
+                  <span class="suggestion-icon">💼</span>
+                  <span class="suggestion-tag">Operations Mode</span>
+                  <svg class="suggestion-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </div>
+                <div class="suggestion-title">Executive Operations</div>
+                <div class="suggestion-desc">Pecah visi abstrak menjadi alur SOP nyata, tata kelola tim, dan efisiensi eksekusi</div>
+              </button>
+
+              <button type="button" class="suggestion-chip suggestion-card rp-card-trigger" data-persona="shark_investor" data-prompt="Tolong uji kelayakan bisnis dari ide ini dan cari lubang/kelemahannya secara kritis">
+                <div class="suggestion-card-header">
+                  <span class="suggestion-icon">💰</span>
+                  <span class="suggestion-tag">Investor Shark</span>
+                  <svg class="suggestion-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </div>
+                <div class="suggestion-title">Shark Angel Investor</div>
+                <div class="suggestion-desc">Kritik tajam model bisnis, evaluasi parit pertahanan (moat), dan unit economics</div>
+              </button>
+
+              <button type="button" class="suggestion-chip suggestion-card rp-card-trigger" data-persona="tech_architect" data-prompt="Buatkan blueprint arsitektur sistem IT dan rekomendasi stack untuk solusi ini">
+                <div class="suggestion-card-header">
+                  <span class="suggestion-icon">⚙️</span>
+                  <span class="suggestion-tag">Tech Lead</span>
+                  <svg class="suggestion-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </div>
+                <div class="suggestion-title">Chief Tech Architect</div>
+                <div class="suggestion-desc">Rancang blueprint IT skala tinggi, arsitektur microservices, dan kehandalan database</div>
+              </button>
             </div>
-            <p id="rp-empty-text">Pilih salah satu Roleplay Model di bawah untuk mulai berdiskusi dan merancang ide besar Anda.</p>
           </div>
         </div>
 
-        <!-- Input Area with Dual Selectors Row (RP Role & AI Model) -->
+        <!-- Floating Capsule Input Area -->
         <div class="input-area">
-          <div class="rp-selectors-row">
-            <!-- Selector 1: Roleplay Persona Dropdown -->
-            <div class="rp-select-wrapper" id="rp-select-wrapper">
-              <label class="selector-mini-label">ROLEPLAY:</label>
-              <select class="rp-role-select" id="rp-role-select" aria-label="Pilih Roleplay Model">
-                <option value="auto">✨ Auto Role (Cari Topik & Arah Ide)</option>
-                <option value="co_founder" selected>🚀 Chief Innovation Officer (Co-Founder)</option>
-                <option value="operations_director">💼 Executive Operations (SOP & Eksekusi)</option>
-                <option value="shark_investor">💰 Shark Angel Investor (Uji Bisnis)</option>
-                <option value="tech_architect">⚙️ Chief Tech Architect (Blueprint IT)</option>
-                <option value="creative_director">🎨 Avant-Garde Creative (Branding/UX)</option>
-              </select>
-            </div>
+          <div class="chat-input-wrapper input-row" id="input-row">
+            <!-- Attached Files Preview inside capsule -->
+            <div class="attached-files" id="attached-files"></div>
 
-            <!-- Selector 2: AI Model Dropdown -->
-            <div class="model-select-wrapper">
-              <label class="selector-mini-label">MODEL AI:</label>
-              <select class="model-select" id="model-select" aria-label="Pilih Model AI">
-                <option value="auto">🤖 Auto (Cortex Route)</option>
-                <option value="groq">⚡ Groq (Llama 3.3 70B)</option>
-                <option value="ollama">🧠 Ollama (DeepSeek V4 Cloud)</option>
-                <option value="deepseek">🐳 DeepSeek (V3)</option>
-                <option value="gemini">♊ Gemini (Flash 2.5)</option>
-              </select>
-            </div>
-          </div>
+            <!-- Textarea for message input -->
+            <textarea
+              class="chat-input"
+              id="rp-chat-input"
+              placeholder="Bagikan ide, visi produk, atau pertanyaan strategis Anda..."
+              rows="1"
+              aria-label="RP message input"
+            ></textarea>
 
-          <!-- Input Row -->
-          <div class="input-row" id="input-row">
-            <div class="input-main-wrapper" style="display: flex; flex-direction: column; flex: 1; width: 100%;">
-              <div class="attached-files" id="attached-files"></div>
-              <textarea
-                class="chat-input"
-                id="rp-chat-input"
-                placeholder="Bagikan ide, visi produk, atau pertanyaan strategis Anda..."
-                rows="1"
-                aria-label="RP message input"
-              ></textarea>
-            </div>
-            <div class="input-actions">
-              <button class="btn-attach" id="btn-attach" title="Attach file" aria-label="Attach file">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
-                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                </svg>
-              </button>
-              <button class="btn-send" id="btn-send" title="Send message" aria-label="Send message" disabled>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 17px; height: 17px; margin-left: 2px;">
+            <!-- Bottom Action & Control Bar inside the capsule frame -->
+            <div class="input-bottom-bar">
+              <div class="input-bottom-left">
+                <!-- Attach Button -->
+                <button type="button" class="btn-attach" id="btn-attach" title="Lampirkan File / Dokumen" aria-label="Attach file">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 17px; height: 17px;">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                  </svg>
+                </button>
+
+                <!-- RP Role Selector Pill -->
+                <div class="advance-select-box" id="rp-select-wrapper">
+                  <span class="advance-mini-label">ROLE:</span>
+                  <select class="api-provider-select rp-role-select" id="rp-role-select" aria-label="Pilih Roleplay Model">
+                    <option value="auto">✨ Auto Discovery</option>
+                    <option value="co_founder" selected>🚀 CIO / Co-Founder</option>
+                    <option value="operations_director">💼 Operations Lead</option>
+                    <option value="shark_investor">💰 Shark Investor</option>
+                    <option value="tech_architect">⚙️ Tech Architect</option>
+                    <option value="creative_director">🎨 Creative Director</option>
+                  </select>
+                </div>
+
+                <!-- Model Selector Pill -->
+                <div class="advance-select-box" id="model-select-wrapper">
+                  <span class="advance-mini-label">AI:</span>
+                  <select class="api-model-select model-select" id="model-select" aria-label="Pilih Model AI">
+                    <option value="auto">🤖 Auto Route</option>
+                    <option value="groq">⚡ Groq (Llama 70B)</option>
+                    <option value="ollama">🧠 Ollama (DeepSeek V4)</option>
+                    <option value="deepseek">🐳 DeepSeek (V3)</option>
+                    <option value="gemini">♊ Gemini (Flash 2.5)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Send Button -->
+              <button class="btn-send" id="btn-send" type="button" title="Kirim Pesan (Enter)" aria-label="Send message" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 17px; height: 17px;">
                   <line x1="22" y1="2" x2="11" y2="13"/>
                   <polygon points="22 2 15 22 11 13 2 9 22 2"/>
                 </svg>
               </button>
             </div>
           </div>
-          <input type="file" id="file-upload" accept=".txt,.md,.py,.json,.csv,.html,.css,.js" multiple>
+          <input type="file" id="file-upload" accept=".txt,.md,.py,.json,.csv,.html,.css,.js,image/*" multiple>
         </div>
 
       </div><!-- /chat-layout -->

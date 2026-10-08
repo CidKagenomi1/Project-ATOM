@@ -135,16 +135,20 @@
 
         <!-- Header -->
         <div style="margin-bottom:var(--space-6);">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
             <div>
-              <h1 style="font-size:1.75rem;font-weight:800;letter-spacing:0.05em;display:flex;align-items:center;gap:10px;">
-                <span>📊</span> MODEL USAGE & TELEMETRY
+              <div class="hero-badge" style="margin-bottom:8px;">
+                <span class="hero-badge-dot"></span>
+                <span>System Analytics & Audit</span>
+              </div>
+              <h1 style="font-family:var(--font-sans);font-size:clamp(1.8rem, 3.5vw, 2.4rem);font-weight:800;letter-spacing:-0.04em;color:var(--text-primary);margin:0;line-height:1.15;">
+                Model Usage & Telemetry
               </h1>
-              <p style="color:var(--text-muted);font-size:0.8rem;letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;">
-                MONITORING KONSUMSI TOKEN, PANGSA API MODEL & LATENSI INFERENSI
+              <p style="font-family:var(--font-sans);color:var(--text-secondary);font-size:0.86rem;letter-spacing:-0.01em;margin-top:6px;">
+                Monitoring konsumsi token, efisiensi throughput API, dan latensi inferensi neural router
               </p>
             </div>
-            <div id="telem-badge-count" style="font-size:0.75rem;color:var(--gold-light);background:rgba(235,179,56,0.1);border:1px solid rgba(235,179,56,0.25);padding:4px 12px;border-radius:14px;font-family:var(--font-mono);">
+            <div id="telem-badge-count" style="font-size:0.72rem;color:var(--text-secondary);background:var(--bg-elevated);border:1px solid var(--border-color);padding:6px 14px;border-radius:var(--radius-full);font-family:var(--font-mono);box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);">
               Memuat data...
             </div>
           </div>

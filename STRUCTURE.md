@@ -14,6 +14,7 @@ PROJECT ATOM/
 ├── vercel.json             # Konfigurasi deployment serverless Vercel
 ├── requirements.txt        # Daftar dependency Python
 ├── README.md               # Dokumentasi umum proyek
+├── DESIGN.md               # Standar Design System & panduan estetika UI resmi
 │
 ├── api/                    # Backend API (Vercel Serverless Functions)
 │   ├── chat.py             # Handler API untuk chat & vision fallback

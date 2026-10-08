@@ -591,6 +591,10 @@ function updateEmptyState() {
   if (!emptyChatDiv || !messagesArea) return;
   const hasMessages = chatHistory.length > 0;
   emptyChatDiv.style.display = hasMessages ? 'none' : '';
+  const atomHeader = document.querySelector('.atom-header');
+  if (atomHeader) {
+    atomHeader.style.display = hasMessages ? 'none' : '';
+  }
 }
 
 function updateSendButton() {
