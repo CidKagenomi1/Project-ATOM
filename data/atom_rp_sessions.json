@@ -1,5 +1,13 @@
 {
-  "type": "roleplay",
-  "sessions": [],
-  "active_id": null
+  "sessions": [
+    {
+      "id": "rp_1791506980965",
+      "title": "[✨] Sesi Baru",
+      "updatedAt": 1791506980966,
+      "personaId": "auto",
+      "messages": []
+    }
+  ],
+  "active_id": "rp_1791506980965",
+  "type": "roleplay"
 }

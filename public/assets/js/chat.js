@@ -35,8 +35,12 @@ function init() {
     createNewSession();
   });
 
-  // Scroll to bottom on load
-  setTimeout(() => scrollToBottom(messagesArea), 100);
+  // Scroll to bottom on load only if messages exist, otherwise keep view at top
+  if (chatHistory && chatHistory.length > 0) {
+    setTimeout(() => scrollToBottom(messagesArea), 100);
+  } else if (messagesArea) {
+    messagesArea.scrollTop = 0;
+  }
 }
 
 // ─── Input Handlers ───────────────────────────────────────
@@ -894,7 +898,11 @@ function renderCurrentSessionMessages() {
   }
 
   renderAttachedFiles();
-  setTimeout(() => scrollToBottom(messagesArea), 50);
+  if (chatHistory && chatHistory.length > 0) {
+    setTimeout(() => scrollToBottom(messagesArea), 50);
+  } else if (messagesArea) {
+    messagesArea.scrollTop = 0;
+  }
 }
 
 function renderSessionsSidebar() {
