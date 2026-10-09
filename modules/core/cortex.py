@@ -7,7 +7,6 @@ Primary: Ollama (Llama 3.2 Local) | Backup: Groq Cloud | Fallback: Gemini
 import os
 import time
 import json
-import pandas as pd
 from datetime import datetime
 # pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
