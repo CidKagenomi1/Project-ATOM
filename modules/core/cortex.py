@@ -7,6 +7,7 @@ Primary: Ollama (Llama 3.2 Local) | Backup: Groq Cloud | Fallback: Gemini
 import os
 import time
 import json
+import csv
 from datetime import datetime
 # pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
@@ -130,8 +131,9 @@ class Sentinel:
         if not os.path.exists(self.log_file):
             try:
                 os.makedirs(os.path.dirname(self.log_file), exist_ok=True)
-                df = pd.DataFrame(columns=["timestamp", "user_input", "model_used", "response_time", "status"])
-                df.to_csv(self.log_file, index=False, encoding='utf-8')
+                with open(self.log_file, mode='w', newline='', encoding='utf-8') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["timestamp", "user_input", "model_used", "response_time", "status"])
             except Exception as e:
                 print(f"[WARN] Sentinel: Could not create local CSV file (expected on read-only hosts like Vercel): {e}")
 
@@ -139,14 +141,15 @@ class Sentinel:
     def log(self, user_input, model_used, start_time, status="SUCCESS"):
         duration = round(time.time() - start_time, 2)
         try:
-            new_data = pd.DataFrame([{
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "user_input": user_input[:50] + "...",
-                "model_used": model_used,
-                "response_time": duration,
-                "status": status
-            }])
-            new_data.to_csv(self.log_file, mode='a', header=False, index=False, encoding='utf-8')
+            with open(self.log_file, mode='a', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow([
+                    datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    user_input[:50] + "...",
+                    model_used,
+                    duration,
+                    status
+                ])
         except Exception as e:
             print(f"[LOG ERROR] {e}")
         return duration
