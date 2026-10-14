@@ -444,7 +444,10 @@ async def list_bubbles():
             cursor = db["bubbles"].find().sort("created_at", -1)
             bubbles_list = []
             for b in cursor:
+                doc_id = str(b.get("_id"))
                 b.pop("_id", None)
+                if "id" not in b or b["id"] is None:
+                    b["id"] = doc_id
                 bubbles_list.append(b)
             return bubbles_list
         except Exception as e:
@@ -461,7 +464,7 @@ async def create_bubble(request: BubbleCreate):
     if MONGODB_CONNECTED:
         try:
             max_bubble = db["bubbles"].find_one(sort=[("id", -1)])
-            new_id = (max_bubble["id"] + 1) if max_bubble else 1
+            new_id = (max_bubble["id"] + 1) if (max_bubble and isinstance(max_bubble.get("id"), int)) else 1
             bubble = {
                 "id": new_id,
                 "text": request.text,
@@ -471,6 +474,14 @@ async def create_bubble(request: BubbleCreate):
             }
             db["bubbles"].insert_one(bubble)
             bubble.pop("_id", None)
+            try:
+                data = load_bubbles()
+                data["bubbles"] = [b for b in data.get("bubbles", []) if str(b.get("id")) != str(new_id)]
+                data["bubbles"].insert(0, dict(bubble))
+                data["last_id"] = max(data.get("last_id", 0), new_id)
+                save_bubbles(data)
+            except Exception:
+                pass
             return bubble
         except Exception as e:
             print(f"[DB ERROR] create_bubble failed: {e}. Using local.")
@@ -491,33 +502,42 @@ async def create_bubble(request: BubbleCreate):
     return bubble
 
 @app.delete("/api/bubbles/{id}")
-async def delete_existing_bubble(id: int):
+async def delete_existing_bubble(id: str):
+    parsed_id = int(id) if str(id).isdigit() else id
     if MONGODB_CONNECTED:
         try:
-            res = db["bubbles"].delete_one({"id": id})
-            if res.deleted_count > 0:
-                return {"status": "success"}
-            raise HTTPException(status_code=404, detail="Bubble not found")
-        except HTTPException:
-            raise
+            from bson import ObjectId
+            query_conds = [{"id": parsed_id}, {"id": str(id)}]
+            if ObjectId.is_valid(id):
+                query_conds.append({"_id": ObjectId(id)})
+            res = db["bubbles"].delete_one({"$or": query_conds})
+            try:
+                data = load_bubbles()
+                data["bubbles"] = [b for b in data.get("bubbles", []) if str(b.get("id")) != str(id)]
+                save_bubbles(data)
+            except Exception:
+                pass
+            return {"status": "success", "deleted": res.deleted_count}
         except Exception as e:
             print(f"[DB ERROR] delete_bubble failed: {e}. Using local.")
             
     # Local fallback
     data = load_bubbles()
-    original_len = len(data["bubbles"])
-    data["bubbles"] = [b for b in data["bubbles"] if b["id"] != id]
-    if len(data["bubbles"]) < original_len:
-        save_bubbles(data)
-        return {"status": "success"}
-    raise HTTPException(status_code=404, detail="Bubble not found")
+    data["bubbles"] = [b for b in data.get("bubbles", []) if str(b.get("id")) != str(id)]
+    save_bubbles(data)
+    return {"status": "success"}
 
 @app.post("/api/bubbles/{id}/expand")
-async def expand_bubble(id: int):
+async def expand_bubble(id: str):
+    parsed_id = int(id) if str(id).isdigit() else id
     bubble = None
     if MONGODB_CONNECTED:
         try:
-            bubble = db["bubbles"].find_one({"id": id})
+            from bson import ObjectId
+            query_conds = [{"id": parsed_id}, {"id": str(id)}]
+            if ObjectId.is_valid(id):
+                query_conds.append({"_id": ObjectId(id)})
+            bubble = db["bubbles"].find_one({"$or": query_conds})
             if bubble:
                 bubble.pop("_id", None)
         except Exception as e:
@@ -526,8 +546,8 @@ async def expand_bubble(id: int):
     if not bubble:
         # Local fallback search
         data = load_bubbles()
-        for b in data["bubbles"]:
-            if b["id"] == id:
+        for b in data.get("bubbles", []):
+            if str(b.get("id")) == str(id):
                 bubble = b
                 break
                 
@@ -696,52 +716,161 @@ class MarkedNews(BaseModel):
     title: str
     content: str
     source: str
+    url: Optional[str] = None
+    image_url: Optional[str] = None
+    author: Optional[str] = None
+    published_at: Optional[str] = None
+
+class UnmarkRequest(BaseModel):
+    id: str
+
+class SummarizeNewsRequest(BaseModel):
+    title: str
+    content: str
+    source: Optional[str] = "News Source"
 
 @app.get("/api/bulletin/fetch")
-async def fetch_bulletin():
+async def fetch_bulletin(category: Optional[str] = "technology", q: Optional[str] = None, scope: Optional[str] = "international"):
     import requests
     news_api_key = os.environ.get("NEWS_API_KEY", "")
+    is_national = (scope or "").lower() in ["national", "nasional", "id", "indonesia"]
     
     # If no key is set, we return mock data for testing UI
     if not news_api_key:
+        if is_national:
+            return {
+                "status": "success",
+                "scope": "national",
+                "articles": [
+                    {
+                        "id": "mock-nat-1",
+                        "title": "Inovasi Ekosistem Kecerdasan Buatan Nasional di Sektor Industri 2026",
+                        "description": "Kementerian dan universitas terkemuka di Indonesia memamerkan terobosan AI lokal untuk manufaktur dan logistik maritim.",
+                        "content": "Indonesia resmi meluncurkan inisiatif percepatan kecerdasan buatan nasional dengan konsorsium riset teknologi terpadu. Model neural buatan anak bangsa diarahkan untuk otomatisasi rantai pasok dan pemantauan maritim terdistribusi.",
+                        "source": "Antara News / ATOM",
+                        "url": "#",
+                        "image_url": "",
+                        "author": "Biro Nasional",
+                        "published_at": "2026-10-14T08:00:00Z",
+                        "scope": "national"
+                    },
+                    {
+                        "id": "mock-nat-2",
+                        "title": "Pusat Riset Komputasi Kuantum & Keamanan Siber Resmi Dibuka di Jakarta",
+                        "description": "Lembaga riset nasional membangun laboratorium enkripsi pos-kuantum guna memproteksi infrastruktur data kritis.",
+                        "content": "Laboratorium keamanan siber pos-kuantum perdana di Indonesia mulai beroperasi hari ini. Lembaga ini difokuskan pada mitigasi risiko serangan komputasi kuantum serta penguatan kedaulatan data nasional.",
+                        "source": "Tempo Tekno",
+                        "url": "#",
+                        "image_url": "",
+                        "author": "Desk Sains Nasional",
+                        "published_at": "2026-10-14T07:30:00Z",
+                        "scope": "national"
+                    }
+                ]
+            }
         return {
             "status": "success",
+            "scope": "international",
             "articles": [
                 {
                     "id": "mock-1",
-                    "title": "SYSTEM ALERT: GNews API Key Missing",
-                    "content": "Please add NEWS_API_KEY to your .env file to fetch real news data. For now, you are seeing this mock transmission.",
-                    "source": "ATOM System Core"
-                },
-                {
-                    "id": "mock-2",
-                    "title": "Quantum Computing Breakthrough",
-                    "content": "Scientists have achieved a new level of quantum coherence at room temperature, paving the way for advanced neural network simulations.",
-                    "source": "Science Journal"
+                    "title": "Quantum Computing Breakthrough in Neural Network Simulation",
+                    "description": "Scientists achieve room temperature quantum coherence.",
+                    "content": "Scientists have achieved a new level of quantum coherence at room temperature, paving the way for advanced neural network simulations and instant model inference.",
+                    "source": "Science Journal",
+                    "url": "#",
+                    "image_url": "",
+                    "author": "Science Desk",
+                    "published_at": "2026-10-14T07:30:00Z",
+                    "scope": "international"
                 }
             ]
         }
     
-    url = f"https://gnews.io/api/v4/top-headlines?category=technology&lang=en&apikey={news_api_key}"
+    headers = {"User-Agent": "ATOM-System/1.0"}
     try:
-        response = requests.get(url, timeout=10)
+        if is_national:
+            # 1. National (Indonesian) Feed
+            if q and q.strip():
+                safe_q = requests.utils.quote(q.strip())
+                newsapi_url = f"https://newsapi.org/v2/everything?q={safe_q}&language=id&sortBy=publishedAt&apiKey={news_api_key}"
+            else:
+                id_cat_queries = {
+                    "technology": "teknologi OR AI OR gadget OR startup OR 'rekayasa perangkat lunak'",
+                    "artificial intelligence": "kecerdasan buatan OR AI OR 'machine learning' OR robotik",
+                    "science": "sains OR penelitian OR riset OR astronomi OR iklim",
+                    "cybersecurity": "keamanan siber OR hacker OR ransomware OR 'kebocoran data' OR peretasan",
+                    "business": "bisnis OR ekonomi OR saham OR investasi OR keuangan OR perbankan",
+                    "general": "indonesia OR nasional OR pemilu OR ikn OR jakarta"
+                }
+                cat_key = (category or "technology").lower()
+                cat_query = id_cat_queries.get(cat_key, "teknologi OR sains OR bisnis OR nasional")
+                safe_cat_q = requests.utils.quote(cat_query)
+                newsapi_url = f"https://newsapi.org/v2/everything?q={safe_cat_q}&language=id&sortBy=publishedAt&apiKey={news_api_key}"
+        else:
+            # 2. International (Global) Feed
+            if q and q.strip():
+                safe_q = requests.utils.quote(q.strip())
+                newsapi_url = f"https://newsapi.org/v2/everything?q={safe_q}&sortBy=publishedAt&language=en&apiKey={news_api_key}"
+            else:
+                cat = (category or "technology").lower()
+                if cat in ["technology", "science", "business", "general", "health"]:
+                    newsapi_url = f"https://newsapi.org/v2/top-headlines?category={cat}&language=en&apiKey={news_api_key}"
+                elif cat in ["artificial intelligence", "ai"]:
+                    newsapi_url = f"https://newsapi.org/v2/everything?q=artificial%20intelligence%20OR%20AI&sortBy=publishedAt&language=en&apiKey={news_api_key}"
+                elif cat in ["cybersecurity", "cyber"]:
+                    newsapi_url = f"https://newsapi.org/v2/everything?q=cybersecurity%20OR%20%22data%20breach%22%20OR%20ransomware&sortBy=publishedAt&language=en&apiKey={news_api_key}"
+                else:
+                    newsapi_url = f"https://newsapi.org/v2/top-headlines?category=technology&language=en&apiKey={news_api_key}"
+            
+        response = requests.get(newsapi_url, headers=headers, timeout=10)
+        
+        # 2. Fallback to GNews if NewsAPI fails
+        if response.status_code != 200:
+            lang_param = "lang=id&country=id&" if is_national else "lang=en&"
+            query_param = f"&q={requests.utils.quote(q.strip())}" if (q and q.strip()) else ""
+            cat_param = f"category={category}&" if (category and not q) else ""
+            gnews_url = f"https://gnews.io/api/v4/top-headlines?{cat_param}{lang_param}{query_param}&apikey={news_api_key}"
+            response = requests.get(gnews_url, timeout=10)
+
         if response.status_code == 200:
             data = response.json()
             articles = []
             for art in data.get("articles", []):
+                desc = art.get("description", "") or ""
+                body = art.get("content", "") or ""
                 articles.append({
-                    "id": art.get("url"),
-                    "title": art.get("title"),
-                    "content": (art.get("description", "") or "") + " " + (art.get("content", "") or ""),
-                    "source": art.get("source", {}).get("name", "Unknown")
+                    "id": art.get("url") or art.get("title", "unknown-id"),
+                    "title": art.get("title", "Untitled Transmission"),
+                    "description": desc,
+                    "content": (desc + "\n\n" + body).strip() or desc or "Konten artikel lengkap dapat dibaca langsung pada tautan sumber asli.",
+                    "source": art.get("source", {}).get("name", "Unknown Source"),
+                    "url": art.get("url", "#"),
+                    "image_url": art.get("urlToImage") or art.get("image", ""),
+                    "author": art.get("author", "Editorial Desk"),
+                    "published_at": art.get("publishedAt", ""),
+                    "scope": "national" if is_national else "international"
                 })
-            return {"status": "success", "articles": articles}
+            return {"status": "success", "scope": "national" if is_national else "international", "articles": articles}
         else:
             return {"status": "error", "message": f"API Error: {response.text}"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 MARKED_NEWS_FILE = "data/atom_bulletin_marked.json"
+
+@app.get("/api/bulletin/marked")
+async def get_marked_bulletin():
+    if MONGODB_CONNECTED:
+        try:
+            items = list(db["marked_news"].find({}, {"_id": 0}))
+            return {"status": "success", "articles": items}
+        except Exception as e:
+            print(f"[DB ERROR] get_marked_bulletin failed: {e}")
+    data = safe_load_json(MARKED_NEWS_FILE, {"marked_news": []})
+    if not isinstance(data, dict):
+        data = {"marked_news": []}
+    return {"status": "success", "articles": data.get("marked_news", [])}
 
 @app.post("/api/bulletin/mark")
 async def mark_bulletin(news: MarkedNews):
@@ -773,6 +902,51 @@ async def mark_bulletin(news: MarkedNews):
         safe_save_json(MARKED_NEWS_FILE, data)
     
     return {"status": "success"}
+
+@app.post("/api/bulletin/unmark")
+async def unmark_bulletin(req: UnmarkRequest):
+    if MONGODB_CONNECTED:
+        try:
+            db["marked_news"].delete_one({"id": req.id})
+        except Exception as e:
+            print(f"[DB ERROR] unmark_bulletin failed: {e}")
+            
+    data = safe_load_json(MARKED_NEWS_FILE, {"marked_news": []})
+    if isinstance(data, dict) and "marked_news" in data:
+        data["marked_news"] = [item for item in data["marked_news"] if item.get("id") != req.id]
+        safe_save_json(MARKED_NEWS_FILE, data)
+    return {"status": "success"}
+
+@app.post("/api/bulletin/summarize")
+async def summarize_news_endpoint(req: SummarizeNewsRequest):
+    try:
+        from api.notes_ai import get_llm
+    except ImportError:
+        from notes_ai import get_llm
+    
+    prompt = f"""Sebagai asisten cerdas A.T.O.M., berikan ringkasan eksekutif yang bernas, informatif, dan mudah dipahami dari berita berikut:
+
+Judul: {req.title}
+Sumber: {req.source}
+Konten: {req.content}
+
+Instruksi format jawaban:
+- **Inti Berita**: 1-2 kalimat ringkas penjelasan utama berita.
+- **Poin Penting & Insight**: 3 poin bullet dampak atau informasi kunci.
+- Gunakan bahasa Indonesia yang ramah, santai, dan jelas."""
+    try:
+        llm = get_llm(temperature=0.3)
+        if llm:
+            res = llm.invoke(prompt)
+            return {"status": "success", "summary": res.content}
+    except Exception as e:
+        print(f"[WARN] summarize_news LLM error: {e}")
+    
+    # Heuristic fallback if LLM offline
+    return {
+        "status": "success",
+        "summary": f"**Inti Berita:** {req.title}\n\n**Poin Penting:**\n- Informasi diterbitkan oleh {req.source}.\n- {req.content[:240]}..."
+    }
 
 
 # --- Chat & Roleplay Sessions Storage ---

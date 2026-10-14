@@ -4,12 +4,10 @@
  */
 
 // ─── Sidebar Toggle (Desktop & Mobile) ────────────────────
-const sidebar = document.getElementById('app-sidebar');
-const overlay = document.getElementById('sidebar-overlay');
-const menuBtn = document.getElementById('mobile-menu-btn');
-const appMain = document.querySelector('.app-main');
-
 function toggleSidebar() {
+  const sidebar = document.getElementById('app-sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const appMain = document.querySelector('.app-main');
   const isMobile = window.innerWidth <= 768;
   if (isMobile) {
     sidebar?.classList.toggle('open');
@@ -30,22 +28,15 @@ function toggleSidebar() {
 }
 
 function closeSidebar() {
+  const sidebar = document.getElementById('app-sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
   sidebar?.classList.remove('open');
   overlay?.classList.remove('visible');
   document.body.style.overflow = '';
 }
 
-menuBtn?.addEventListener('click', toggleSidebar);
-overlay?.addEventListener('click', closeSidebar);
-
-// Close on nav link click (mobile only)
-document.querySelectorAll('.sidebar-nav a').forEach(link => {
-  link.addEventListener('click', () => {
-    if (window.innerWidth <= 768) {
-      closeSidebar();
-    }
-  });
-});
+window.toggleSidebar = toggleSidebar;
+window.closeSidebar = closeSidebar;
 
 // Auto-close sidebar on any session selection or mobile action
 document.addEventListener('click', (e) => {
@@ -56,8 +47,26 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Restore sidebar state on load & inject close button
-document.addEventListener('DOMContentLoaded', () => {
+// Restore sidebar state & inject/bind close button
+function initSidebarSystem() {
+  const sidebar = document.getElementById('app-sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const menuBtn = document.getElementById('mobile-menu-btn');
+  const appMain = document.querySelector('.app-main');
+
+  menuBtn?.removeEventListener('click', toggleSidebar);
+  menuBtn?.addEventListener('click', toggleSidebar);
+
+  overlay?.removeEventListener('click', closeSidebar);
+  overlay?.addEventListener('click', closeSidebar);
+
+  // Close on nav link click (mobile only)
+  document.querySelectorAll('.sidebar-nav a').forEach(link => {
+    link.onclick = () => {
+      if (window.innerWidth <= 768) closeSidebar();
+    };
+  });
+
   // Restore sidebar state
   if (window.innerWidth > 768) {
     const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
@@ -67,35 +76,45 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Inject close/collapse button in sidebar header (desktop & mobile)
+  // Inject or bind close/collapse button in sidebar header (desktop & mobile)
   const sidebarHeader = document.querySelector('.sidebar-header');
-  if (sidebarHeader && !sidebarHeader.querySelector('.sidebar-close-btn')) {
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'sidebar-close-btn';
-    closeBtn.innerHTML = `
-      <span class="desktop-icon">◀</span>
-      <span class="mobile-icon">✕</span>
-    `;
-    closeBtn.title = 'Tutup / Ciutkan Sidebar';
-    closeBtn.type = 'button';
-    closeBtn.setAttribute('aria-label', 'Tutup Sidebar');
-    closeBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
+  if (sidebarHeader) {
+    let closeBtn = sidebarHeader.querySelector('.sidebar-close-btn') || document.getElementById('sidebar-close-btn');
+    if (!closeBtn) {
+      closeBtn = document.createElement('button');
+      closeBtn.className = 'sidebar-close-btn';
+      closeBtn.id = 'sidebar-close-btn';
+      closeBtn.innerHTML = `
+        <span class="desktop-icon">◀</span>
+        <span class="mobile-icon">✕</span>
+      `;
+      closeBtn.title = 'Tutup / Ciutkan Sidebar';
+      closeBtn.type = 'button';
+      closeBtn.setAttribute('aria-label', 'Tutup Sidebar');
+      sidebarHeader.appendChild(closeBtn);
+    }
+    closeBtn.onclick = (e) => {
+      if (e) e.stopPropagation();
       if (window.innerWidth <= 768) {
         closeSidebar();
       } else {
         toggleSidebar();
       }
-    });
-    sidebarHeader.appendChild(closeBtn);
+    };
   }
+}
+
+// Run immediately AND when DOM is ready
+initSidebarSystem();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initSidebarSystem);
+}
 
   // Initialize Vapor Chamber particle system only if explicitly enabled
   const isParticlesEnabled = localStorage.getItem('atom_setting_particles') === 'true';
   if (isParticlesEnabled && document.getElementById('vapor-canvas') && window.VaporChamber) {
     window.vaporChamberInstance = new window.VaporChamber('vapor-canvas');
   }
-});
 
 // ─── Flashlight Cursor Glow ──────────────────────────────
 const cursorGlow = document.createElement('div');

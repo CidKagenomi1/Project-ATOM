@@ -41,6 +41,16 @@ function init() {
   } else if (messagesArea) {
     messagesArea.scrollTop = 0;
   }
+
+  // Check if user redirected from Topics with an article discussion prompt
+  const pendingPrompt = localStorage.getItem('atom_pending_chat_prompt');
+  if (pendingPrompt && chatInputEl) {
+    chatInputEl.value = pendingPrompt;
+    localStorage.removeItem('atom_pending_chat_prompt');
+    autoResize(chatInputEl);
+    updateSendButton();
+    chatInputEl.focus();
+  }
 }
 
 // ─── Input Handlers ───────────────────────────────────────

@@ -20,5 +20,5 @@ if __name__ == "__main__":
     print(f"Starting dev server on port {port}...")
     print(f"[*] ATOM Local Dev Server ready at http://localhost:{port}")
     host = os.getenv("HOST", "0.0.0.0")
-    uvicorn.run(app, host=host, port=port)
+    uvicorn.run("dev_server:app", host=host, port=port, reload=True)
 

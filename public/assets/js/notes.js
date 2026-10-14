@@ -138,39 +138,93 @@ async function getAllTags() {
   }
 }
 
-// ─── Bubble API Handlers ───────────────────────────────────
-async function loadBubbles() {
+// ─── Bubble API Handlers with Resilient Local Fallback ─────
+const LOCAL_BUBBLES_KEY = 'atom_local_bubbles';
+
+function getLocalBubbles() {
   try {
-    const resp = await fetch('/api/bubbles');
-    if (!resp.ok) return [];
-    return await resp.json();
-  } catch (err) {
-    console.error('[LOAD BUBBLES ERROR]', err);
+    const raw = localStorage.getItem(LOCAL_BUBBLES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
     return [];
   }
 }
 
-async function addBubble(text) {
-  const resp = await fetch('/api/bubbles', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text })
-  });
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err.detail || `HTTP ${resp.status}`);
+function saveLocalBubbles(list) {
+  try {
+    localStorage.setItem(LOCAL_BUBBLES_KEY, JSON.stringify(list));
+  } catch (e) {
+    console.warn('LocalStorage save error:', e);
   }
-  return resp.json();
+}
+
+async function loadBubbles() {
+  try {
+    const resp = await fetch('/api/bubbles');
+    if (resp.ok) {
+      const data = await resp.json();
+      if (Array.isArray(data)) {
+        saveLocalBubbles(data);
+        return data;
+      }
+    }
+  } catch (err) {
+    console.warn('[LOAD BUBBLES] API unreachable, using local storage cache:', err);
+  }
+  return getLocalBubbles();
+}
+
+async function addBubble(text) {
+  const randomColors = ['#9333EA', '#3B82F6', '#14B8A6', '#F59E0B', '#F43F5E', '#10B981'];
+  const newBubble = {
+    id: Date.now(),
+    text: text,
+    color: randomColors[Math.floor(Math.random() * randomColors.length)],
+    created_at: new Date().toISOString(),
+    expanded: false
+  };
+
+  try {
+    const resp = await fetch('/api/bubbles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    if (resp.ok) {
+      const serverBubble = await resp.json();
+      const local = getLocalBubbles();
+      // Remove any existing with same id if any, and insert
+      const filtered = local.filter(b => String(b.id) !== String(serverBubble.id));
+      filtered.unshift(serverBubble);
+      saveLocalBubbles(filtered);
+      return serverBubble;
+    }
+  } catch (err) {
+    console.warn('[ADD BUBBLE] Server unavailable, fallback to local storage:', err);
+  }
+
+  // Fallback to local storage
+  const local = getLocalBubbles();
+  local.unshift(newBubble);
+  saveLocalBubbles(local);
+  return newBubble;
 }
 
 async function deleteBubble(id) {
+  // 1. Immediately remove from local storage cache
+  const local = getLocalBubbles().filter(b => String(b.id) !== String(id));
+  saveLocalBubbles(local);
+
+  // 2. Call backend DELETE
   try {
-    const resp = await fetch(`/api/bubbles/${id}`, { method: 'DELETE' });
-    return resp.ok;
+    const resp = await fetch(`/api/bubbles/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!resp.ok) {
+      console.warn('[DELETE BUBBLE] Server responded with HTTP status:', resp.status);
+    }
   } catch (err) {
-    console.error('[DELETE BUBBLE ERROR]', err);
-    return false;
+    console.warn('[DELETE BUBBLE] Server unreachable, deleted locally:', err);
   }
+  return true;
 }
 
 // ─── Render Notes Sidebar ─────────────────────────────────
@@ -666,7 +720,7 @@ async function renderBubbles() {
     const hex = normalizeBubbleColor(b.color);
     const date = formatSafeDate(b.created_at);
     return `
-      <div class="bubble-card" style="
+      <div class="bubble-card" data-id="${b.id}" style="
         background: linear-gradient(135deg, ${hex}28, rgba(22, 27, 34, 0.75));
         border: 1px solid ${hex}55;
         box-shadow: 0 4px 16px ${hex}18;
@@ -676,9 +730,9 @@ async function renderBubbles() {
           <span class="bubble-date">${date} ${b.expanded ? '✨ Expanded' : ''}</span>
           <div class="bubble-actions" style="display:flex;gap:6px;">
             ${!b.expanded 
-              ? `<button class="btn btn-primary btn-sm" onclick="expandBubble(${b.id})" title="Kembangkan menjadi artikel penuh">🚀 Expand</button>` 
+              ? `<button class="btn btn-primary btn-sm" onclick="expandBubble('${b.id}', event)" title="Kembangkan menjadi artikel penuh">🚀 Expand</button>` 
               : '<span style="font-size:0.72rem;color:var(--success);padding:4px 6px;font-weight:700;">✅ Expanded</span>'}
-            <button class="btn btn-danger btn-sm" onclick="removeBubble(${b.id})" title="Hapus bubble">🗑</button>
+            <button class="btn btn-danger btn-sm" onclick="removeBubble('${b.id}', event)" title="Hapus bubble">🗑</button>
           </div>
         </div>
       </div>
@@ -723,21 +777,35 @@ document.getElementById('bubble-input')?.addEventListener('keydown', (e) => {
   }
 });
 
-window.removeBubble = async function(id) {
+window.removeBubble = async function(id, event) {
+  if (event && event.stopPropagation) event.stopPropagation();
   if (!confirm('Hapus Magic Bubble ini?')) return;
+
+  // Optimistic UI removal: smooth shrink and fade immediately
+  const card = document.querySelector(`.bubble-card[data-id="${id}"]`);
+  if (card) {
+    card.style.transition = 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
+    card.style.opacity = '0';
+    card.style.transform = 'scale(0.8)';
+    setTimeout(() => {
+      if (card && card.parentNode) card.remove();
+    }, 250);
+  }
+
   const ok = await deleteBubble(id);
   if (ok) {
     await renderBubbles();
-    showToast('Bubble dihapus', 'info');
+    showToast('Bubble dihapus 🗑', 'info');
   } else {
     showToast('Gagal menghapus bubble', 'error');
   }
 };
 
-window.expandBubble = async function(id) {
+window.expandBubble = async function(id, event) {
+  if (event && event.stopPropagation) event.stopPropagation();
   showAIOverlay('CrewAI sedang meriset & menulis artikel...');
   try {
-    const resp = await fetch(`/api/bubbles/${id}/expand`, { method: 'POST' });
+    const resp = await fetch(`/api/bubbles/${encodeURIComponent(id)}/expand`, { method: 'POST' });
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
       throw new Error(err.detail || `HTTP ${resp.status}`);
@@ -772,6 +840,22 @@ document.getElementById('note-textarea')?.addEventListener('keydown', (e) => {
 
 // ─── Initialization ───────────────────────────────────────
 async function init() {
+  // Check if there is an imported note from Topics
+  const importedNoteRaw = localStorage.getItem('atom_draft_imported_note');
+  if (importedNoteRaw) {
+    try {
+      const draft = JSON.parse(importedNoteRaw);
+      localStorage.removeItem('atom_draft_imported_note');
+      const note = await createNote(draft.title || 'Catatan Berita', draft.content || '', draft.tags || ['intel', 'news']);
+      await renderNotesList();
+      await openNote(note.id, 'edit');
+      showToast('Berita berhasil diimpor ke Magic Note! ✨', 'success');
+      return;
+    } catch (e) {
+      console.warn('Failed to parse imported note:', e);
+    }
+  }
+
   await renderNotesList();
   
   // If there are existing notes, auto-select the latest one so screen is never blank
