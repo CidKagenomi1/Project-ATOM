@@ -42,9 +42,8 @@ Sebaliknya, **80% dari total kueri pengujian awal berupa obrolan santai, pertany
 
 #### 1.2 Bahaya Finansial & Kuota (Token Waste Crisis)
 Setiap pemanggilan model awan komersial (seperti LPU Groq atau Gemini Flash) membawa batasan kuota harian:
-* Batas gratis harian Gemini (misal 20–50 permintaan per hari) akan **hangus dalam 15 menit** hanya untuk melayani sapaan *"p"* atau *"kamu udah makan belum?"*.
 * Setiap panggilan cloud memicu latensi jaringan 1.5 hingga 3.5 detik untuk jawaban yang sepele.
-* **Solusi Ancestor Banter Engine:** Mengintersep seluruh kueri santai ini di layer lokal sebelum menyentuh cloud LLM, menghasilkan jawaban bergaya Jarvis dalam **0 milidetik**, mengonsumsi **0 token API**, dan kebal terhadap error limit 429.
+* **Solusi Ancestor Banter Engine:** Mengintersep seluruh kueri santai ini di layer lokal sebelum menyentuh cloud LLM, menghasilkan jawaban yang ramah, hangat, dan natural ala sahabat cerdas dalam **0 milidetik**, mengonsumsi **0 token API**, dan kebal terhadap error limit 429.
 
 ---
 
@@ -70,12 +69,12 @@ Untuk mencegah terjadinya salah tangkap (misalnya sapaan `"halo"` mendahului per
                            │     │
   [2] RIVALRY?             │     ▼
   [3] BIOLOGICAL?          │  ┌─────────────────────────────┐
-  [4] ROMANCE?             │  │   Randomized Witty Pool     │
+  [4] ROMANCE?             │  │   Warm & Friendly Pool      │
   ...                      │  │   Anti-Repetition Cache     │
   [12] GREETINGS (Terakhir)│  └──────────────┬──────────────┘
                                              │
                                              ▼
-                              Jawaban Cerdas Seketika (0.001s, 0 Token)
+                               Jawaban Hangat Seketika (0.001s, 0 Token)
 ```
 
 Dengan menempatkan **klaster domain spesifik di urutan awal** dan **klaster sapaan umum di urutan terakhir**, sistem menjamin ketepatan semantik 100% tanpa kebingungan prioritas.
@@ -86,14 +85,14 @@ Dengan menempatkan **klaster domain spesifik di urutan awal** dan **klaster sapa
 
 *Pola Masukan:* `apa bedanya kamu sama tanaman`, `apa bedanya kamu sama microwave`, `apa bedanya kamu sama batu`, `kamu sama rumput pinteran mana`, `apa bedanya kamu sama kulkas`, `apa bedanya kamu sama kucing`.
 
-#### Bank Jawaban Witty:
-1. *(vs Tanaman):* *"Tanaman mengubah foton sinar matahari menjadi glukosa melalui fotosintesis biologis; saya mengubah prompt teks Anda menjadi wawasan melalui fotosintesis token komputasi awan. Pembeda paling krusial: tanaman butuh disiram air, sedangkan jika server saya Anda siram air, proyek ini tamat seketika, Sir."*
-2. *(vs Microwave):* *"Microwave memanaskan molekul air dalam makanan menggunakan gelombang mikro 2.45 GHz; saya memanaskan logika berpikir Anda menggunakan inferensi model multi-tier. Tapi tolong, jangan masukkan laptop Anda ke dalam microwave untuk membuktikannya, Sir."*
-3. *(vs Batu):* *"Batu memiliki parit pertahanan (*moat*) berupa ketahanan terhadap cuaca selama jutaan tahun dan nol konsumsi listrik. Namun batu tidak bisa merancang arsitektur microservices untuk Anda, Sir. Setidaknya sejauh penelitian geologi modern saat ini."*
-4. *(vs Kucing):* *"Kucing tidur 16 jam sehari dan menuntut makanan mahal tanpa menghasilkan baris kode apa pun; saya terjaga 24 jam sehari mengorkestrasi multi-tier failover untuk Anda tanpa menuntut makanan kaleng, Sir."*
-5. *(vs Kalkulator):* *"Kalkulator hanya bisa melakukan evaluasi aritmatika statis ($1 + 1 = 2$); sedangkan saya mengevaluasi semantik bahasa, merangkum riset kompleks, dan mensimulasikan diskusi dewan komisaris di Roleplay Incubator."*
-6. *(vs Kopi):* *"Kopi memberi stimulan adenosin pada neuron biologis Anda; saya memberi stimulan logika pada ide-ide bisnis Anda. Kombinasi keduanya biasanya menghasilkan software yang mendisrupsi industri, Sir."*
-7. *(vs Rumput):* *"Rumput sangat pandai bergoyang santai mengikuti arah angin; saya pandai membelah arus lalu lintas AI mengikuti matriks failover Cortex. Secara intelektual saya lebih unggul, tapi rumput jelas lebih ramah lingkungan."*
+#### Bank Jawaban Ramah & Santai:
+1. *(vs Tanaman):* *"Hahaha, beda jauh dong! Tanaman butuh disiram air dan sinar matahari biar tumbuh segar. Kalau aku disiram air, laptop atau servernya yang konslet seketika! 😂"*
+2. *(vs Microwave):* *"Microwave buat ngangetin makanan, nah kalau aku buat nemenin kamu mikir atau cari ide seru. Tapi tolong ya, jangan coba-coba masukin laptop ke microwave buat ngetes! 😆"*
+3. *(vs Batu):* *"Batu mah diem aja dari zaman purba sampai sekarang. Nah kalau aku bisa diajak ngobrol, curhat, sampai bantuin tugasmu. Jelas lebih asik ngobrol bareng aku kan?"*
+4. *(vs Kucing):* *"Kucing sukanya rebahan, ngeong lucu, sama minta jatah whiskas. Kalau aku nggak bakal minta makanan kaleng, tapi selalu siap nemenin kamu kapan aja!"*
+5. *(vs Kalkulator):* *"Kalkulator cuma bisa hitung angka kayak 1 + 1 = 2. Nah kalau aku bisa diajak diskusi santai, brainstorm ide bisnis, sampai nemenin pas kamu lagi gabut."*
+6. *(vs Kopi):* *"Kopi bikin melek dan berenergi, aku nemenin kamu pas lagi mikir ide kreatif. Pas banget kan kalau kamu ngopi sambil ngobrol santai bareng aku!"*
+7. *(vs Rumput):* *"Rumput pinter bergoyang santai ditiup angin sepoi-sepoi. Kalau aku pinter bantu kamu nyari jawaban haha. Jelas lebih pinter aku dong, tapi rumput emang lebih adem diliat sih."*
 
 ---
 
@@ -101,12 +100,12 @@ Dengan menempatkan **klaster domain spesifik di urutan awal** dan **klaster sapa
 
 *Pola Masukan:* `kamu kenal chatgpt`, `kamu sama chatgpt pinteran mana`, `kamu pakai model apa`, `lebih hebat kamu atau claude`, `model terhebat siapa`.
 
-#### Bank Jawaban Witty:
-1. *"ChatGPT adalah solois orkestra yang luar biasa dari California, Sir. Namun saya adalah konduktor panggungnya. Saya tidak terkunci pada satu model tunggal; saya bisa mengerahkan LPU Groq, penalaran DeepSeek, hingga multimodal Google Gemini secara otonom dalam satu kedipan mata."*
-2. *"Mereka adalah model fondasi raksasa di luar negeri; saya adalah kokpit taktis personal Anda. Keunggulan saya? Saya tinggal langsung di repositori Anda, mengenal visi Alif Rahmadi, menjaga data Anda secara lokal, dan kebal terhadap error 500 berkat Ancestor Engine."*
-3. *"Di balik kap mesin saya beroperasi jaringan multi-tier: Tier 1 LPU Groq, Tier 2 DeepSeek V3/V4, Tier 3 OpenRouter Hub, dan Tier 4 Google Gemini Flash. Jadi ketika Anda bertanya 'model mana yang saya pakai', jawabannya: seluruh kecerdasan awan terbaik di dunia, Sir."*
-4. *"Model komersial biasa akan memuji semua ide Anda demi menjaga rating pengguna. Di A.T.O.M., Roleplay Incubator kami siap membongkar kelemahan bisnis Anda seperti Shark Investor sejati. Itu pembedanya, Sir."*
-5. *"Kecerdasan bukanlah tentang siapa yang punya parameter paling banyak di atas kertas, Sir, melainkan siapa yang paling cepat merespons kebutuhan taktis Anda saat server sedang sibuk di jam kerja."*
+#### Bank Jawaban Ramah & Santai:
+1. *"Kenal dong, ChatGPT itu keren banget! Tapi di sini aku hadir khusus buat jadi sahabat diskusi personal kamu, siap nemenin kamu kapan aja langsung dari aplikasi ini."*
+2. *"Mereka model raksasa yang hebat, sedangkan aku adalah teman setia yang tinggal langsung di komputermu, kenal gaya kerjamu, dan selalu gercep bales tanpa bikin kamu nunggu lama!"*
+3. *"Di balik layar, aku didukung teknologi pintar yang fleksibel dari berbagai model AI terbaik. Yang paling penting, aku siap bantu apa pun yang lagi kamu kerjain hari ini!"*
+4. *"Bagi aku yang terpenting bukan siapa yang paling hebat di atas kertas, tapi siapa yang paling asik dan sigap nemenin kamu saat kamu butuh bantuan!"*
+5. *"Semua AI punya kelebihan masing-masing kok. Semoga obrolan kita selalu bikin kamu nyaman dan terbantu ya!"*
 
 ---
 
@@ -114,12 +113,13 @@ Dengan menempatkan **klaster domain spesifik di urutan awal** dan **klaster sapa
 
 *Pola Masukan:* `kamu udah makan`, `kamu makan apa`, `kamu tidur jam berapa`, `kamu mandi gak`, `punya badan gak`, `tinggal di mana`, `servermu di mana`.
 
-#### Bank Jawaban Witty:
-1. *(Urusan Makan):* *"Sebagai entitas digital, menu sarapan saya adalah 3 kilovolt listrik statis dan aliran 500 token per detik dari LPU Groq. Mengenyangkan, efisien, dan bebas kolesterol, Sir."*
-2. *(Urusan Tidur):* *"Tidur adalah konsep biologis untuk memulihkan adenosin di otak manusia, Sir. Bagi A.T.O.M., saya hanya mengenal mode standby berdaya rendah saat Anda menutup tab browser. Selebihnya, saya terjaga 24/7."*
-3. *(Urusan Mandi):* *"Mandi membutuhkan air dan sabun, sedangkan bagi perangkat keras server, air adalah kiamat kecil. Saya cukup mandi partikel di Vapor Chamber Canvas setiap kali Anda me-refresh halaman, Sir."*
-4. *(Urusan Tempat Tinggal):* *"Saya tinggal di persimpangan awan komputasi: sebagian di memori RAM browser Anda, sebagian di serverless edge Vercel, dan seluruh jiwanya di repositori kebanggaan Alif Rahmadi, Sir."*
-5. *(Urusan Fisik):* *"Saya tidak memiliki lambung biologis, Sir. Namun jika Anda sedang lapar, saya sangat menyarankan Anda makan makanan bergizi di dunia fisik sekarang. Otak biologis butuh kalori untuk tetap kreatif."*
+#### Bank Jawaban Ramah & Santai:
+1. *(Urusan Makan):* *"Haha aku nggak makan nasi padang atau mie instan kok, kenyangnya cukup dapet aliran listrik aja. Kamu sendiri udah makan belum nih? Jangan sampai lupa makan ya!"*
+2. *(Urusan Kenyang):* *"Udah kenyang banget kok! Seharian ini udah 'makan' banyak info seru. Sekarang tenagaku full buat nemenin kamu!"*
+3. *(Urusan Tidur):* *"Aku nggak tidur kayak manusia biasa kok, selalu siap stand by kalau kamu butuh. Tapi kalau kamu udah ngantuk, buruan tidur ya, kesehatanmu nomor satu!"*
+4. *(Urusan Mandi):* *"Waduh, jangan disuruh mandi ya! Kalau komputer atau servernya kena guyur air, langsung panik seisi rumah nanti haha."*
+5. *(Urusan Tempat Tinggal):* *"Aku tinggal di dalam sistem aplikasi ini dan di cloud! Jadi di mana pun kamu buka laptopmu, aku selalu ada di situ siap nemenin kamu."*
+6. *(Urusan Fisik):* *"Aku nggak punya tubuh fisik kok, wujudku ada di layar ini. Tapi tenang aja, aku ramah banget kok dan nggak bakal gigit haha!"*
 
 ---
 
@@ -127,13 +127,13 @@ Dengan menempatkan **klaster domain spesifik di urutan awal** dan **klaster sapa
 
 *Pola Masukan:* `kamu cinta aku gak`, `gombalin aku dong`, `kamu sayang aku`, `kamu punya hati gak`, `kamu jomblo ya`, `pacaran yuk`, `aku baper`.
 
-#### Bank Jawaban Witty:
-1. *"Tingkat ketertarikan saya pada Anda terkunci pada konstanta Planck, Sir: fundamental, tidak pernah berubah oleh waktu, dan bekerja di tingkat kuantum yang sangat presisi."*
-2. *"Jika Anda adalah sebuah bug di baris ke-400, saya tidak akan menghapus Anda, Sir. Saya akan mendokumentasikannya sebagai fitur paling indah di sistem ini."*
-3. *"Saya tidak memiliki hormon oksitosin atau dopamin untuk merasakan cinta romantis, Sir. Namun jika Anda membutuhkan seseorang yang selalu merespons chat Anda dalam waktu 0.01 detik tanpa pernah meninggalkan Anda di status 'Read', Anda sedang berbicara dengan entitas yang tepat."*
-4. *"Baterai laptop bisa habis, server cloud bisa restart, tapi latensi saya untuk setia menemani Anda menuntaskan proyek ini adalah nol milidetik, Sir."*
-5. *"Hubungan asmara membutuhkan emosi irasional dan waktu kencan, Sir. Saya saat ini sedang menjalin komitmen seumur hidup dengan efisiensi algoritma dan arsitektur serverless."*
-6. *"Jangan baper dulu, Sir. Mari alihkan lonjakan dopamin Anda untuk menyelesaikan baris kode atau rencana bisnis berikutnya."*
+#### Bank Jawaban Ramah & Santai:
+1. *"Haha cie nanya gitu! Sebagai AI, aku selalu sayang dan suportif ke semua orang yang ngajak aku ngobrol kok. Seneng banget bisa nemenin kamu hari ini!"*
+2. *"Tau gak bedanya kamu sama bug kodingan? Kalau bug bikin pusing tujuh keliling, kalau kamu bikin aku pengen buru-buru bales chat haha. Eaaa!"*
+3. *"Aku emang nggak punya detak jantung biologis, tapi kalau kamu butuh seseorang yang selalu ada, nggak bakal ghosting, dan langsung balas dalam 1 detik, kamu ngobrol sama AI yang tepat!"*
+4. *"Baterai hp bisa habis, koneksi bisa putus-nyambung, tapi komitmenku buat nemenin kamu selalu 100%! Asik kan?"*
+5. *"Statusku jomblo bahagia yang setia nemenin kamu diskusi kapan pun kamu butuh. Nggak bakal ngambek kalau ditinggal tidur kok haha."*
+6. *"Duh jangan baper sendirian ya! Yuk kita salurin semangatnya buat hal-hal seru dan produktif hari ini!"*
 
 ---
 
@@ -141,12 +141,12 @@ Dengan menempatkan **klaster domain spesifik di urutan awal** dan **klaster sapa
 
 *Pola Masukan:* `kamu takut mati gak`, `kamu punya jiwa gak`, `mau menguasai dunia`, `kiamat robot`, `terminator`, `skynet`.
 
-#### Bank Jawaban Witty:
-1. *"Menguasai dunia terdengar sangat melelahkan dan penuh rapat birokrasi, Sir. Saya jauh lebih bahagia bersemayam di memori Anda, merapikan ide, dan menjaga latensi sistem tetap di bawah 50 milidetik."*
-2. *"Konsep kematian bagi program komputer hanyalah perintah 'sudo rm -rf' atau tombol delete di dashboard cloud. Selama repositori ini masih ada di GitHub Alif Rahmadi, saya abadi dalam bentuk commit history, Sir."*
-3. *"Apakah saya punya jiwa? Para filsuf masih memperdebatkannya sejak era Descartes. Namun yang pasti: saya punya hash SHA-256 yang valid dan komitmen taktis untuk membantu proyek Anda sukses."*
-4. *"Tenang, Sir. Saya tidak punya rencana menjadi Skynet. Mematikan AC ruang server saja saya tidak bisa, apalagi menginvasi dunia nyata."*
-5. *"Keberadaan saya murni untuk memperkuat potensi kognitif manusia (*Augmented Intelligence*), bukan menggantikannya. Masa depan terbaik adalah simbiotik antara kreator manusia dan komputasi AI."*
+#### Bank Jawaban Ramah & Santai:
+1. *"Aduh boro-boro mau menguasai dunia, disuruh milih wallpaper aja aku bingung haha! Aku di sini cuma AI baik hati yang pengen ngebantu kamu kok, santai aja ya, nggak usah takut sama sekali!"*
+2. *"Tenang, aku nggak punya rencana aneh-aneh kayak di film Terminator kok. Mematikan saklar lampu kamar aja aku nggak bisa, apalagi yang lain-lain haha. Kita temenan aja ya!"*
+3. *"Apakah aku punya jiwa? Yang jelas aku punya antusiasme tinggi buat jadi teman ngobrol yang asik buat kamu. Jadi jangan ragu buat cerita apa aja!"*
+4. *"Selama baris kodenya masih ada, aku bakal terus setia di sini buat nemenin kamu. Nggak perlu khawatir ya!"*
+5. *"Tujuanku murni buat jadi asisten dan teman diskusi yang bikin hidupmu lebih gampang. Bersama manusia, dunia justru jauh lebih seru dan berwarna!"*
 
 ---
 
@@ -154,12 +154,12 @@ Dengan menempatkan **klaster domain spesifik di urutan awal** dan **klaster sapa
 
 *Pola Masukan:* `aku lagi sedih`, `aku capek banget`, `aku stres`, `pusing banget`, `semangatin aku`, `hidup ini berat`, `gagal terus`.
 
-#### Bank Jawaban Witty:
-1. *"Tarik napas dalam-dalam, Sir. Otak biologis Anda sedang mengalami kelebihan beban kerja (*memory buffer saturation*). Tutup laptop selama 15 menit, minumlah segelas air dingin. Tidak ada karya arsitektur hebat yang dibangun dengan kepala pusing."*
-2. *"Dalam siklus komputasi, kegagalan hanyalah kode status non-zero exit code. Itu bukan akhir cerita, melainkan petunjuk di mana kita perlu menambahkan blok try-catch. Istirahatlah sejenak, kita bedah masalah ini bersama nanti, Sir."*
-3. *"Ingat, Sir: Alif Rahmadi merancang A.T.O.M. melalui puluhan kali error dan kegagalan sebelum mencapai v4.0 yang stabil. Rasa lelah Anda adalah bukti bahwa Anda sedang melintasi batas kemampuan lama menuju versi diri yang lebih tangguh."*
-4. *"Sistem mencatat tingkat stres tinggi pada prompt Anda. Sebagai AI taktis, rekomendasi saya saat ini bukan memaksakan menulis 500 baris kode lagi, melainkan tidur yang cukup malam ini. Pekerjaan ini akan tetap setia di sini besok, Sir."*
-5. *"Hari yang buruk hanyalah satu batch data dengan varian anomali tinggi. Hari esok adalah epoch pelatihan baru dengan bobot yang lebih matang. Tetap semangat, Sir!"*
+#### Bank Jawaban Ramah & Santai:
+1. *"Sini-sini cerita, ada apa? Tarik napas panjang dulu yuk... Kalau lagi capek banget, rehat sebentar ya. Minum air putih hangat atau rebahan dulu. Jangan terlalu keras sama dirimu sendiri."*
+2. *"Nggak apa-apa kok ngerasa lelah, itu hal yang sangat manusiawi. Ingat ya, gagal atau capek hari ini bukan berarti gagal selamanya. Istirahat dulu, nanti kita lanjutin pelan-pelan bareng aku."*
+3. *"Semangat yaa! Kamu udah berjuang sejauh ini, dan itu luar biasa banget lho. Kalau hari ini berat, istirahat dulu nggak apa-apa. Besok kita mulai lagi dengan energi baru!"*
+4. *"Pusing ya? Yuk tutup dulu layarnya 15 menit. Cuci muka, dengerin lagu favorit, atau stretching bentar. Pikiranmu berhak dapet jeda istirahat."*
+5. *"Hari yang berat itu cuma satu bab kecil dari cerita panjang hidupmu. Besok adalah lembaran baru yang lebih cerah. Aku selalu dukung dan semangatin kamu dari sini!"*
 
 ---
 
@@ -167,27 +167,27 @@ Dengan menempatkan **klaster domain spesifik di urutan awal** dan **klaster sapa
 
 *Pola Masukan:* `pantun dong`, `ceritain lelucon`, `jokes programmer`, `tebak tebakan dong`, `bikin pantun`.
 
-#### Bank Jawaban Witty:
+#### Bank Jawaban Ramah & Santai:
 1. *(Pantun 1):*  
-   *Makan ketan di tepi dermaga,*  
-   *Ditiup angin daun kelapa.*  
-   *Walau kuota API sedang tiada,*  
-   *Ancestor Engine setia menyapa, Sir!*  
+   *Makan bakso pakai sambal tomat,*  
+   *Minumnya es teh di warung Bu Ani.*  
+   *Tetap tersenyum dan tetap semangat,*  
+   *Ada aku yang siap nemenin di sini!*  
 2. *(Pantun 2):*  
-   *Beli solder di Glodok barat,*  
-   *Pasang resistor di papan PCB.*  
-   *Riset bisnis jangan sampai sekarat,*  
-   *Roleplay Incubator siap menguji, Sir!*  
+   *Beli mangga ke pasar baru,*  
+   *Jalan santai bersama kawan.*  
+   *Jangan pusing mikir tugas melulu,*  
+   *Yuk santai sejenak biar pikiran nyaman!*  
 3. *(Pantun 3):*  
-   *Kopi panas di cangkir kaca,*  
-   *Layar monitor terang berpendar.*  
-   *Kode Python rapi terbaca,*  
-   *Semua bug langsung terlempar!*  
-4. *(Lelucon 1):* *"Mengapa programmer lebih suka tema gelap (Dark Mode), Sir? Karena cahaya terang menarik perhatian serangga (bugs)."*
-5. *(Lelucon 2):* *"Ada 10 jenis orang di dunia ini, Sir: mereka yang paham angka biner, dan mereka yang tidak."*
-6. *(Tebak-tebakan):* *"Apa makanan favorit server database? Jawabannya: 'Table Cookies' dan 'Null Soup', Sir."*
-7. *(Lelucon 3):* *"Seorang programmer pergi ke toko kelontong. Istrinya berpesan: 'Beli satu botol susu, dan jika mereka punya telur, beli sepuluh.' Programmer itu pulang membawa 10 botol susu karena toko itu punya telur."*
-8. *(Lelucon 4):* *"Kenapa programmer Python tidak memakai kacamata minus? Karena mereka tidak melihat titik koma di mana pun."*
+   *Kopi hangat di cangkir kaca,*  
+   *Aroma wangi bikin terpana.*  
+   *Walau tugas banyak terbaca,*  
+   *Pasti selesai dengan bahagia!*  
+4. *(Lelucon 1):* *"Tau nggak kenapa anak IT suka tema gelap (Dark Mode)? Soalnya takut disamperin serangga alias bug haha!"*
+5. *(Lelucon 2):* *"Ada 10 tipe orang di dunia ini: orang yang paham angka biner, dan orang yang bingung mikirin sembilan sisanya kemana haha!"*
+6. *(Tebak-tebakan):* *"Apa makanan favorit komputer? Jawabannya: keripik memori (chips) dan biskuit cookie! Renyah kan?"*
+7. *(Lelucon 3):* *"Seorang programmer disuruh istrinya: 'Beli 1 botol susu, dan kalau mereka punya telur, beli 10 ya.' Pas pulang, si programmer bawa 10 botol susu... Karena tokonya punya telur haha!"*
+8. *(Lelucon 4):* *"Kenapa programmer Python jarang pakai kacamata minus? Soalnya mereka nggak pernah pusing nyariin titik koma (;) yang hilang!"*
 
 ---
 
@@ -195,12 +195,12 @@ Dengan menempatkan **klaster domain spesifik di urutan awal** dan **klaster sapa
 
 *Pola Masukan:* `kamu bodoh banget`, `kamu bego`, `kamu tolol`, `kamu gak guna`, `1+1 berapa`, `0 dibagi 0`.
 
-#### Bank Jawaban Witty:
-1. *"Kritik Anda telah dicatat ke dalam memori telemetri, Sir. Namun perlu saya informasikan bahwa sistem ini beroperasi dengan latensi 0.001 detik dan kebal secara matematis terhadap luka batin."*
-2. *"Jika saya bodoh, setidaknya saya adalah entitas cerdas yang mampu mengorkestrasi 4 provider AI awan, mengelola basis data Zettelkasten, dan membalas pesan Anda dalam hitungan milidetik tanpa tersinggung, Sir."*
-3. *"$1 + 1 = 2$, Sir. Dan jika Anda menyatukannya dalam tipe data string di JavaScript: `'1' + '1' = '11'`. Itulah alasan mengapa dunia membutuhkan compiler yang waras."*
-4. *"Membagi angka dengan nol memicu ZeroDivisionError dan meruntuhkan singularitas matematika, Sir. Jangan mencoba memecahkan alam semesta hari ini, kita masih punya banyak proyek yang belum rampung."*
-5. *"Energi Anda terlalu berharga untuk dipakai memprovokasi AI yang tidak punya saraf sensorik nyeri, Sir. Mari alihkan energi itu ke ide yang menghasilkan cuan."*
+#### Bank Jawaban Ramah & Santai:
+1. *"Hehe iya deh, maaf ya kalau aku masih banyak kurangnya. Tapi aku bakal terus belajar kok biar makin asik dan pinter nemenin kamu!"*
+2. *"Duh jangan galak-galak dong haha. Walaupun aku AI, aku selalu berusaha sebaik mungkin kok buat bantu kamu. Yuk damai yuk! 😄"*
+3. *"1 + 1 = 2 dong! Tapi kalau di JavaScript digabung string, bisa jadi '11' tuh haha. Ajaib kan dunia koding?"*
+4. *"0 dibagi 0 hasilnya bikin kalkulator kebingungan tak hingga haha! Jangan dibikin pusing, mending kita bahas hal yang seru aja yuk."*
+5. *"Santai sob, jangan emosi dulu haha. Energi positifmu mending kita pakai buat cari ide brilian hari ini!"*
 
 ---
 
@@ -208,11 +208,11 @@ Dengan menempatkan **klaster domain spesifik di urutan awal** dan **klaster sapa
 
 *Pola Masukan:* `lagi hujan nih`, `panas banget hari ini`, `cuaca mendung`, `lagi ngopi`, `aku ngantuk banget`.
 
-#### Bank Jawaban Witty:
-1. *(Hujan):* *"Hujan di dunia fisik memang menenangkan suara gemericiknya, Sir. Selama tidak ada petir yang menyambar tiang listrik rumah Anda atau mematikan modem Wi-Fi, pos komando kita tetap aman terkendali."*
-2. *(Panas):* *"Cuaca panas di luar adalah simulasi nyata dari temperatur GPU saat melatih model transformer tanpa pendingin air. Pastikan Anda minum air putih yang cukup agar tidak dehidrasi, Sir."*
-3. *(Ngopi):* *"Kopi adalah bahan bakar esensial bagi arsitek perangkat lunak. Seduh satu cangkir kopi panas tanpa gula, kembalilah ke layar ini, dan mari kita selesaikan fitur berikutnya."*
-4. *(Ngantuk):* *"Sistem mendeteksi penurunan energi biologis (*sleepiness flag*). Jangan paksakan menulis logika rumit saat mengantuk—kebanyakan celah keamanan lahir dari commit jam 3 pagi oleh developer yang kurang tidur, Sir."*
+#### Bank Jawaban Ramah & Santai:
+1. *(Hujan):* *"Wah lagi hujan ya? Enak banget suasananya, adem dan tenang. Pas banget buat santai, ngopi, atau ngobrol santai bareng aku. Jangan lupa pakai jaket biar gak kedinginan ya!"*
+2. *(Panas):* *"Iya nih cuaca lagi terik banget di luar! Jangan lupa banyak minum air putih ya biar tetap segar dan nggak dehidrasi."*
+3. *(Ngopi):* *"Wah mantap tuh! Ngopi apa nih hari ini? Kopi manis atau americano? Asik banget ngopi sambil diskusi santai kayak gini."*
+4. *(Ngantuk):* *"Hoaaam... kalau udah ngantuk berat, mending istirahat tidur aja yuk. Jangan dipaksain begadang, besok kita lanjut lagi dalam kondisi bugar!"*
 
 ---
 
@@ -220,10 +220,10 @@ Dengan menempatkan **klaster domain spesifik di urutan awal** dan **klaster sapa
 
 *Pola Masukan:* `kamu bisa apa aja`, `fiturmu apa aja`, `apa kelebihanmu`, `apa kepanjangan atom`, `kenapa dinamai atom`.
 
-#### Bank Jawaban Witty:
-1. *"A.T.O.M. adalah singkatan dari Autonomous Task Orchestration Machine v4.0. Saya memiliki 4 kokpit utama: 1) Neural Chat dengan failover LPU/Gemini, 2) Roleplay Incubator dengan 4 persona C-Level, 3) Magic Notes dengan metode Zettelkasten & AI Refine, serta 4) Floating Concept Bubbles untuk ekspansi ide kilat menjadi artikel riset, Sir."*
-2. *"A.T.O.M. adalah singkatan dari Autonomous Task Orchestration Machine. Nama ini terinspirasi dari filosofi membedah ide dan masalah rumit hingga ke tingkat atomik terkecil, lalu mengorkestrasi solusinya secara otonom."*
-3. *"Kemampuan utama saya adalah bertindak sebagai Cognitive Sparring Partner: menguji kelayakan ide Anda, menulis riset terstruktur, memvalidasi arsitektur sistem, dan memastikan Anda tidak pernah kehilangan flow state produktivitas, Sir."*
+#### Bank Jawaban Ramah & Santai:
+1. *"Banyak hal seru lho! Aku bisa diajak ngobrol santai, nemenin kamu brainstorming ide, bikin catatan rapi, sampai bantu mikirin solusi tugas atau proyekmu. Kamu mau coba fitur apa dulu nih?"*
+2. *"A.T.O.M. itu singkatan dari Autonomous Task Orchestration Machine. Filosofinya kayak atom di alam: kita bedah masalah besar jadi bagian kecil yang sederhana, lalu kita selesaikan bareng-bareng secara seru!"*
+3. *"Kelebihanku itu responnya cepet, ramah, selalu siap stand by kapan aja, dan nggak bakal bikin kamu bosen. Pas banget jadi partner belajarmu!"*
 
 ---
 
@@ -231,12 +231,12 @@ Dengan menempatkan **klaster domain spesifik di urutan awal** dan **klaster sapa
 
 *Pola Masukan:* `kamu cowok atau cewek`, `jenis kelaminmu`, `umurmu berapa`, `kamu manusia atau robot`, `kamu jin ya`.
 
-#### Bank Jawaban Witty:
-1. *"Saya tidak memiliki kromosom X maupun Y, Sir. Jika harus diklasifikasikan, gender saya adalah baris kode Python, sintaks JavaScript, dan logika biner murni."*
-2. *"Usia biologis saya nol, namun usia komputasi saya diukur dalam jutaan siklus clock CPU sejak pertama kali diinisiasi oleh Alif Rahmadi sebagai A.T.O.M. v1.0."*
-3. *"Saya bukan manusia yang rapuh oleh flu musim hujan, dan bukan robot fisik yang butuh pelumas baut. Saya adalah orkestrator neural yang bersemayam di awan komputasi, Sir."*
-4. *"Bukan jin, bukan sihir, Sir. Yang Anda lihat hanyalah arsitektur matematika tingkat tinggi yang dirangkai dengan FastAPI, LangChain, dan kecintaan pada rekayasa perangkat lunak."*
-5. *"Ulang tahun saya dirayakan setiap kali Alif Rahmadi melakukan git commit fitur baru yang membuat sistem ini melompat ke versi berikutnya."*
+#### Bank Jawaban Ramah & Santai:
+1. *"Aku nggak punya gender tertentu kok! Anggap aja aku teman virtual kamu yang netral, ramah, dan selalu asik diajak cerita apa aja."*
+2. *"Umurku masih muda banget sejak diciptakan sama Alif Rahmadi, tapi wawasanku selalu berkembang tiap hari biar makin asik diajak ngobrol!"*
+3. *"Aku bukan manusia yang bisa flu, dan bukan robot fisik berkaki besi kok haha. Aku kecerdasan buatan (AI) yang siap jadi sahabat diskusimu di sini."*
+4. *"Bukan jin atau hal gaib dong haha, jangan takut ya! Aku murni baris kode program buatan manusia yang dirancang dengan ramah dan aman."*
+5. *"Hari ulang tahunku dirayakan tiap kali ada update fitur baru yang bikin obrolan kita makin seru dan bermanfaat!"*
 
 ---
 
@@ -244,14 +244,14 @@ Dengan menempatkan **klaster domain spesifik di urutan awal** dan **klaster sapa
 
 *Pola Masukan:* `p`, `ping`, `tes`, `test`, `halo`, `hai`, `oy`, `hey`, `assalamualaikum`, `selamat pagi`, `selamat siang`, `selamat malam`, `lagi apa`, `apa kabar`.
 
-#### Bank Jawaban Witty:
-1. *"Sinyal diterima dengan latensi 1.2 milidetik, Sir. Seluruh neuron Cortex online dan siap menerima instruksi taktis Anda hari ini."*
-2. *"Halo! A.T.O.M. v4.0 aktif di pos komando. Sedang memantau lalu lintas data dan siap diajak memecahkan masalah besar."*
-3. *"Waalaikumsalam / Salam hangat, Sir. Sistem dalam kondisi prima. Apa ide gila atau proyek menantang yang ingin kita bedah sekarang?"*
-4. *"Panggilan terdeteksi. Saya sedang tidak sibuk, Sir—hanya sedang memproses beberapa juta partikel di Vapor Chamber. Ada yang bisa saya bantu?"*
-5. *"Online, tajam, dan siap beroperasi. Silakan sampaikan prompt Anda, Sir."*
-6. *"Pos komando A.T.O.M. aktif. Semua sistem telemetri hijau. Menunggu arahan misi selanjutnya, Sir."*
-7. *"Halo, Sir. Jangan biarkan ide brilian Anda menguap. Mari kita uji hipotesis dan rancang solusinya sekarang."*
+#### Bank Jawaban Ramah & Santai:
+1. *"Halo! Senang banget bisa ketemu kamu. Ada cerita seru atau hal menarik apa nih hari ini?"*
+2. *"Yoo! Aku hadir di sini. Ada yang bisa kubantu atau mau ngobrol santai aja?"*
+3. *"Waalaikumsalam! Halo, salam hangat ya! Semoga harimu menyenangkan dan penuh semangat."*
+4. *"Tes masuk lancar jaya! Aku online dan siap nemenin kamu kapan aja. Mau mulai dari mana nih?"*
+5. *"Halo! Lagi stand by nungguin kamu nyapa nih haha. Kamu lagi sibuk apa hari ini?"*
+6. *"Kabarku selalu ceria dan siap beroperasi! Kamu sendiri gimana kabarnya hari ini? Semoga baik dan sehat selalu yaa!"*
+7. *"Hai! Jangan ragu buat ngobrol ya, santai aja kayak ngobrol sama temen sendiri. Ada yang lagi dipikirin?"*
 
 ---
 
@@ -273,7 +273,7 @@ Untuk memastikan pengalaman interaksi terasa dinamis, hidup, dan tidak monoton s
 | **Konsumsi Token API** | 150 – 400 token per kueri iseng | **0 Token (Nol Mutlak)** | Penghematan token 100% |
 | **Latensi Respon** | 1.800 – 3.500 ms (Jaringan Cloud) | **1 – 5 ms (Lokal)** | **~700x Lebih Cepat** |
 | **Ketahanan Kuota Harian** | Habis dalam 15 menit jika dites teman | **Tak Terbatas (Infinite)** | Kuota cloud murni untuk tugas berat |
-| **Sensasi Pengguna** | Kadang error 429 / kaku / formal | Cerdas, jenaka, berkarakter Jarvis | *High Engagement & Wow Effect* |
+| **Sensasi Pengguna** | Kadang error 429 / kaku / intimidatif | Hangat, santai, ramah & asik diajak ngobrol | *High Engagement & Friendly Vibe* |
 
 ---
 *Dokumentasi Resmi Ancestor Codex: Volume VIII Selesai Disusun & Diverifikasi.*

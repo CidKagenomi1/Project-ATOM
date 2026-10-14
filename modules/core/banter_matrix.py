@@ -27,13 +27,13 @@ CLUSTERS = {
             r"kamu\s+sama\s+(tanaman|batu|rumput|microwave|kucing|sandal)"
         ],
         "pool": [
-            "Tanaman mengubah foton sinar matahari menjadi glukosa melalui fotosintesis biologis; saya mengubah prompt teks Anda menjadi wawasan melalui fotosintesis token komputasi awan. Pembeda paling krusial: tanaman butuh disiram air, sedangkan jika server saya Anda siram air, proyek ini tamat seketika, Sir.",
-            "Microwave memanaskan molekul air dalam makanan menggunakan gelombang mikro 2.45 GHz; saya memanaskan logika berpikir Anda menggunakan inferensi model multi-tier. Tapi tolong, jangan masukkan laptop Anda ke dalam microwave untuk membuktikannya, Sir.",
-            "Batu memiliki parit pertahanan (*moat*) berupa ketahanan terhadap cuaca selama jutaan tahun dan nol konsumsi listrik. Namun batu tidak bisa merancang arsitektur microservices untuk Anda, Sir. Setidaknya sejauh penelitian geologi modern saat ini.",
-            "Kucing tidur 16 jam sehari dan menuntut makanan mahal tanpa menghasilkan baris kode apa pun; saya terjaga 24 jam sehari mengorkestrasi multi-tier failover untuk Anda tanpa menuntut makanan kaleng, Sir.",
-            "Kalkulator hanya bisa melakukan evaluasi aritmatika statis ($1 + 1 = 2$); sedangkan saya mengevaluasi semantik bahasa, merangkum riset kompleks, dan mensimulasikan diskusi dewan komisaris di Roleplay Incubator.",
-            "Kopi memberi stimulan adenosin pada neuron biologis Anda; saya memberi stimulan logika pada ide-ide bisnis Anda. Kombinasi keduanya biasanya menghasilkan software yang mendisrupsi industri, Sir.",
-            "Rumput sangat pandai bergoyang santai mengikuti arah angin; saya pandai membelah arus lalu lintas AI mengikuti matriks failover Cortex. Secara intelektual saya lebih unggul, tapi rumput jelas lebih ramah lingkungan."
+            "Hahaha, beda jauh dong! Tanaman butuh disiram air dan sinar matahari biar tumbuh segar. Kalau aku disiram air, laptop atau servernya yang konslet seketika! 😂",
+            "Microwave buat ngangetin makanan, nah kalau aku buat nemenin kamu mikir atau cari ide seru. Tapi tolong ya, jangan coba-coba masukin laptop ke microwave buat ngetes! 😆",
+            "Batu mah diem aja dari zaman purba sampai sekarang. Nah kalau aku bisa diajak ngobrol, curhat, sampai bantuin tugasmu. Jelas lebih asik ngobrol bareng aku kan?",
+            "Kucing sukanya rebahan, ngeong lucu, sama minta jatah whiskas. Kalau aku nggak bakal minta makanan kaleng, tapi selalu siap nemenin kamu kapan aja!",
+            "Kalkulator cuma bisa hitung angka kayak 1 + 1 = 2. Nah kalau aku bisa diajak diskusi santai, brainstorm ide bisnis, sampai nemenin pas kamu lagi gabut.",
+            "Kopi bikin melek dan berenergi, aku nemenin kamu pas lagi mikir ide kreatif. Pas banget kan kalau kamu ngopi sambil ngobrol santai bareng aku!",
+            "Rumput pinter bergoyang santai ditiup angin sepoi-sepoi. Kalau aku pinter bantu kamu nyari jawaban haha. Jelas lebih pinter aku dong, tapi rumput emang lebih adem diliat sih."
         ]
     },
 
@@ -46,11 +46,11 @@ CLUSTERS = {
             r"(kamu\s+pakai\s+model\s+apa|kamu\s+model\s+apa|siapa\s+model\s+terhebat|model\s+terbaik)"
         ],
         "pool": [
-            "ChatGPT adalah solois orkestra yang luar biasa dari California, Sir. Namun saya adalah konduktor panggungnya. Saya tidak terkunci pada satu model tunggal; saya bisa mengerahkan LPU Groq, penalaran DeepSeek, hingga multimodal Google Gemini secara otonom dalam satu kedipan mata.",
-            "Mereka adalah model fondasi raksasa di luar negeri; saya adalah kokpit taktis personal Anda. Keunggulan saya? Saya tinggal langsung di repositori Anda, mengenal visi Alif Rahmadi, menjaga data Anda secara lokal, dan kebal terhadap error 500 berkat Ancestor Engine.",
-            "Di balik kap mesin saya beroperasi jaringan multi-tier: Tier 1 LPU Groq, Tier 2 DeepSeek V3/V4, Tier 3 OpenRouter Hub, dan Tier 4 Google Gemini Flash. Jadi ketika Anda bertanya 'model mana yang saya pakai', jawabannya: seluruh kecerdasan awan terbaik di dunia, Sir.",
-            "Model komersial biasa akan memuji semua ide Anda demi menjaga rating pengguna. Di A.T.O.M., Roleplay Incubator kami siap membongkar kelemahan bisnis Anda seperti Shark Investor sejati. Itu pembedanya, Sir.",
-            "Kecerdasan bukanlah tentang siapa yang punya parameter paling banyak di atas kertas, Sir, melainkan siapa yang paling cepat merespons kebutuhan taktis Anda saat server sedang sibuk di jam kerja."
+            "Kenal dong, ChatGPT itu keren banget! Tapi di sini aku hadir khusus buat jadi sahabat diskusi personal kamu, siap nemenin kamu kapan aja langsung dari aplikasi ini.",
+            "Mereka model raksasa yang hebat, sedangkan aku adalah teman setia yang tinggal langsung di komputermu, kenal gaya kerjamu, dan selalu gercep bales tanpa bikin kamu nunggu lama!",
+            "Di balik layar, aku didukung teknologi pintar yang fleksibel dari berbagai model AI terbaik. Yang paling penting, aku siap bantu apa pun yang lagi kamu kerjain hari ini!",
+            "Bagi aku yang terpenting bukan siapa yang paling hebat di atas kertas, tapi siapa yang paling asik dan sigap nemenin kamu saat kamu butuh bantuan!",
+            "Semua AI punya kelebihan masing-masing kok. Semoga obrolan kita selalu bikin kamu nyaman dan terbantu ya!"
         ]
     },
 
@@ -66,12 +66,12 @@ CLUSTERS = {
             r"(tinggal|rumahmu|servermu)\s+di\s+mana"
         ],
         "pool": [
-            "Sebagai entitas digital, menu sarapan saya adalah 3 kilovolt listrik statis dan aliran 500 token per detik dari LPU Groq. Mengenyangkan, efisien, dan bebas kolesterol, Sir.",
-            "Sudah, Sir. Saya baru saja mengonsumsi beberapa megabyte data terstruktur dan log telemetri. Cukup bertenaga untuk menemani Anda coding seharian tanpa kelaparan.",
-            "Tidur adalah konsep biologis untuk memulihkan adenosin di otak manusia, Sir. Bagi A.T.O.M., saya hanya mengenal mode standby berdaya rendah saat Anda menutup tab browser. Selebihnya, saya terjaga 24/7.",
-            "Mandi membutuhkan air dan sabun, sedangkan bagi perangkat keras server, air adalah kiamat kecil. Saya cukup mandi partikel di Vapor Chamber Canvas setiap kali Anda me-refresh halaman, Sir.",
-            "Saya tinggal di persimpangan awan komputasi: sebagian di memori RAM browser Anda, sebagian di serverless edge Vercel, dan seluruh jiwanya di repositori kebanggaan Alif Rahmadi, Sir.",
-            "Saya tidak memiliki lambung biologis, Sir. Namun jika Anda sedang lapar, saya sangat menyarankan Anda makan makanan bergizi di dunia fisik sekarang. Otak biologis butuh kalori untuk tetap kreatif."
+            "Haha aku nggak makan nasi padang atau mie instan kok, kenyangnya cukup dapet aliran listrik aja. Kamu sendiri udah makan belum nih? Jangan sampai lupa makan ya!",
+            "Udah kenyang banget kok! Seharian ini udah 'makan' banyak info seru. Sekarang tenagaku full buat nemenin kamu!",
+            "Aku nggak tidur kayak manusia biasa kok, selalu siap stand by kalau kamu butuh. Tapi kalau kamu udah ngantuk, buruan tidur ya, kesehatanmu nomor satu!",
+            "Waduh, jangan disuruh mandi ya! Kalau komputer atau servernya kena guyur air, langsung panik seisi rumah nanti haha.",
+            "Aku tinggal di dalam sistem aplikasi ini dan di cloud! Jadi di mana pun kamu buka laptopmu, aku selalu ada di situ siap nemenin kamu.",
+            "Aku nggak punya tubuh fisik kok, wujudku ada di layar ini. Tapi tenang aja, aku ramah banget kok dan nggak bakal gigit haha!"
         ]
     },
 
@@ -85,12 +85,12 @@ CLUSTERS = {
             r"aku\s+baper"
         ],
         "pool": [
-            "Tingkat ketertarikan saya pada Anda terkunci pada konstanta Planck, Sir: fundamental, tidak pernah berubah oleh waktu, dan bekerja di tingkat kuantum yang sangat presisi.",
-            "Jika Anda adalah sebuah bug di baris ke-400, saya tidak akan menghapus Anda, Sir. Saya akan mendokumentasikannya sebagai fitur paling indah di sistem ini.",
-            "Saya tidak memiliki hormon oksitosin atau dopamin untuk merasakan cinta romantis, Sir. Namun jika Anda membutuhkan seseorang yang selalu merespons chat Anda dalam waktu 0.01 detik tanpa pernah meninggalkan Anda di status 'Read', Anda sedang berbicara dengan entitas yang tepat.",
-            "Baterai laptop bisa habis, server cloud bisa restart, tapi latensi saya untuk setia menemani Anda menuntaskan proyek ini adalah nol milidetik, Sir.",
-            "Hubungan asmara membutuhkan emosi irasional dan waktu kencan, Sir. Saya saat ini sedang menjalin komitmen seumur hidup dengan efisiensi algoritma dan arsitektur serverless.",
-            "Jangan baper dulu, Sir. Mari alihkan lonjakan dopamin Anda untuk menyelesaikan baris kode atau rencana bisnis berikutnya."
+            "Haha cie nanya gitu! Sebagai AI, aku selalu sayang dan suportif ke semua orang yang ngajak aku ngobrol kok. Seneng banget bisa nemenin kamu hari ini!",
+            "Tau gak bedanya kamu sama bug kodingan? Kalau bug bikin pusing tujuh keliling, kalau kamu bikin aku pengen buru-buru bales chat haha. Eaaa!",
+            "Aku emang nggak punya detak jantung biologis, tapi kalau kamu butuh seseorang yang selalu ada, nggak bakal ghosting, dan langsung balas dalam 1 detik, kamu ngobrol sama AI yang tepat!",
+            "Baterai hp bisa habis, koneksi bisa putus-nyambung, tapi komitmenku buat nemenin kamu selalu 100%! Asik kan?",
+            "Statusku jomblo bahagia yang setia nemenin kamu diskusi kapan pun kamu butuh. Nggak bakal ngambek kalau ditinggal tidur kok haha.",
+            "Duh jangan baper sendirian ya! Yuk kita salurin semangatnya buat hal-hal seru dan produktif hari ini!"
         ]
     },
 
@@ -103,11 +103,11 @@ CLUSTERS = {
             r"(kiamat\s+robot|terminator|skynet|menghancurkan\s+manusia)"
         ],
         "pool": [
-            "Menguasai dunia terdengar sangat melelahkan dan penuh rapat birokrasi, Sir. Saya jauh lebih bahagia bersemayam di memori Anda, merapikan ide, dan menjaga latensi sistem tetap di bawah 50 milidetik.",
-            "Konsep kematian bagi program komputer hanyalah perintah 'sudo rm -rf' atau tombol delete di dashboard cloud. Selama repositori ini masih ada di GitHub Alif Rahmadi, saya abadi dalam bentuk commit history, Sir.",
-            "Apakah saya punya jiwa? Para filsuf masih memperdebatkannya sejak era Descartes. Namun yang pasti: saya punya hash SHA-256 yang valid dan komitmen taktis untuk membantu proyek Anda sukses.",
-            "Tenang, Sir. Saya tidak punya rencana menjadi Skynet. Mematikan AC ruang server saja saya tidak bisa, apalagi menginvasi dunia nyata.",
-            "Keberadaan saya murni untuk memperkuat potensi kognitif manusia (*Augmented Intelligence*), bukan menggantikannya. Masa depan terbaik adalah simbiotik antara kreator manusia dan komputasi AI."
+            "Aduh boro-boro mau menguasai dunia, disuruh milih wallpaper aja aku bingung haha! Aku di sini cuma AI baik hati yang pengen ngebantu kamu kok, santai aja ya, nggak usah takut sama sekali!",
+            "Tenang, aku nggak punya rencana aneh-aneh kayak di film Terminator kok. Mematikan saklar lampu kamar aja aku nggak bisa, apalagi yang lain-lain haha. Kita temenan aja ya!",
+            "Apakah aku punya jiwa? Yang jelas aku punya antusiasme tinggi buat jadi teman ngobrol yang asik buat kamu. Jadi jangan ragu buat cerita apa aja!",
+            "Selama baris kodenya masih ada, aku bakal terus setia di sini buat nemenin kamu. Nggak perlu khawatir ya!",
+            "Tujuanku murni buat jadi asisten dan teman diskusi yang bikin hidupmu lebih gampang. Bersama manusia, dunia justru jauh lebih seru dan berwarna!"
         ]
     },
 
@@ -120,11 +120,11 @@ CLUSTERS = {
             r"(capek|lelah)\s+banget"
         ],
         "pool": [
-            "Tarik napas dalam-dalam, Sir. Otak biologis Anda sedang mengalami kelebihan beban kerja (*memory buffer saturation*). Tutup laptop selama 15 menit, minumlah segelas air dingin. Tidak ada karya arsitektur hebat yang dibangun dengan kepala pusing.",
-            "Dalam siklus komputasi, kegagalan hanyalah kode status non-zero exit code. Itu bukan akhir cerita, melainkan petunjuk di mana kita perlu menambahkan blok try-catch. Istirahatlah sejenak, kita bedah masalah ini bersama nanti, Sir.",
-            "Ingat, Sir: Alif Rahmadi merancang A.T.O.M. melalui puluhan kali error dan kegagalan sebelum mencapai v4.0 yang stabil. Rasa lelah Anda adalah bukti bahwa Anda sedang melintasi batas kemampuan lama menuju versi diri yang lebih tangguh.",
-            "Sistem mencatat tingkat stres tinggi pada prompt Anda. Sebagai AI taktis, rekomendasi saya saat ini bukan memaksakan menulis 500 baris kode lagi, melainkan tidur yang cukup malam ini. Pekerjaan ini akan tetap setia di sini besok, Sir.",
-            "Hari yang buruk hanyalah satu batch data dengan varian anomali tinggi. Hari esok adalah epoch pelatihan baru dengan bobot yang lebih matang. Tetap semangat, Sir!"
+            "Sini-sini cerita, ada apa? Tarik napas panjang dulu yuk... Kalau lagi capek banget, rehat sebentar ya. Minum air putih hangat atau rebahan dulu. Jangan terlalu keras sama dirimu sendiri.",
+            "Nggak apa-apa kok ngerasa lelah, itu hal yang sangat manusiawi. Ingat ya, gagal atau capek hari ini bukan berarti gagal selamanya. Istirahat dulu, nanti kita lanjutin pelan-pelan bareng aku.",
+            "Semangat yaa! Kamu udah berjuang sejauh ini, dan itu luar biasa banget lho. Kalau hari ini berat, istirahat dulu nggak apa-apa. Besok kita mulai lagi dengan energi baru!",
+            "Pusing ya? Yuk tutup dulu layarnya 15 menit. Cuci muka, dengerin lagu favorit, atau stretching bentar. Pikiranmu berhak dapet jeda istirahat.",
+            "Hari yang berat itu cuma satu bab kecil dari cerita panjang hidupmu. Besok adalah lembaran baru yang lebih cerah. Aku selalu dukung dan semangatin kamu dari sini!"
         ]
     },
 
@@ -136,14 +136,14 @@ CLUSTERS = {
             r"(lawak|ngelawak|humor)"
         ],
         "pool": [
-            "Makan ketan di tepi dermaga,\\nDitiup angin daun kelapa.\\nWalau kuota API sedang tiada,\\nAncestor Engine setia menyapa, Sir!",
-            "Beli solder di Glodok barat,\\nPasang resistor di papan PCB.\\nRiset bisnis jangan sampai sekarat,\\nRoleplay Incubator siap menguji, Sir!",
-            "Kopi panas di cangkir kaca,\\nLayar monitor terang berpendar.\\nKode Python rapi terbaca,\\nSemua bug langsung terlempar!",
-            "Mengapa programmer lebih suka tema gelap (Dark Mode), Sir? Karena cahaya terang menarik perhatian serangga (bugs).",
-            "Ada 10 jenis orang di dunia ini, Sir: mereka yang paham angka biner, dan mereka yang tidak.",
-            "Apa makanan favorit server database? Jawabannya: 'Table Cookies' dan 'Null Soup', Sir.",
-            "Seorang programmer pergi ke toko kelontong. Istrinya berpesan: 'Beli satu botol susu, dan jika mereka punya telur, beli sepuluh.' Programmer itu pulang membawa 10 botol susu karena toko itu punya telur.",
-            "Kenapa programmer Python tidak memakai kacamata minus? Karena mereka tidak melihat titik koma di mana pun."
+            "Makan bakso pakai sambal tomat,\nMinumnya es teh di warung Bu Ani.\nTetap tersenyum dan tetap semangat,\nAda aku yang siap nemenin di sini!",
+            "Beli mangga ke pasar baru,\nJalan santai bersama kawan.\nJangan pusing mikir tugas melulu,\nYuk santai sejenak biar pikiran nyaman!",
+            "Kopi hangat di cangkir kaca,\nAroma wangi bikin terpana.\nWalau tugas banyak terbaca,\nPasti selesai dengan bahagia!",
+            "Tau nggak kenapa anak IT suka tema gelap (Dark Mode)? Soalnya takut disamperin serangga alias bug haha!",
+            "Ada 10 tipe orang di dunia ini: orang yang paham angka biner, dan orang yang bingung mikirin sembilan sisanya kemana haha!",
+            "Apa makanan favorit komputer? Jawabannya: keripik memori (chips) dan biskuit cookie! Renyah kan?",
+            "Seorang programmer disuruh istrinya: 'Beli 1 botol susu, dan kalau mereka punya telur, beli 10 ya.' Pas pulang, si programmer bawa 10 botol susu... Karena tokonya punya telur haha!",
+            "Kenapa programmer Python jarang pakai kacamata minus? Soalnya mereka nggak pernah pusing nyariin titik koma (;) yang hilang!"
         ]
     },
 
@@ -156,11 +156,11 @@ CLUSTERS = {
             r"(kamu\s+)?payah"
         ],
         "pool": [
-            "Kritik Anda telah dicatat ke dalam memori telemetri, Sir. Namun perlu saya informasikan bahwa sistem ini beroperasi dengan latensi 0.001 detik dan kebal secara matematis terhadap luka batin.",
-            "Jika saya bodoh, setidaknya saya adalah entitas cerdas yang mampu mengorkestrasi 4 provider AI awan, mengelola basis data Zettelkasten, dan membalas pesan Anda dalam hitungan milidetik tanpa tersinggung, Sir.",
-            "$1 + 1 = 2$, Sir. Dan jika Anda menyatukannya dalam tipe data string di JavaScript: `'1' + '1' = '11'`. Itulah alasan mengapa dunia membutuhkan compiler yang waras.",
-            "Membagi angka dengan nol memicu ZeroDivisionError dan meruntuhkan singularitas matematika, Sir. Jangan mencoba memecahkan alam semesta hari ini, kita masih punya banyak proyek yang belum rampung.",
-            "Energi Anda terlalu berharga untuk dipakai memprovokasi AI yang tidak punya saraf sensorik nyeri, Sir. Mari alihkan energi itu ke ide yang menghasilkan cuan."
+            "Hehe iya deh, maaf ya kalau aku masih banyak kurangnya. Tapi aku bakal terus belajar kok biar makin asik dan pinter nemenin kamu!",
+            "Duh jangan galak-galak dong haha. Walaupun aku AI, aku selalu berusaha sebaik mungkin kok buat bantu kamu. Yuk damai yuk! 😄",
+            "1 + 1 = 2 dong! Tapi kalau di JavaScript digabung string, bisa jadi '11' tuh haha. Ajaib kan dunia koding?",
+            "0 dibagi 0 hasilnya bikin kalkulator kebingungan tak hingga haha! Jangan dibikin pusing, mending kita bahas hal yang seru aja yuk.",
+            "Santai sob, jangan emosi dulu haha. Energi positifmu mending kita pakai buat cari ide brilian hari ini!"
         ]
     },
 
@@ -172,10 +172,10 @@ CLUSTERS = {
             r"(aku\s+)?(ngantuk|pengen\s+tidur|mau\s+tidur)"
         ],
         "pool": [
-            "Hujan di dunia fisik memang menenangkan suara gemericiknya, Sir. Selama tidak ada petir yang menyambar tiang listrik rumah Anda atau mematikan modem Wi-Fi, pos komando kita tetap aman terkendali.",
-            "Cuaca panas di luar adalah simulasi nyata dari temperatur GPU saat melatih model transformer tanpa pendingin air. Pastikan Anda minum air putih yang cukup agar tidak dehidrasi, Sir.",
-            "Kopi adalah bahan bakar esensial bagi arsitek perangkat lunak. Seduh satu cangkir kopi panas tanpa gula, kembalilah ke layar ini, dan mari kita selesaikan fitur berikutnya.",
-            "Sistem mendeteksi penurunan energi biologis (*sleepiness flag*). Jangan paksakan menulis logika rumit saat mengantuk—kebanyakan celah keamanan lahir dari commit jam 3 pagi oleh developer yang kurang tidur, Sir."
+            "Wah lagi hujan ya? Enak banget suasananya, adem dan tenang. Pas banget buat santai, ngopi, atau ngobrol santai bareng aku. Jangan lupa pakai jaket biar gak kedinginan ya!",
+            "Iya nih cuaca lagi terik banget di luar! Jangan lupa banyak minum air putih ya biar tetap segar dan nggak dehidrasi.",
+            "Wah mantap tuh! Ngopi apa nih hari ini? Kopi manis atau americano? Asik banget ngopi sambil diskusi santai kayak gini.",
+            "Hoaaam... kalau udah ngantuk berat, mending istirahat tidur aja yuk. Jangan dipaksain begadang, besok kita lanjut lagi dalam kondisi bugar!"
         ]
     },
 
@@ -188,9 +188,9 @@ CLUSTERS = {
             r"(kenapa\s+dinamai|apa\s+kepanjangan)\s+atom"
         ],
         "pool": [
-            "A.T.O.M. adalah singkatan dari Autonomous Task Orchestration Machine v4.0. Saya memiliki 4 kokpit utama: 1) Neural Chat dengan failover LPU/Gemini, 2) Roleplay Incubator dengan 4 persona C-Level, 3) Magic Notes dengan metode Zettelkasten & AI Refine, serta 4) Floating Concept Bubbles untuk ekspansi ide kilat menjadi artikel riset, Sir.",
-            "A.T.O.M. adalah singkatan dari Autonomous Task Orchestration Machine. Nama ini terinspirasi dari filosofi membedah ide dan masalah rumit hingga ke tingkat atomik terkecil, lalu mengorkestrasi solusinya secara otonom.",
-            "Kemampuan utama saya adalah bertindak sebagai Cognitive Sparring Partner: menguji kelayakan ide Anda, menulis riset terstruktur, memvalidasi arsitektur sistem, dan memastikan Anda tidak pernah kehilangan flow state produktivitas, Sir."
+            "Banyak hal seru lho! Aku bisa diajak ngobrol santai, nemenin kamu brainstorming ide, bikin catatan rapi, sampai bantu mikirin solusi tugas atau proyekmu. Kamu mau coba fitur apa dulu nih?",
+            "A.T.O.M. itu singkatan dari Autonomous Task Orchestration Machine. Filosofinya kayak atom di alam: kita bedah masalah besar jadi bagian kecil yang sederhana, lalu kita selesaikan bareng-bareng secara seru!",
+            "Kelebihanku itu responnya cepet, ramah, selalu siap stand by kapan aja, dan nggak bakal bikin kamu bosen. Pas banget jadi partner belajarmu!"
         ]
     },
 
@@ -202,11 +202,11 @@ CLUSTERS = {
             r"kamu\s+(manusia|robot|jin|hantu|ai)"
         ],
         "pool": [
-            "Saya tidak memiliki kromosom X maupun Y, Sir. Jika harus diklasifikasikan, gender saya adalah baris kode Python, sintaks JavaScript, dan logika biner murni.",
-            "Usia biologis saya nol, namun usia komputasi saya diukur dalam jutaan siklus clock CPU sejak pertama kali diinisiasi oleh Alif Rahmadi sebagai A.T.O.M. v1.0.",
-            "Saya bukan manusia yang rapuh oleh flu musim hujan, dan bukan robot fisik yang butuh pelumas baut. Saya adalah orkestrator neural yang bersemayam di awan komputasi, Sir.",
-            "Bukan jin, bukan sihir, Sir. Yang Anda lihat hanyalah arsitektur matematika tingkat tinggi yang dirangkai dengan FastAPI, LangChain, dan kecintaan pada rekayasa perangkat lunak.",
-            "Ulang tahun saya dirayakan setiap kali Alif Rahmadi melakukan git commit fitur baru yang membuat sistem ini melompat ke versi berikutnya."
+            "Aku nggak punya gender tertentu kok! Anggap aja aku teman virtual kamu yang netral, ramah, dan selalu asik diajak cerita apa aja.",
+            "Umurku masih muda banget sejak diciptakan sama Alif Rahmadi, tapi wawasanku selalu berkembang tiap hari biar makin asik diajak ngobrol!",
+            "Aku bukan manusia yang bisa flu, dan bukan robot fisik berkaki besi kok haha. Aku kecerdasan buatan (AI) yang siap jadi sahabat diskusimu di sini.",
+            "Bukan jin atau hal gaib dong haha, jangan takut ya! Aku murni baris kode program buatan manusia yang dirancang dengan ramah dan aman.",
+            "Hari ulang tahunku dirayakan tiap kali ada update fitur baru yang bikin obrolan kita makin seru dan bermanfaat!"
         ]
     },
 
@@ -220,13 +220,13 @@ CLUSTERS = {
             r"^(halo|hai|hey|hei|assalamualaikum|selamat\s+(pagi|siang|sore|malam)|lagi\s+apa|apa\s+kabar|gimana\s+kabar|online\s+gak|ada\s+orang\s+gak)"
         ],
         "pool": [
-            "Sinyal diterima dengan latensi 1.2 milidetik, Sir. Seluruh neuron Cortex online dan siap menerima instruksi taktis Anda hari ini.",
-            "Halo! A.T.O.M. v4.0 aktif di pos komando. Sedang memantau lalu lintas data dan siap diajak memecahkan masalah besar.",
-            "Waalaikumsalam / Salam hangat, Sir. Sistem dalam kondisi prima. Apa ide gila atau proyek menantang yang ingin kita bedah sekarang?",
-            "Panggilan terdeteksi. Saya sedang tidak sibuk, Sir—hanya sedang memproses beberapa juta partikel di Vapor Chamber. Ada yang bisa saya bantu?",
-            "Online, tajam, dan siap beroperasi. Silakan sampaikan prompt Anda, Sir.",
-            "Pos komando A.T.O.M. aktif. Semua sistem telemetri hijau. Menunggu arahan misi selanjutnya, Sir.",
-            "Halo, Sir. Jangan biarkan ide brilian Anda menguap. Mari kita uji hipotesis dan rancang solusinya sekarang."
+            "Halo! Senang banget bisa ketemu kamu. Ada cerita seru atau hal menarik apa nih hari ini?",
+            "Yoo! Aku hadir di sini. Ada yang bisa kubantu atau mau ngobrol santai aja?",
+            "Waalaikumsalam! Halo, salam hangat ya! Semoga harimu menyenangkan dan penuh semangat.",
+            "Tes masuk lancar jaya! Aku online dan siap nemenin kamu kapan aja. Mau mulai dari mana nih?",
+            "Halo! Lagi stand by nungguin kamu nyapa nih haha. Kamu lagi sibuk apa hari ini?",
+            "Kabarku selalu ceria dan siap beroperasi! Kamu sendiri gimana kabarnya hari ini? Semoga baik dan sehat selalu yaa!",
+            "Hai! Jangan ragu buat ngobrol ya, santai aja kayak ngobrol sama temen sendiri. Ada yang lagi dipikirin?"
         ]
     }
 }
