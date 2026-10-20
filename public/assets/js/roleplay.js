@@ -293,6 +293,7 @@ async function sendRpMessage() {
   const displayPrompt = prompt || '[Lampiran Dikirim]';
   renderMessage('user', displayPrompt);
   rpChatHistory.push({ role: 'user', content: displayPrompt });
+  saveRpHistory();
   updateEmptyState();
   scrollToBottom(messagesArea);
 
@@ -616,21 +617,23 @@ async function syncRpSessionsWithBackend() {
     const res = await fetch('/api/sessions/roleplay');
     if (!res.ok) return;
     const data = await res.json();
-    const serverSessions = data.sessions || [];
-    
-    if (serverSessions.length > 0) {
-      const isClientEmpty = rpSessions.length === 0 || 
-        (rpSessions.length === 1 && rpSessions[0].title.includes('Sesi Baru') && (!rpSessions[0].messages || rpSessions[0].messages.length === 0));
-        
-      if (isClientEmpty || serverSessions.length >= rpSessions.length) {
+    const serverSessions = (data && Array.isArray(data.sessions)) ? data.sessions : [];
+
+    const isClientEmpty = !rpSessions || rpSessions.length === 0 || 
+      (rpSessions.length === 1 && (!rpSessions[0].messages || rpSessions[0].messages.length === 0));
+
+    // Case 1: Client is empty, but server has sessions with messages
+    if (isClientEmpty && serverSessions.length > 0) {
+      const serverHasMessages = serverSessions.some(s => s.messages && s.messages.length > 0);
+      if (serverHasMessages) {
         rpSessions = serverSessions;
         currentRpSessionId = data.active_id || serverSessions[0].id;
         const active = rpSessions.find(s => s.id === currentRpSessionId) || rpSessions[0];
-        rpChatHistory = active.messages || [];
-        if (active.personaId) selectRolePersona(active.personaId);
+        rpChatHistory = active ? (active.messages || []) : [];
+        if (active && active.personaId) selectRolePersona(active.personaId);
         try {
           localStorage.setItem('atom_rp_sessions', JSON.stringify(rpSessions));
-          localStorage.setItem('atom_rp_active_session_id', currentRpSessionId);
+          if (currentRpSessionId) localStorage.setItem('atom_rp_active_session_id', currentRpSessionId);
         } catch {}
         renderCurrentMessages();
         renderRpSessionsSidebar();
@@ -639,15 +642,85 @@ async function syncRpSessionsWithBackend() {
       }
     }
 
-    if (rpSessions.length > 0 && serverSessions.length === 0) {
-      saveRpSessionsToBackend();
+    // Case 2: Server has no sessions but client has active chats -> persist immediately
+    if (!isClientEmpty && serverSessions.length === 0) {
+      saveRpSessionsToBackend(true);
+      return;
+    }
+
+    // Case 3: Both exist -> Intelligently merge by session id without data loss
+    if (serverSessions.length > 0 && rpSessions.length > 0) {
+      const sessionMap = new Map();
+      let hasChanges = false;
+      let clientHadNewer = false;
+
+      // Seed with server sessions
+      serverSessions.forEach(s => {
+        if (s && s.id) sessionMap.set(s.id, s);
+      });
+
+      // Compare with client sessions
+      rpSessions.forEach(clientSess => {
+        if (!clientSess || !clientSess.id) return;
+        const serverSess = sessionMap.get(clientSess.id);
+
+        if (!serverSess) {
+          sessionMap.set(clientSess.id, clientSess);
+          clientHadNewer = true;
+        } else {
+          const clientMsgs = clientSess.messages || [];
+          const serverMsgs = serverSess.messages || [];
+          const clientTime = clientSess.updatedAt || 0;
+          const serverTime = serverSess.updatedAt || 0;
+
+          if (clientMsgs.length > serverMsgs.length || (clientMsgs.length === serverMsgs.length && clientTime >= serverTime)) {
+            sessionMap.set(clientSess.id, clientSess);
+            if (clientMsgs.length > serverMsgs.length || clientTime > serverTime) {
+              clientHadNewer = true;
+            }
+          } else {
+            sessionMap.set(clientSess.id, serverSess);
+            hasChanges = true;
+          }
+        }
+      });
+
+      if (sessionMap.size !== rpSessions.length) {
+        hasChanges = true;
+      }
+
+      if (hasChanges || clientHadNewer) {
+        rpSessions = Array.from(sessionMap.values()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+        if (!rpSessions.some(s => s.id === currentRpSessionId)) {
+          currentRpSessionId = rpSessions[0]?.id || null;
+        }
+        const active = rpSessions.find(s => s.id === currentRpSessionId);
+        if (active) {
+          rpChatHistory = active.messages || [];
+          if (active.personaId) selectRolePersona(active.personaId);
+        }
+
+        try {
+          localStorage.setItem('atom_rp_sessions', JSON.stringify(rpSessions));
+          if (currentRpSessionId) localStorage.setItem('atom_rp_active_session_id', currentRpSessionId);
+        } catch {}
+
+        renderCurrentMessages();
+        renderRpSessionsSidebar();
+        updateEmptyState();
+
+        if (clientHadNewer) {
+          saveRpSessionsToBackend(true);
+        }
+      }
     }
   } catch {}
 }
 
-function saveRpSessionsToBackend() {
+function saveRpSessionsToBackend(immediate = false) {
   clearTimeout(rpSyncTimer);
-  rpSyncTimer = setTimeout(async () => {
+  const doSave = async () => {
     try {
       await fetch('/api/sessions/roleplay', {
         method: 'POST',
@@ -655,21 +728,32 @@ function saveRpSessionsToBackend() {
         body: JSON.stringify({
           sessions: rpSessions,
           active_id: currentRpSessionId
-        })
+        }),
+        keepalive: true
       });
     } catch {}
-  }, 400);
+  };
+
+  if (immediate) {
+    doSave();
+  } else {
+    rpSyncTimer = setTimeout(doSave, 300);
+  }
 }
 
-function saveRpSessions() {
+function saveRpSessions(immediateBackend = false) {
   try {
     localStorage.setItem('atom_rp_sessions', JSON.stringify(rpSessions));
     if (currentRpSessionId) {
       localStorage.setItem('atom_rp_active_session_id', currentRpSessionId);
     }
   } catch {}
-  saveRpSessionsToBackend();
+  saveRpSessionsToBackend(immediateBackend);
 }
+
+// Flush pending changes before page unloads
+window.addEventListener('beforeunload', () => saveRpSessionsToBackend(true));
+window.addEventListener('pagehide', () => saveRpSessionsToBackend(true));
 
 function saveRpHistory() {
   if (!currentRpSessionId) currentRpSessionId = 'rp_' + Date.now();

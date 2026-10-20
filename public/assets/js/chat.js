@@ -21,6 +21,7 @@ const fileUploadEl     = document.getElementById('file-upload');
 const attachedFilesEl  = document.getElementById('attached-files');
 const btnClearChat     = document.getElementById('btn-clear-chat');
 const btnNewChat       = document.getElementById('btn-new-chat');
+const btnTopbarNewChat = document.getElementById('btn-topbar-new-chat');
 const chatSessionsList = document.getElementById('chat-sessions-list');
 
 // ─── Init ─────────────────────────────────────────────────
@@ -32,6 +33,9 @@ function init() {
   renderSessionsSidebar();
 
   btnNewChat?.addEventListener('click', () => {
+    createNewSession();
+  });
+  btnTopbarNewChat?.addEventListener('click', () => {
     createNewSession();
   });
 
@@ -220,6 +224,7 @@ async function sendMessage() {
   const displayPrompt = prompt || (hasFiles ? (contextFiles.some(f => f.type?.startsWith('image/')) ? '[Gambar Terlampir]' : '[Dokumen Terlampir]') : '');
   renderMessage('user', displayPrompt);
   chatHistory.push({ role: 'user', content: displayPrompt });
+  saveHistory();
   updateEmptyState();
   scrollToBottom(messagesArea);
 
@@ -702,20 +707,22 @@ async function syncSessionsWithBackend() {
     const res = await fetch('/api/sessions/chat');
     if (!res.ok) return;
     const data = await res.json();
-    const serverSessions = data.sessions || [];
-    
-    if (serverSessions.length > 0) {
-      const isClientEmpty = chatSessions.length === 0 || 
-        (chatSessions.length === 1 && chatSessions[0].title === 'Percakapan Baru' && (!chatSessions[0].messages || chatSessions[0].messages.length === 0));
-      
-      if (isClientEmpty || serverSessions.length >= chatSessions.length) {
+    const serverSessions = (data && Array.isArray(data.sessions)) ? data.sessions : [];
+
+    const isClientEmpty = !chatSessions || chatSessions.length === 0 || 
+      (chatSessions.length === 1 && (!chatSessions[0].messages || chatSessions[0].messages.length === 0));
+
+    // Case 1: Client is empty, but server has sessions with messages
+    if (isClientEmpty && serverSessions.length > 0) {
+      const serverHasMessages = serverSessions.some(s => s.messages && s.messages.length > 0);
+      if (serverHasMessages) {
         chatSessions = serverSessions;
         currentSessionId = data.active_id || serverSessions[0].id;
         const active = chatSessions.find(s => s.id === currentSessionId) || chatSessions[0];
-        chatHistory = active.messages || [];
+        chatHistory = active ? (active.messages || []) : [];
         try {
           localStorage.setItem('atom_chat_sessions', JSON.stringify(chatSessions));
-          localStorage.setItem('atom_active_session_id', currentSessionId);
+          if (currentSessionId) localStorage.setItem('atom_active_session_id', currentSessionId);
         } catch {}
         renderCurrentSessionMessages();
         renderSessionsSidebar();
@@ -723,18 +730,90 @@ async function syncSessionsWithBackend() {
         return;
       }
     }
-    
-    if (chatSessions.length > 0 && serverSessions.length === 0) {
-      saveSessionsToBackend();
+
+    // Case 2: Server has no sessions but client has active chats -> persist immediately
+    if (!isClientEmpty && serverSessions.length === 0) {
+      saveSessionsToBackend(true);
+      return;
+    }
+
+    // Case 3: Both exist -> Intelligently merge by session id without data loss
+    if (serverSessions.length > 0 && chatSessions.length > 0) {
+      const sessionMap = new Map();
+      let hasChanges = false;
+      let clientHadNewer = false;
+
+      // Seed with server sessions
+      serverSessions.forEach(s => {
+        if (s && s.id) sessionMap.set(s.id, s);
+      });
+
+      // Compare with client sessions
+      chatSessions.forEach(clientSess => {
+        if (!clientSess || !clientSess.id) return;
+        const serverSess = sessionMap.get(clientSess.id);
+
+        if (!serverSess) {
+          // Exists on client only -> keep
+          sessionMap.set(clientSess.id, clientSess);
+          clientHadNewer = true;
+        } else {
+          const clientMsgs = clientSess.messages || [];
+          const serverMsgs = serverSess.messages || [];
+          const clientTime = clientSess.updatedAt || 0;
+          const serverTime = serverSess.updatedAt || 0;
+
+          // If client has more messages or equal messages with newer timestamp, retain client
+          if (clientMsgs.length > serverMsgs.length || (clientMsgs.length === serverMsgs.length && clientTime >= serverTime)) {
+            sessionMap.set(clientSess.id, clientSess);
+            if (clientMsgs.length > serverMsgs.length || clientTime > serverTime) {
+              clientHadNewer = true;
+            }
+          } else {
+            // Server has newer/more messages
+            sessionMap.set(clientSess.id, serverSess);
+            hasChanges = true;
+          }
+        }
+      });
+
+      if (sessionMap.size !== chatSessions.length) {
+        hasChanges = true;
+      }
+
+      if (hasChanges || clientHadNewer) {
+        chatSessions = Array.from(sessionMap.values()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+        if (!chatSessions.some(s => s.id === currentSessionId)) {
+          currentSessionId = chatSessions[0]?.id || null;
+        }
+        const active = chatSessions.find(s => s.id === currentSessionId);
+        if (active) {
+          chatHistory = active.messages || [];
+        }
+
+        try {
+          localStorage.setItem('atom_chat_sessions', JSON.stringify(chatSessions));
+          if (currentSessionId) localStorage.setItem('atom_active_session_id', currentSessionId);
+        } catch {}
+
+        renderCurrentSessionMessages();
+        renderSessionsSidebar();
+        updateEmptyState();
+
+        if (clientHadNewer) {
+          saveSessionsToBackend(true);
+        }
+      }
     }
   } catch {
     // Offline / fallback to localStorage
   }
 }
 
-function saveSessionsToBackend() {
+function saveSessionsToBackend(immediate = false) {
   clearTimeout(chatSyncTimer);
-  chatSyncTimer = setTimeout(async () => {
+  const doSave = async () => {
     try {
       await fetch('/api/sessions/chat', {
         method: 'POST',
@@ -742,13 +821,20 @@ function saveSessionsToBackend() {
         body: JSON.stringify({
           sessions: chatSessions,
           active_id: currentSessionId
-        })
+        }),
+        keepalive: true
       });
     } catch {}
-  }, 400);
+  };
+
+  if (immediate) {
+    doSave();
+  } else {
+    chatSyncTimer = setTimeout(doSave, 300);
+  }
 }
 
-function saveSessionsToStorage() {
+function saveSessionsToStorage(immediateBackend = false) {
   try {
     localStorage.setItem('atom_chat_sessions', JSON.stringify(chatSessions));
     if (currentSessionId) {
@@ -756,9 +842,15 @@ function saveSessionsToStorage() {
     }
     // Backward compatibility
     localStorage.setItem('atom_chat_history', JSON.stringify(chatHistory.slice(-50)));
-  } catch { /* quota limit handling */ }
-  saveSessionsToBackend();
+  } catch (e) {
+    console.warn('[ATOM] localStorage quota exceeded or error:', e);
+  }
+  saveSessionsToBackend(immediateBackend);
 }
+
+// Flush pending changes before page unloads (e.g. switching sidebar / changing page)
+window.addEventListener('beforeunload', () => saveSessionsToBackend(true));
+window.addEventListener('pagehide', () => saveSessionsToBackend(true));
 
 function saveHistory() {
   if (!currentSessionId) {

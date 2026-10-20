@@ -1416,6 +1416,15 @@ input:checked + .atom-toggle-slider:before {
   border-radius: var(--radius-md);
 }
 
+.btn-sm.btn-icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* ─── Cards / Panels ─── */
 .card {
   background: rgba(22, 27, 34, 0.3);
