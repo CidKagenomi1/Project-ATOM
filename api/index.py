@@ -790,36 +790,41 @@ async def fetch_bulletin(category: Optional[str] = "technology", q: Optional[str
     headers = {"User-Agent": "ATOM-System/1.0"}
     try:
         if is_national:
-            # 1. National (Indonesian) Feed
+            # 1. National (Indonesian) Feed - Broad coverage, strictly non-criminal
+            crime_negatives = "-pembunuhan -narkoba -curanmor -pencurian -begal -mutilasi -tawuran"
             if q and q.strip():
-                safe_q = requests.utils.quote(q.strip())
+                safe_q = requests.utils.quote(f"({q.strip()}) {crime_negatives}")
                 newsapi_url = f"https://newsapi.org/v2/everything?q={safe_q}&language=id&sortBy=publishedAt&apiKey={news_api_key}"
             else:
                 id_cat_queries = {
-                    "technology": "teknologi OR AI OR gadget OR startup OR 'rekayasa perangkat lunak'",
-                    "artificial intelligence": "kecerdasan buatan OR AI OR 'machine learning' OR robotik",
-                    "science": "sains OR penelitian OR riset OR astronomi OR iklim",
-                    "cybersecurity": "keamanan siber OR hacker OR ransomware OR 'kebocoran data' OR peretasan",
-                    "business": "bisnis OR ekonomi OR saham OR investasi OR keuangan OR perbankan",
-                    "general": "indonesia OR nasional OR pemilu OR ikn OR jakarta"
+                    "general": f"(indonesia OR nasional OR pembangunan OR ikn OR presiden OR masyarakat OR infrastruktur) {crime_negatives}",
+                    "politics": f"(politik OR dpr OR mpr OR kementerian OR pemilu OR pilkada OR menteri OR presiden OR kebijakan) {crime_negatives}",
+                    "business": f"(bisnis OR ekonomi OR saham OR investasi OR perbankan OR industri OR bumn OR rupiah) {crime_negatives}",
+                    "culture": f"(pendidikan OR kampus OR sekolah OR kebudayaan OR pariwisata OR seni OR tradisi) {crime_negatives}",
+                    "technology": f"(teknologi OR 'kecerdasan buatan' OR AI OR startup OR gadget OR digital) {crime_negatives}"
                 }
-                cat_key = (category or "technology").lower()
-                cat_query = id_cat_queries.get(cat_key, "teknologi OR sains OR bisnis OR nasional")
+                cat_key = (category or "general").lower()
+                cat_query = id_cat_queries.get(cat_key, id_cat_queries["general"])
                 safe_cat_q = requests.utils.quote(cat_query)
                 newsapi_url = f"https://newsapi.org/v2/everything?q={safe_cat_q}&language=id&sortBy=publishedAt&apiKey={news_api_key}"
         else:
-            # 2. International (Global) Feed
+            # 2. International (Global) Feed - Diverse science branches (biology, geography, astronomy, discoveries) & tech
             if q and q.strip():
                 safe_q = requests.utils.quote(q.strip())
                 newsapi_url = f"https://newsapi.org/v2/everything?q={safe_q}&sortBy=publishedAt&language=en&apiKey={news_api_key}"
             else:
-                cat = (category or "technology").lower()
-                if cat in ["technology", "science", "business", "general", "health"]:
-                    newsapi_url = f"https://newsapi.org/v2/top-headlines?category={cat}&language=en&apiKey={news_api_key}"
-                elif cat in ["artificial intelligence", "ai"]:
-                    newsapi_url = f"https://newsapi.org/v2/everything?q=artificial%20intelligence%20OR%20AI&sortBy=publishedAt&language=en&apiKey={news_api_key}"
-                elif cat in ["cybersecurity", "cyber"]:
-                    newsapi_url = f"https://newsapi.org/v2/everything?q=cybersecurity%20OR%20%22data%20breach%22%20OR%20ransomware&sortBy=publishedAt&language=en&apiKey={news_api_key}"
+                intl_cat_queries = {
+                    "technology": "technology OR 'artificial intelligence' OR software OR computing OR gadget",
+                    "biology": "biology OR wildlife OR genetics OR evolution OR biodiversity OR 'marine life'",
+                    "geography": "geography OR geology OR volcano OR oceanography OR climate OR 'earth science'",
+                    "astronomy": "astronomy OR astrophysics OR telescope OR 'deep space' OR cosmology OR quantum",
+                    "discoveries": "archaeology OR discovery OR 'ancient civilization' OR fossil OR paleontology",
+                    "business": "global economy OR markets OR 'stock market' OR inflation OR trade"
+                }
+                cat_key = (category or "technology").lower()
+                if cat_key in intl_cat_queries:
+                    safe_cat_q = requests.utils.quote(intl_cat_queries[cat_key])
+                    newsapi_url = f"https://newsapi.org/v2/everything?q={safe_cat_q}&sortBy=publishedAt&language=en&apiKey={news_api_key}"
                 else:
                     newsapi_url = f"https://newsapi.org/v2/top-headlines?category=technology&language=en&apiKey={news_api_key}"
             
@@ -836,12 +841,29 @@ async def fetch_bulletin(category: Optional[str] = "technology", q: Optional[str
         if response.status_code == 200:
             data = response.json()
             articles = []
+            crime_bad_words = [
+                "pembunuhan", "dibunuh", "tewas dibunuh", "mutilasi", "mayat", "jenazah",
+                "narkoba", "sabu", "ganja", "ekstasi", "miras", "razia thm", "diskotek",
+                "pemerkosaan", "pencabulan", "pelecehan seksual", "rudapaksa",
+                "pencurian", "mencuri", "curanmor", "maling", "perampokan", "rampok", "begal",
+                "tawuran", "pengeroyokan", "bacok", "senjata tajam", "penikaman",
+                "judi online", "judol", "slot online", "slot gacor", "taruhan",
+                "penipuan", "penggelapan", "penganiayaan"
+            ]
             for art in data.get("articles", []):
+                title = art.get("title", "Untitled Transmission")
                 desc = art.get("description", "") or ""
                 body = art.get("content", "") or ""
+
+                # Explicitly exclude crime news on national scope
+                if is_national:
+                    haystack = (title + " " + desc).lower()
+                    if any(bad in haystack for bad in crime_bad_words):
+                        continue
+
                 articles.append({
-                    "id": art.get("url") or art.get("title", "unknown-id"),
-                    "title": art.get("title", "Untitled Transmission"),
+                    "id": art.get("url") or title,
+                    "title": title,
                     "description": desc,
                     "content": (desc + "\n\n" + body).strip() or desc or "Konten artikel lengkap dapat dibaca langsung pada tautan sumber asli.",
                     "source": art.get("source", {}).get("name", "Unknown Source"),

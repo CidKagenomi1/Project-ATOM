@@ -160,11 +160,22 @@
           <!-- Region / Scope Switcher (Internasional vs Nasional) -->
           <div class="topics-scope-switcher" role="radiogroup" aria-label="Cakupan Wilayah Berita">
             <button type="button" class="scope-toggle-btn active" data-scope="international" id="scope-intl-btn" title="Berita Global / Mancanegara">
-              <span class="scope-icon">🌐</span>
+              <span class="scope-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+              </span>
               <span class="scope-text">Internasional</span>
             </button>
             <button type="button" class="scope-toggle-btn" data-scope="national" id="scope-nat-btn" title="Berita Nasional Indonesia">
-              <span class="scope-icon">🇮🇩</span>
+              <span class="scope-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+                  <line x1="4" y1="22" x2="4" y2="15"></line>
+                </svg>
+              </span>
               <span class="scope-text">Nasional</span>
             </button>
           </div>
@@ -182,23 +193,14 @@
 
         <!-- Filter Chips Row -->
         <div class="topics-filters-row">
-          <button class="filter-chip active" data-category="technology" data-label="All Tech">
-            ⚡ All Tech
-          </button>
-          <button class="filter-chip" data-category="artificial intelligence" data-label="AI & Robotics">
-            🤖 AI & Robotics
-          </button>
-          <button class="filter-chip" data-category="science" data-label="Science & Quantum">
-            🔬 Science & Quantum
-          </button>
-          <button class="filter-chip" data-category="cybersecurity" data-label="Cyber & Infosec">
-            🛡️ Cybersecurity
-          </button>
-          <button class="filter-chip" data-category="business" data-label="Business & Startups">
-            💼 Business & Startups
-          </button>
-          <button class="filter-chip bookmark-chip" data-category="bookmarks" data-label="Bookmarks">
-            🔖 Tersimpan <span class="filter-count-badge" id="bookmarkCountBadge">0</span>
+          <div class="topics-chips-container" id="topicsChipsContainer" style="display: flex; gap: 8px; align-items: center; flex-shrink: 0;">
+            <!-- Category Chips will be dynamically rendered based on scope -->
+          </div>
+          <button class="filter-chip bookmark-chip" data-category="bookmarks" data-label="Bookmarks" id="bookmarkFilterChip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+            </svg>
+            Tersimpan <span class="filter-count-badge" id="bookmarkCountBadge">0</span>
           </button>
 
           <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
@@ -218,7 +220,12 @@
           <!-- Spotlight Card (Breaking / Top Story) -->
           <div id="spotlightWrapper" style="display: none;">
             <div class="topics-spotlight-card" id="spotlightCard">
-              <div class="spotlight-badge">⭐ Sorotan Transmisi Utama</div>
+              <div class="spotlight-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="display:inline-block; vertical-align:-1px; margin-right:4px;">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                Sorotan Transmisi Utama
+              </div>
               <h2 class="spotlight-title" id="spotlightTitle">Loading headline...</h2>
               <p class="spotlight-desc" id="spotlightDesc">Fetching latest intelligence stream...</p>
               <div class="spotlight-meta">
@@ -297,16 +304,32 @@
               Bedah AI
             </button>
             <button class="btn btn-secondary btn-sm" onclick="sendCurrentToNotes()" title="Simpan artikel ini ke Magic Notes Zettelkasten">
-              📝 Ke Notes
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z"></path>
+              </svg>
+              Ke Notes
             </button>
             <button class="btn btn-secondary btn-sm" onclick="sendCurrentToChat()" title="Bawa artikel ini ke Chat untuk dianalisis bersama">
-              💬 Diskusi di Chat
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+              Diskusi di Chat
             </button>
             <button class="btn btn-secondary btn-sm" onclick="copyCurrentArticle()" title="Salin kutipan artikel">
-              📋 Salin
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              Salin
             </button>
             <a id="readerExternalLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="margin-left: auto;">
-              🌐 Sumber Asli ↗
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+              Sumber Asli ↗
             </a>
           </div>
         </aside>
@@ -320,7 +343,7 @@
 
   <script src="assets/js/particles.js?v=4.8"></script>
   <script src="assets/js/app.js?v=5.1"></script>
-  <script src="assets/js/topics.js?v=1.2"></script>
+  <script src="assets/js/topics.js?v=1.4"></script>
   <script src="assets/js/mobile-ui.js"></script>
 </body>
 </html>

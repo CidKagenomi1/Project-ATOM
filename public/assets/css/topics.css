@@ -126,17 +126,34 @@
 }
 
 .scope-icon {
-  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
 }
 
+.scope-icon svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+}
+
 .scope-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   font-size: 0.65rem;
   font-family: var(--font-mono);
   font-weight: 700;
   padding: 1px 6px;
   border-radius: 3px;
   letter-spacing: 0.02em;
+}
+
+.scope-tag svg {
+  width: 11px;
+  height: 11px;
+  stroke: currentColor;
 }
 
 .scope-tag-nat {
@@ -232,6 +249,13 @@
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.filter-chip svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  stroke: currentColor;
 }
 
 .filter-chip:hover {

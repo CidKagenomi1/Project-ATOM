@@ -12,6 +12,77 @@ let currentQuery = '';
 let isBookmarkView = false;
 let searchDebounceTimer = null;
 
+// Scope Configurations & Categories with crisp SVG icons (Vercel/Linear tactical precision)
+const SCOPE_CONFIG = {
+    international: {
+        defaultCategory: 'technology',
+        placeholder: 'Cari topik global, biologi, bumi, antariksa, sains, teknologi...',
+        categories: [
+            {
+                id: 'technology',
+                label: 'All Tech',
+                svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>'
+            },
+            {
+                id: 'biology',
+                label: 'Biologi & Alam',
+                svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>'
+            },
+            {
+                id: 'geography',
+                label: 'Geografi & Bumi',
+                svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>'
+            },
+            {
+                id: 'astronomy',
+                label: 'Astronomi & Fisika',
+                svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="3"></circle><path d="M3 12a9 9 0 0 1 18 0"></path><path d="M5.6 5.6a9 9 0 0 1 12.8 12.8"></path></svg>'
+            },
+            {
+                id: 'discoveries',
+                label: 'Wawasan & Arkeologi',
+                svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>'
+            },
+            {
+                id: 'business',
+                label: 'Bisnis Global',
+                svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>'
+            }
+        ]
+    },
+    national: {
+        defaultCategory: 'general',
+        placeholder: 'Cari isu nasional, kebijakan, ekonomi, pendidikan, nusantara...',
+        categories: [
+            {
+                id: 'general',
+                label: 'Semua Nasional',
+                svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>'
+            },
+            {
+                id: 'politics',
+                label: 'Politik & Kebijakan',
+                svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="3" y1="22" x2="21" y2="22"></line><line x1="6" y1="18" x2="6" y2="11"></line><line x1="10" y1="18" x2="10" y2="11"></line><line x1="14" y1="18" x2="14" y2="11"></line><line x1="18" y1="18" x2="18" y2="11"></line><polygon points="12 2 20 7 4 7"></polygon></svg>'
+            },
+            {
+                id: 'business',
+                label: 'Ekonomi & Bisnis',
+                svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>'
+            },
+            {
+                id: 'culture',
+                label: 'Edukasi & Budaya',
+                svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>'
+            },
+            {
+                id: 'technology',
+                label: 'Teknologi Nusantara',
+                svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>'
+            }
+        ]
+    }
+};
+
 // DOM Elements
 const feedGrid = document.getElementById('topicsGrid');
 const spotlightCard = document.getElementById('spotlightCard');
@@ -19,17 +90,56 @@ const spotlightWrapper = document.getElementById('spotlightWrapper');
 const readerDrawer = document.getElementById('readerDrawer');
 const searchInput = document.getElementById('topicsSearch');
 const clearSearchBtn = document.getElementById('clearSearch');
-const filterChips = document.querySelectorAll('.filter-chip');
+const bookmarkFilterChip = document.getElementById('bookmarkFilterChip');
 const liveCountEl = document.getElementById('liveCount');
 const activeCategoryLabel = document.getElementById('activeCategoryLabel');
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
+    renderCategoryChips();
     setupEventListeners();
     updateActiveCategoryHeader();
     await loadBookmarks();
     await loadTopics();
 });
+
+function renderCategoryChips() {
+    const container = document.getElementById('topicsChipsContainer');
+    if (!container) return;
+
+    const config = SCOPE_CONFIG[currentScope] || SCOPE_CONFIG.international;
+    container.innerHTML = '';
+
+    config.categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `filter-chip ${(!isBookmarkView && currentCategory === cat.id) ? 'active' : ''}`;
+        btn.dataset.category = cat.id;
+        btn.dataset.label = cat.label;
+        btn.innerHTML = `${cat.svg} <span>${cat.label}</span>`;
+
+        btn.addEventListener('click', () => {
+            isBookmarkView = false;
+            currentCategory = cat.id;
+            currentQuery = '';
+            if (searchInput) searchInput.value = '';
+            if (clearSearchBtn) clearSearchBtn.style.display = 'none';
+
+            container.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            if (bookmarkFilterChip) bookmarkFilterChip.classList.remove('active');
+            btn.classList.add('active');
+
+            updateActiveCategoryHeader();
+            loadTopics();
+        });
+
+        container.appendChild(btn);
+    });
+
+    if (searchInput) {
+        searchInput.placeholder = config.placeholder;
+    }
+}
 
 function updateActiveCategoryHeader() {
     if (!activeCategoryLabel) return;
@@ -37,9 +147,10 @@ function updateActiveCategoryHeader() {
         activeCategoryLabel.textContent = 'Bookmarks';
         return;
     }
-    const scopeLabel = currentScope === 'national' ? '🇮🇩 Nasional' : '🌐 Internasional';
-    const activeChip = document.querySelector('.filter-chip.active');
-    const catLabel = activeChip ? (activeChip.dataset.label || activeChip.textContent.trim()) : currentCategory;
+    const scopeLabel = currentScope === 'national' ? 'Nasional' : 'Internasional';
+    const config = SCOPE_CONFIG[currentScope] || SCOPE_CONFIG.international;
+    const catObj = config.categories.find(c => c.id === currentCategory);
+    const catLabel = catObj ? catObj.label : currentCategory;
     activeCategoryLabel.textContent = `${scopeLabel} • ${catLabel}`;
 }
 
@@ -54,39 +165,35 @@ function setupEventListeners() {
             scopeBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
 
-            if (isBookmarkView) {
-                isBookmarkView = false;
-                filterChips.forEach(c => c.classList.remove('active'));
-                const activeChip = document.querySelector(`.filter-chip[data-category="${currentCategory}"]`) || filterChips[0];
-                if (activeChip) activeChip.classList.add('active');
-            }
+            // Switch default category for this scope
+            const config = SCOPE_CONFIG[currentScope] || SCOPE_CONFIG.international;
+            currentCategory = config.defaultCategory;
+            isBookmarkView = false;
+            currentQuery = '';
+            if (searchInput) searchInput.value = '';
+            if (clearSearchBtn) clearSearchBtn.style.display = 'none';
+
+            if (bookmarkFilterChip) bookmarkFilterChip.classList.remove('active');
+
+            renderCategoryChips();
             updateActiveCategoryHeader();
             loadTopics();
         });
     });
 
-    // Category chips
-    filterChips.forEach(chip => {
-        chip.addEventListener('click', () => {
-            const cat = chip.dataset.category;
-            filterChips.forEach(c => c.classList.remove('active'));
-            chip.classList.add('active');
-
-            if (cat === 'bookmarks') {
-                isBookmarkView = true;
-                activeCategoryLabel.textContent = 'Bookmarks';
-                loadBookmarksView();
-            } else {
-                isBookmarkView = false;
-                currentCategory = cat;
-                currentQuery = '';
-                if (searchInput) searchInput.value = '';
-                if (clearSearchBtn) clearSearchBtn.style.display = 'none';
-                updateActiveCategoryHeader();
-                loadTopics();
+    // Bookmark Filter Chip
+    if (bookmarkFilterChip) {
+        bookmarkFilterChip.addEventListener('click', () => {
+            isBookmarkView = true;
+            const container = document.getElementById('topicsChipsContainer');
+            if (container) {
+                container.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
             }
+            bookmarkFilterChip.classList.add('active');
+            updateActiveCategoryHeader();
+            loadBookmarksView();
         });
-    });
+    }
 
     // Search input
     if (searchInput) {
@@ -250,7 +357,7 @@ function renderFeed(articles, isBookmarks = false) {
         spotlightWrapper.style.display = 'block';
         spotlightCard.onclick = () => openReader(topArticle);
 
-        const topScope = topArticle.scope === 'national' ? '🇮🇩 Nasional' : '🌐 Global';
+        const topScope = topArticle.scope === 'national' ? 'Nasional' : 'Global';
         document.getElementById('spotlightTitle').textContent = topArticle.title || 'Untitled';
         document.getElementById('spotlightDesc').textContent = topArticle.description || topArticle.content || '';
         document.getElementById('spotlightSource').textContent = `${topArticle.source || 'Intel Feed'} • ${topScope}`;
@@ -274,8 +381,8 @@ function renderFeed(articles, isBookmarks = false) {
         }
 
         const scopeBadgeHtml = article.scope === 'national' 
-            ? `<span class="scope-tag scope-tag-nat">🇮🇩 Nasional</span>` 
-            : `<span class="scope-tag scope-tag-intl">🌐 Global</span>`;
+            ? `<span class="scope-tag scope-tag-nat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg> Nasional</span>` 
+            : `<span class="scope-tag scope-tag-intl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Global</span>`;
 
         card.innerHTML = `
             ${coverImgHtml}
