@@ -975,6 +975,25 @@ Instruksi format jawaban:
 CHAT_SESSIONS_FILE = "data/atom_chat_sessions.json"
 RP_SESSIONS_FILE = "data/atom_rp_sessions.json"
 
+# === CHAT & ROLEPLAY AUTO-MIGRATION TO MONGODB ===
+if MONGODB_CONNECTED:
+    try:
+        if db["sessions"].count_documents({"type": "chat"}) == 0 and os.path.exists(CHAT_SESSIONS_FILE):
+            local_chat = safe_load_json(CHAT_SESSIONS_FILE, None)
+            if local_chat and local_chat.get("sessions"):
+                local_chat["type"] = "chat"
+                db["sessions"].update_one({"type": "chat"}, {"$set": local_chat}, upsert=True)
+                print("[OK] DATABASE: Migrated local chat sessions to MongoDB.")
+        
+        if db["sessions"].count_documents({"type": "roleplay"}) == 0 and os.path.exists(RP_SESSIONS_FILE):
+            local_rp = safe_load_json(RP_SESSIONS_FILE, None)
+            if local_rp and local_rp.get("sessions"):
+                local_rp["type"] = "roleplay"
+                db["sessions"].update_one({"type": "roleplay"}, {"$set": local_rp}, upsert=True)
+                print("[OK] DATABASE: Migrated local roleplay sessions to MongoDB.")
+    except Exception as e:
+        print(f"[WARN] DATABASE: Chat sessions auto-migration failed: {e}")
+
 @app.get("/api/sessions/chat")
 async def get_chat_sessions():
     """Retrieve chat history and sessions from database or local project file."""

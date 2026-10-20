@@ -20,8 +20,8 @@ MONGODB_CONNECTED = False
 
 if MONGODB_URI and HAS_PYMONGO:
     try:
-        # Establish connection with 1.5-second timeout to fail fast if offline
-        client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=1500, connectTimeoutMS=1500)
+        # Establish connection with 5-second timeout suitable for cloud/serverless environments (e.g. Vercel)
+        client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000, connectTimeoutMS=5000)
         # Verify connection
         client.admin.command('ping')
         db = client[DB_NAME]
