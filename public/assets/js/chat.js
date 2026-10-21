@@ -127,6 +127,33 @@ chatInputEl?.addEventListener('paste', (e) => {
   }
 });
 
+// Drag and drop support on chat area
+const chatLayoutEl = document.querySelector('.chat-layout');
+if (chatLayoutEl) {
+  ['dragenter', 'dragover'].forEach(eventName => {
+    chatLayoutEl.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      chatLayoutEl.classList.add('drag-over-active');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    chatLayoutEl.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      chatLayoutEl.classList.remove('drag-over-active');
+    });
+  });
+
+  chatLayoutEl.addEventListener('drop', (e) => {
+    const droppedFiles = Array.from(e.dataTransfer?.files || []);
+    if (droppedFiles.length > 0) {
+      droppedFiles.forEach(readAndAttachFile);
+    }
+  });
+}
+
 // Suggestion chips
 document.querySelectorAll('.suggestion-chip').forEach(chip => {
   chip.addEventListener('click', () => {
@@ -140,32 +167,80 @@ document.querySelectorAll('.suggestion-chip').forEach(chip => {
   });
 });
 
-// ─── File Reading ──────────────────────────────────────────
-function readAndAttachFile(file) {
+// ─── File Reading & Multi-Format Document Extraction ───────
+async function readAndAttachFile(file) {
   const isImage = file.type?.startsWith('image/');
-  const maxSize = isImage ? 10 * 1024 * 1024 : 500 * 1024; // 10MB limit for images, 500KB for text
+  const ext = file.name.split('.').pop().toLowerCase();
+  const isPdf = ext === 'pdf' || file.type === 'application/pdf';
+  const isDocx = ext === 'docx' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  
+  const maxSize = isImage ? 15 * 1024 * 1024 : 10 * 1024 * 1024; // 15MB for images, 10MB for docs
   if (file.size > maxSize) {
-    showToast(`File "${file.name}" terlalu besar (max ${isImage ? '10MB' : '500KB'})`, 'warning');
+    showToast(`File "${file.name}" melebihi batas (${isImage ? '15MB' : '10MB'})`, 'warning');
     return;
   }
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const existing = contextFiles.find(f => f.name === file.name);
-    if (!existing) {
-      contextFiles.push({ 
-        name: file.name, 
-        content: e.target.result,
-        type: file.type 
-      });
-      renderAttachedFiles();
+  showToast(`Memproses ${file.name}...`, 'info');
+
+  try {
+    if (isImage) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        addFileToContext(file.name, e.target.result, file.type);
+      };
+      reader.readAsDataURL(file);
+    } else if (isPdf) {
+      // PDF text extraction using PDF.js
+      const arrayBuffer = await file.arrayBuffer();
+      if (window.pdfjsLib) {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = `[DOKUMEN PDF: ${file.name} - Total ${pdf.numPages} Halaman]\n\n`;
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageStrings = textContent.items.map(item => item.str).join(' ');
+          fullText += `--- Halaman ${i} ---\n${pageStrings}\n\n`;
+        }
+        addFileToContext(file.name, fullText, 'application/pdf');
+        showToast(`Dokumen PDF "${file.name}" berhasil diuraikan (${pdf.numPages} hal)`, 'success');
+      } else {
+        // Fallback plain text read
+        const reader = new FileReader();
+        reader.onload = (e) => addFileToContext(file.name, e.target.result, 'application/pdf');
+        reader.readAsText(file);
+      }
+    } else if (isDocx && window.mammoth) {
+      // Word DOCX extraction using mammoth.js
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await window.mammoth.extractRawText({ arrayBuffer });
+      const extractedText = `[DOKUMEN WORD DOCX: ${file.name}]\n\n${result.value}`;
+      addFileToContext(file.name, extractedText, file.type);
+      showToast(`Dokumen Word "${file.name}" siap dianalisis`, 'success');
+    } else {
+      // Standard text formats: .txt, .md, .py, .json, .csv, .html, .css, .js, .sql, etc.
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        addFileToContext(file.name, e.target.result, file.type || 'text/plain');
+        showToast(`Dokumen "${file.name}" siap`, 'success');
+      };
+      reader.readAsText(file, 'utf-8');
     }
-  };
-  if (isImage) {
-    reader.readAsDataURL(file);
-  } else {
-    reader.readAsText(file, 'utf-8');
+  } catch (err) {
+    console.error('File parsing error:', err);
+    showToast(`Gagal membaca "${file.name}": ${err.message}`, 'error');
   }
+}
+
+function addFileToContext(name, content, type) {
+  const existingIdx = contextFiles.findIndex(f => f.name === name);
+  const fileObj = { name, content, type };
+  if (existingIdx >= 0) {
+    contextFiles[existingIdx] = fileObj;
+  } else {
+    contextFiles.push(fileObj);
+  }
+  renderAttachedFiles();
 }
 
 function renderAttachedFiles() {
@@ -222,8 +297,9 @@ async function sendMessage() {
 
   // Add user message to UI
   const displayPrompt = prompt || (hasFiles ? (contextFiles.some(f => f.type?.startsWith('image/')) ? '[Gambar Terlampir]' : '[Dokumen Terlampir]') : '');
-  renderMessage('user', displayPrompt);
-  chatHistory.push({ role: 'user', content: displayPrompt });
+  const sentAttachments = [...contextFiles];
+  renderMessage('user', displayPrompt, [], '', '', sentAttachments);
+  chatHistory.push({ role: 'user', content: displayPrompt, attachments: sentAttachments });
   saveHistory();
   updateEmptyState();
   scrollToBottom(messagesArea);
@@ -339,7 +415,7 @@ async function callChatAPI(prompt, history, files, signal) {
 }
 
 // ─── Render Message ────────────────────────────────────────
-function renderMessage(role, content, thinking = [], model = '', personaBadge = '') {
+function renderMessage(role, content, thinking = [], model = '', personaBadge = '', attachments = []) {
   if (!messagesArea) return;
 
   const msgId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
@@ -349,8 +425,37 @@ function renderMessage(role, content, thinking = [], model = '', personaBadge = 
     ? '<div class="message-avatar">👤</div>'
     : '<div class="message-avatar">⚛️</div>';
 
+  let attachmentsHtml = '';
+  if (isUser && attachments && attachments.length > 0) {
+    attachmentsHtml = '<div class="user-msg-attachments">';
+    attachments.forEach(f => {
+      const isImg = f.type?.startsWith('image/') || f.content?.startsWith('data:image/');
+      if (isImg) {
+        attachmentsHtml += `
+          <div class="user-msg-img-container" onclick="window.open('${f.content}', '_blank')">
+            <img src="${f.content}" class="user-msg-img" alt="${escapeHtml(f.name || 'image')}">
+          </div>
+        `;
+      } else {
+        const ext = (f.name || '').split('.').pop().toUpperCase();
+        let icon = '📄';
+        if (ext === 'PDF') icon = '📕';
+        else if (['DOC', 'DOCX'].includes(ext)) icon = '📘';
+        else if (['XLS', 'XLSX', 'CSV'].includes(ext)) icon = '📊';
+        else if (['PY', 'JS', 'HTML', 'CSS', 'JSON'].includes(ext)) icon = '💻';
+        attachmentsHtml += `
+          <div class="user-msg-doc-pill">
+            <span>${icon}</span>
+            <span>${escapeHtml(f.name || 'document')}</span>
+          </div>
+        `;
+      }
+    });
+    attachmentsHtml += '</div>';
+  }
+
   const bubbleContent = isUser
-    ? `<p style="margin:0;color:inherit;">${escapeHtml(content).replace(/\n/g, '<br>')}</p>`
+    ? `${attachmentsHtml}<p style="margin:0;color:inherit;">${escapeHtml(content).replace(/\n/g, '<br>')}</p>`
     : renderMarkdown(content);
 
   // Reasoning steps
@@ -991,7 +1096,7 @@ function renderCurrentSessionMessages() {
   }
 
   chatHistory.forEach(msg => {
-    renderMessage(msg.role, msg.content, msg.thinking || [], msg.model || '');
+    renderMessage(msg.role, msg.content, msg.thinking || [], msg.model || '', '', msg.attachments || []);
   });
 
   if (emptyChatDiv) {
@@ -1083,6 +1188,7 @@ const ADVANCE_MODELS_BY_API = {
     { value: 'groq:qwen/qwen3.8-27b', label: '⚡ Qwen 3.8 27B (Groq Turbo)' }
   ],
   openrouter: [
+    { value: 'openrouter:nvidia/nemotron-3.5-super-vl:free', label: '👁️ Nemotron 3.5 Super VL (Free)' },
     { value: 'openrouter:nvidia/nemotron-3-super-120b-a12b:free', label: '🟢 Nemotron 3 Super 120B (Free)' },
     { value: 'openrouter:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', label: '🧠 Nemotron 3 Nano Omni 30B Reasoning (Free)' },
     { value: 'openrouter:nvidia/nemotron-3-ultra-550b-a55b:free', label: '⚡ Nemotron 3 Ultra 550B (Free)' },

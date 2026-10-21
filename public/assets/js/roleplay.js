@@ -205,29 +205,82 @@ chatInputEl?.addEventListener('paste', (e) => {
   }
 });
 
-function readAndAttachFile(file) {
-  const reader = new FileReader();
+async function readAndAttachFile(file) {
   const isImage = file.type?.startsWith('image/');
-  reader.onload = (e) => {
-    contextFiles.push({
-      name: file.name || 'attachment',
-      type: file.type,
-      content: e.target.result
-    });
-    renderAttachedFiles();
-    updateSendButton();
-  };
-  if (isImage) reader.readAsDataURL(file);
-  else reader.readAsText(file);
+  const ext = (file.name || '').split('.').pop().toLowerCase();
+  const isPdf = ext === 'pdf' || file.type === 'application/pdf';
+  const isDocx = ext === 'docx' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+  try {
+    if (isImage) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        contextFiles.push({
+          name: file.name || 'attachment.png',
+          type: file.type,
+          content: e.target.result
+        });
+        renderAttachedFiles();
+        updateSendButton();
+      };
+      reader.readAsDataURL(file);
+    } else if (isPdf && window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = `[DOKUMEN PDF: ${file.name} - ${pdf.numPages} Halaman]\n\n`;
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        fullText += `--- Halaman ${i} ---\n${textContent.items.map(item => item.str).join(' ')}\n\n`;
+      }
+      contextFiles.push({ name: file.name, type: 'application/pdf', content: fullText });
+      renderAttachedFiles();
+      updateSendButton();
+      showToast(`Dokumen PDF "${file.name}" terlampir`, 'success');
+    } else if (isDocx && window.mammoth) {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await window.mammoth.extractRawText({ arrayBuffer });
+      contextFiles.push({ name: file.name, type: file.type, content: `[DOKUMEN WORD DOCX: ${file.name}]\n\n${result.value}` });
+      renderAttachedFiles();
+      updateSendButton();
+      showToast(`Dokumen Word "${file.name}" terlampir`, 'success');
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        contextFiles.push({
+          name: file.name || 'document.txt',
+          type: file.type || 'text/plain',
+          content: e.target.result
+        });
+        renderAttachedFiles();
+        updateSendButton();
+      };
+      reader.readAsText(file);
+    }
+  } catch (err) {
+    console.error('Roleplay attach error:', err);
+    showToast(`Gagal membaca file: ${err.message}`, 'error');
+  }
 }
 
 function renderAttachedFiles() {
   if (!attachedFilesEl) return;
   attachedFilesEl.innerHTML = '';
   contextFiles.forEach((f, idx) => {
+    const isImg = f.type?.startsWith('image/') || f.content?.startsWith('data:image/');
     const item = document.createElement('div');
-    item.className = 'attached-file';
-    item.innerHTML = `<span>📎 ${escapeHtml(f.name)}</span><button onclick="removeFile(${idx})">✕</button>`;
+    if (isImg) {
+      item.className = 'attached-file image-preview-chip';
+      item.style.cssText = 'position: relative; display: inline-block; margin: 4px; padding: 0; background: none; border: none; border-radius: 8px;';
+      item.innerHTML = `
+        <img src="${f.content}" style="width: 52px; height: 52px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color);" alt="${escapeHtml(f.name)}">
+        <button onclick="removeFile(${idx})" style="position: absolute; top: -6px; right: -6px; background: #ea6060; color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 11px; border: 1px solid var(--border-color); cursor: pointer;">✕</button>
+      `;
+    } else {
+      item.className = 'attached-file';
+      item.innerHTML = `<span>📎 ${escapeHtml(f.name)}</span><button onclick="removeFile(${idx})">✕</button>`;
+    }
     attachedFilesEl.appendChild(item);
   });
 }

@@ -9,6 +9,10 @@
   <link rel="stylesheet" href="assets/css/components.css?v=4.6">
   <!-- marked.js for markdown rendering -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- PDF.js for in-browser PDF parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- Mammoth.js for in-browser docx extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -473,7 +477,7 @@
           <input
             type="file"
             id="file-upload"
-            accept=".txt,.md,.py,.json,.csv,.html,.css,.js"
+            accept=".txt,.md,.py,.json,.csv,.html,.css,.js,.pdf,.docx,.doc,.xlsx,.xls,.pptx,image/*"
             multiple
           >
         </div>

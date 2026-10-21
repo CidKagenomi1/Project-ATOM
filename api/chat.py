@@ -217,7 +217,7 @@ def call_ai(messages: list, model_preference: str = "auto", image_files: list = 
             else:
                 models_str = os.environ.get("OPENROUTER_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
                 models = [m.strip() for m in models_str.split(",") if m.strip()]
-            for fallback in ["nvidia/nemotron-3-super-120b-a12b:free", "google/gemma-4-31b-it:free", "liquid/lfm-2.5-2.6b:free"]:
+            for fallback in ["nvidia/nemotron-3.5-super-vl:free", "nvidia/nemotron-3-super-120b-a12b:free", "google/gemma-4-31b-it:free", "liquid/lfm-2.5-2.6b:free"]:
                 if fallback not in models:
                     models.append(fallback)
             

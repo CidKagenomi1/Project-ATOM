@@ -9,6 +9,10 @@
   <link rel="stylesheet" href="assets/css/components.css?v=4.6">
   <link rel="stylesheet" href="assets/css/terminal.css">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- PDF.js for in-browser PDF parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- Mammoth.js for in-browser docx extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -295,6 +299,7 @@
                     <option value="groq:openai/gpt-oss-120b" selected>⚡ GPT-OSS 120B (Groq Turbo)</option>
                     <option value="groq:openai/gpt-oss-20b">⚡ GPT-OSS 20B (Groq Fast)</option>
                     <option value="groq:qwen/qwen3.8-27b">⚡ Qwen 3.8 27B (Groq Turbo)</option>
+                    <option value="openrouter:nvidia/nemotron-3.5-super-vl:free">👁️ Nemotron 3.5 Super VL (Free)</option>
                     <option value="openrouter:nvidia/nemotron-3-super-120b-a12b:free">🟢 Nemotron 3 Super 120B (Free)</option>
                     <option value="openrouter:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free">🧠 Nemotron 3 Nano Omni (Free)</option>
                     <option value="openrouter:nvidia/nemotron-3-ultra-550b-a55b:free">⚡ Nemotron 3 Ultra 550B (Free)</option>
@@ -320,7 +325,7 @@
               </button>
             </div>
           </div>
-          <input type="file" id="file-upload" accept=".txt,.md,.py,.json,.csv,.html,.css,.js,image/*" multiple>
+          <input type="file" id="file-upload" accept=".txt,.md,.py,.json,.csv,.html,.css,.js,.pdf,.docx,.doc,.xlsx,.xls,.pptx,image/*" multiple>
         </div>
 
       </div><!-- /chat-layout -->

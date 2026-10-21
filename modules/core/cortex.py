@@ -453,7 +453,7 @@ class ATOMCortex:
                 raw_model = model_override if model_override else os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
                 models = [m.strip() for m in raw_model.split(",") if m.strip()]
                 # Add reliable fallback free models if none specified or if custom failed
-                for fallback in ["nvidia/nemotron-3-super-120b-a12b:free", "google/gemma-4-31b-it:free", "liquid/lfm-2.5-2.6b:free"]:
+                for fallback in ["nvidia/nemotron-3.5-super-vl:free", "nvidia/nemotron-3-super-120b-a12b:free", "google/gemma-4-31b-it:free", "liquid/lfm-2.5-2.6b:free"]:
                     if fallback not in models:
                         models.append(fallback)
                 last_err = None
