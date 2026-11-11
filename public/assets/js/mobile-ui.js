@@ -98,10 +98,6 @@ class MobileUIHandler {
       let label = emoji;
       if (fullText.toLowerCase().includes('groq')) {
         label = '⚡';
-      } else if (fullText.toLowerCase().includes('gemini')) {
-        label = '♊';
-      } else if (fullText.toLowerCase().includes('deepseek')) {
-        label = '🐳';
       } else if (fullText.toLowerCase().includes('ollama')) {
         label = '🧠';
       } else if (fullText.toLowerCase().includes('openrouter')) {

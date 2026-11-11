@@ -312,7 +312,16 @@
           <span class="nav-icon">
             <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
               <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0
+                  l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2
+                  2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06
+                  a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82
+                  1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9
+                  a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06
+                  a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2
+                  v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0
+                  2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21
+                  a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
             </svg>
           </span>Settings
         </a>
@@ -340,8 +349,8 @@
           <span class="status-label">Agent CrewAI</span>
         </div>
         <div class="status-row">
-          <div class="status-dot offline" id="dot-gemini"></div>
-          <span class="status-label">Fallback (Gemini)</span>
+          <div class="status-dot offline" id="dot-openrouter"></div>
+          <span class="status-label">OpenRouter Hub</span>
         </div>
       </div>
       <div class="sidebar-credit">initiate by alif rahmadi</div>
@@ -408,7 +417,7 @@
                 <strong>A.T.O.M.</strong> lahir dari visi untuk melampaui paradigma chatbot konvensional. Bukan sekadar menjawab pertanyaan secara statis, ATOM dirancang sebagai <strong>orkestrator mitra berpikir</strong> untuk mendukung eksplorasi ide-ide besar, perancangan inovasi strategis, dan stimulasi kreativitas otak secara terstruktur.
               </p>
               <p>
-                Dengan memadukan jaringan model komputasi awan mutakhir (Groq LPU ultra-cepat, DeepSeek Cloud reasoning, katalog model OpenRouter, dan Google Gemini Multimodal), ATOM memberi kebebasan penuh dalam berimajinasi, menyusun rencana inovatif, dan memvalidasi hipotesis bisnis tanpa batasan hardware lokal.
+                Dengan memadukan jaringan model komputasi awan mutakhir (Groq LPU ultra-cepat dan katalog model OpenRouter), ATOM memberi kebebasan penuh dalam berimajinasi, menyusun rencana inovatif, dan memvalidasi hipotesis bisnis tanpa batasan hardware lokal.
               </p>
             </div>
           </div>
@@ -434,19 +443,9 @@
                 <span class="pipeline-desc">Komputasi awan LPU ultra cepat (~500 token/detik) untuk percakapan instan tanpa jeda.</span>
               </div>
               <div class="pipeline-box">
-                <span class="pipeline-step">Tier 2 • Deep Reasoning Cloud</span>
-                <span class="pipeline-name">DeepSeek (V3 / V4 Cloud)</span>
-                <span class="pipeline-desc">Penalaran logis mendalam dan sintesis analitis untuk pemecahan masalah rumit.</span>
-              </div>
-              <div class="pipeline-box">
-                <span class="pipeline-step">Tier 3 • Open Model Hub</span>
+                <span class="pipeline-step">Tier 2 • Open Model Hub & Vision</span>
                 <span class="pipeline-name">OpenRouter Multi-Catalog</span>
-                <span class="pipeline-desc">Akses dinamis ke ragam model global (Gemma 4, Qwen3 Coder, Nemotron) untuk variasi wawasan.</span>
-              </div>
-              <div class="pipeline-box">
-                <span class="pipeline-step">Tier 4 • Cloud Resilience & Vision</span>
-                <span class="pipeline-name">Google Gemini Flash 2.5</span>
-                <span class="pipeline-desc">Fallback handal berdaya nalar tinggi dengan jendela konteks luas & kapabilitas multimodal.</span>
+                <span class="pipeline-desc">Akses dinamis ke model global (Nemotron VL, Gemma 4, Qwen) untuk variasi wawasan, vision, dan failover utama.</span>
               </div>
             </div>
           </div>

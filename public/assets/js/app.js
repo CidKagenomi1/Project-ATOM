@@ -278,7 +278,7 @@ function backfillTelemetryFromSessions() {
             const aiMsg = msgs[i + 1];
             const pLen = (userMsg.content || '').length;
             const rLen = (aiMsg.content || '').length;
-            const model = aiMsg.model || 'DeepSeek V3 (Cloud)';
+            const model = aiMsg.model || 'Groq Cloud';
             syntheticLogs.push({
               id: 'bfrp_' + (userMsg.timestamp || sess.updatedAt || Date.now()) + '_' + i,
               timestamp: new Date(sess.updatedAt || Date.now()).toISOString(),
@@ -362,7 +362,7 @@ async function updateStatusIndicators() {
     if (!resp.ok) return;
     const status = await resp.json();
 
-    const services = ['local', 'groq', 'crew', 'gemini'];
+    const services = ['local', 'groq', 'crew', 'openrouter'];
     services.forEach(srv => {
       const isOnline = status[srv] === 'online';
       

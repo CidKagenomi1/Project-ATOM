@@ -286,6 +286,40 @@ def call_ai(messages: list, model_preference: str = "auto", image_files: list = 
             return content, f"DeepSeek-{model}"
         raise ValueError("DeepSeek not configured")
 
+    def try_huggingface(pref_model=None):
+        api_key = os.environ.get("HUGGINGFACE_API_KEY") or os.environ.get("HF_TOKEN")
+        if api_key:
+            if pref_model:
+                models = [pref_model]
+            else:
+                models_str = os.environ.get("HUGGINGFACE_MODELS", os.environ.get("HUGGINGFACE_MODEL", "deepseek-ai/DeepSeek-V4.1-Flash"))
+                models = [m.strip() for m in models_str.split(",") if m.strip()]
+            for fallback in [
+                "deepseek-ai/DeepSeek-V4.1-Flash",
+                "meta-llama/Llama-3.1-8B-Instruct",
+                "Jackrong/Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled",
+                "empero-ai/Qwythos-9B-Claude-Mythos-5-1M",
+                "google/gemma-4-26B-A4B-it"
+            ]:
+                if fallback not in models:
+                    models.append(fallback)
+            last_err = None
+            for model in models:
+                try:
+                    content = call_openai_compatible(
+                        "https://router.huggingface.co/v1/chat/completions",
+                        api_key,
+                        model,
+                        messages
+                    )
+                    return content, f"HF-{model.split('/')[-1]}"
+                except Exception as e:
+                    last_err = e
+                    continue
+            if last_err:
+                raise last_err
+        raise ValueError("Hugging Face not configured")
+
     def try_gemini():
         if HAS_GEMINI and os.environ.get("GOOGLE_API_KEY"):
             gemini_model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
@@ -321,6 +355,8 @@ def call_ai(messages: list, model_preference: str = "auto", image_files: list = 
         "fireworks": try_fireworks,
         "openrouter": try_openrouter,
         "deepseek": try_deepseek,
+        "huggingface": try_huggingface,
+        "hf": try_huggingface,
         "gemini": try_gemini
     }
     
@@ -341,7 +377,7 @@ def call_ai(messages: list, model_preference: str = "auto", image_files: list = 
         except Exception as e:
             print(f"[PREFERENCE ERROR] Preferred model {model_preference} failed: {e}. Falling back...")
             
-    fallback_chain = ["groq", "fireworks", "openrouter", "deepseek", "gemini"]
+    fallback_chain = ["groq", "fireworks", "openrouter", "deepseek", "huggingface", "gemini"]
     for provider in fallback_chain:
         if provider == pref_provider:
             continue

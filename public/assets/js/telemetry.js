@@ -626,19 +626,19 @@ const FLOW_STEPS_INFO = {
     icon: '🧠',
     title: 'Tahap 3: ATOM Cortex Router & Dispatcher',
     file: 'modules/core/cortex.py · api/index.py',
-    body: 'Backend FastAPI menerima payload via endpoint /api/chat. Objek ATOMCortex menguraikan preferensi model (auto, groq, deepseek, gemini, openrouter, atau ollama), menyelaraskan memori Librarian, mengevaluasi tipe kueri (apakah membutuhkan coding, reasoning mendalam, atau jawaban kilat), dan menentukan rute pemanggilan provider utama.'
+    body: 'Backend FastAPI menerima payload via endpoint /api/chat. Objek ATOMCortex menguraikan preferensi model (auto, groq, openrouter, atau ollama), menyelaraskan memori Librarian, mengevaluasi tipe kueri (apakah membutuhkan coding, reasoning mendalam, atau jawaban kilat), dan menentukan rute pemanggilan provider utama.'
   },
   4: {
     icon: '🚀',
     title: 'Tahap 4: Multi-Model Inference Hub',
-    file: 'modules/core/cortex.py (Groq, DeepSeek, Gemini, OpenRouter, Ollama)',
-    body: 'Permintaan inferensi dieksekusi secara asinkron ke provider yang dipilih:\n• Groq Cloud (LPU Llama 3.3 70B): Kecepatan luar biasa ~300 token/detik.\n• DeepSeek Cloud (V3): Penalaran bertahap & sintesis kode kompleks.\n• Google Gemini (Flash 2.5): Analisis multimodal teks & gambar.\n• OpenRouter Hub: Akses gratis model open-source dunia.\n• Ollama: Eksekusi privat offline di mesin lokal.'
+    file: 'modules/core/cortex.py (Groq, OpenRouter, Ollama)',
+    body: 'Permintaan inferensi dieksekusi secara asinkron ke provider yang dipilih:\n• Groq Cloud (LPU Llama 3.3 70B / GPT-OSS): Kecepatan luar biasa ~500 token/detik.\n• OpenRouter Hub: Akses model open-source dunia dan analisis multimodal vision.\n• Ollama: Eksekusi privat offline di mesin lokal.'
   },
   5: {
     icon: '🛡️',
     title: 'Tahap 5: Automated Failover Engine',
     file: 'modules/core/cortex.py (Fallback & Error Recovery)',
-    body: 'Jika provider utama mengalami rate-limit, gangguan koneksi, atau timeout, Cortex tidak menyerah. Sistem secara otomatis mengalihkan (failover) kueri ke provider cadangan (misal dari Groq ke Gemini Flash atau OpenRouter) tanpa perlu campur tangan pengguna, sehingga sesi obrolan tidak pernah macet.'
+    body: 'Jika provider utama mengalami rate-limit, gangguan koneksi, atau timeout, Cortex tidak menyerah. Sistem secara otomatis mengalihkan (failover) kueri ke provider cadangan (dari Groq ke OpenRouter) tanpa perlu campur tangan pengguna, sehingga sesi obrolan tidak pernah macet.'
   },
   6: {
     icon: '⚙️',

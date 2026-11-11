@@ -169,66 +169,12 @@ document.querySelectorAll('.suggestion-chip').forEach(chip => {
 
 // ─── File Reading & Multi-Format Document Extraction ───────
 async function readAndAttachFile(file) {
-  const isImage = file.type?.startsWith('image/');
-  const ext = file.name.split('.').pop().toLowerCase();
-  const isPdf = ext === 'pdf' || file.type === 'application/pdf';
-  const isDocx = ext === 'docx' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-  
-  const maxSize = isImage ? 15 * 1024 * 1024 : 10 * 1024 * 1024; // 15MB for images, 10MB for docs
-  if (file.size > maxSize) {
-    showToast(`File "${file.name}" melebihi batas (${isImage ? '15MB' : '10MB'})`, 'warning');
-    return;
-  }
-
-  showToast(`Memproses ${file.name}...`, 'info');
-
-  try {
-    if (isImage) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        addFileToContext(file.name, e.target.result, file.type);
-      };
-      reader.readAsDataURL(file);
-    } else if (isPdf) {
-      // PDF text extraction using PDF.js
-      const arrayBuffer = await file.arrayBuffer();
-      if (window.pdfjsLib) {
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        let fullText = `[DOKUMEN PDF: ${file.name} - Total ${pdf.numPages} Halaman]\n\n`;
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          const pageStrings = textContent.items.map(item => item.str).join(' ');
-          fullText += `--- Halaman ${i} ---\n${pageStrings}\n\n`;
-        }
-        addFileToContext(file.name, fullText, 'application/pdf');
-        showToast(`Dokumen PDF "${file.name}" berhasil diuraikan (${pdf.numPages} hal)`, 'success');
-      } else {
-        // Fallback plain text read
-        const reader = new FileReader();
-        reader.onload = (e) => addFileToContext(file.name, e.target.result, 'application/pdf');
-        reader.readAsText(file);
-      }
-    } else if (isDocx && window.mammoth) {
-      // Word DOCX extraction using mammoth.js
-      const arrayBuffer = await file.arrayBuffer();
-      const result = await window.mammoth.extractRawText({ arrayBuffer });
-      const extractedText = `[DOKUMEN WORD DOCX: ${file.name}]\n\n${result.value}`;
-      addFileToContext(file.name, extractedText, file.type);
-      showToast(`Dokumen Word "${file.name}" siap dianalisis`, 'success');
-    } else {
-      // Standard text formats: .txt, .md, .py, .json, .csv, .html, .css, .js, .sql, etc.
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        addFileToContext(file.name, e.target.result, file.type || 'text/plain');
-        showToast(`Dokumen "${file.name}" siap`, 'success');
-      };
-      reader.readAsText(file, 'utf-8');
+  if (window.ATOM_AttachmentManager) {
+    const parsed = await window.ATOM_AttachmentManager.parseFile(file);
+    if (parsed) {
+      addFileToContext(parsed.name, parsed.content, parsed.type);
     }
-  } catch (err) {
-    console.error('File parsing error:', err);
-    showToast(`Gagal membaca "${file.name}": ${err.message}`, 'error');
+    return;
   }
 }
 
@@ -249,16 +195,16 @@ function renderAttachedFiles() {
     const isImg = f.type?.startsWith('image/') || f.content?.startsWith('data:image/');
     if (isImg) {
       return `
-        <div class="attached-file image-preview-chip" style="position: relative; display: inline-block; margin: 4px; padding: 0; background: none; border: none; border-radius: 8px;">
+        <div class="attached-file image-preview-chip" style="position: relative; display: inline-block; margin: 4px; padding: 0;">
           <img src="${f.content}" style="width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color);" alt="${escapeHtml(f.name)}">
-          <button onclick="removeFile(${i})" style="position: absolute; top: -6px; right: -6px; background: #ea6060; color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 11px; border: 1px solid var(--border-color); cursor: pointer;" aria-label="Remove ${f.name}">×</button>
+          <button onclick="removeFile(${i})" style="position: absolute; top: -6px; right: -6px; background: #ea6060; color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 11px; cursor: pointer;" aria-label="Remove ${escapeHtml(f.name)}">×</button>
         </div>
       `;
     }
     return `
       <div class="attached-file">
         <span>📄 ${escapeHtml(f.name)}</span>
-        <button onclick="removeFile(${i})" aria-label="Remove ${f.name}">×</button>
+        <button onclick="removeFile(${i})" aria-label="Remove ${escapeHtml(f.name)}">×</button>
       </div>
     `;
   }).join('');
@@ -485,7 +431,7 @@ function renderMessage(role, content, thinking = [], model = '', personaBadge = 
 
   // Model & Persona badges
   const modelBadge = (!isUser && model)
-    ? `<span class="model-badge ${model.toLowerCase().includes('groq') ? 'groq' : 'gemini'}">${escapeHtml(model)}</span>`
+    ? `<span class="model-badge ${model.toLowerCase().includes('groq') ? 'groq' : 'openrouter'}">${escapeHtml(model)}</span>`
     : '';
 
   const personaTag = (!isUser && personaBadge && personaBadge !== 'ATOM Standard')
@@ -1195,14 +1141,8 @@ const ADVANCE_MODELS_BY_API = {
     { value: 'openrouter:nvidia/nemotron-3.5-lightning:free', label: '⚡ Nemotron 3.5 Lightning (Free)' },
     { value: 'openrouter:cohere/north-mini-code:free', label: '💻 Cohere North Mini Code (Free)' }
   ],
-  gemini: [
-    { value: 'gemini', label: '♊ Gemini Flash 2.5 (Disabled)', disabled: true }
-  ],
-  deepseek: [
-    { value: 'deepseek', label: '🐳 DeepSeek V3 (Disabled)', disabled: true }
-  ],
   ollama: [
-    { value: 'ollama', label: '🧠 DeepSeek V4 (Disabled)', disabled: true }
+    { value: 'ollama', label: '🧠 Local Ollama (Disabled)', disabled: true }
   ]
 };
 

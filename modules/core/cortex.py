@@ -46,6 +46,7 @@ OPENROUTER_AVAILABLE = bool(os.getenv("OPENROUTER_API_KEY"))
 DEEPSEEK_AVAILABLE = False  # Terminated by user request
 GEMINI_AVAILABLE = bool(os.getenv("GOOGLE_API_KEY"))
 OLLAMA_AVAILABLE = False  # Disabled for public cloud-only deployment
+HUGGINGFACE_AVAILABLE = bool(os.getenv("HUGGINGFACE_API_KEY") or os.getenv("HF_TOKEN"))
 
 
 # pyrefly: ignore [missing-import]
@@ -124,77 +125,11 @@ class LocalOllamaBrain:
             return SimpleResponse(content)
 
 
-# --- 1. THE SENTINEL (Sistem Pengawas/Logger) ---
-class Sentinel:
-    def __init__(self, log_file="data/atom_telemetry.csv"):
-        self.log_file = log_file
-        if not os.path.exists(self.log_file):
-            try:
-                os.makedirs(os.path.dirname(self.log_file), exist_ok=True)
-                with open(self.log_file, mode='w', newline='', encoding='utf-8') as f:
-                    writer = csv.writer(f)
-                    writer.writerow(["timestamp", "user_input", "model_used", "response_time", "status"])
-            except Exception as e:
-                print(f"[WARN] Sentinel: Could not create local CSV file (expected on read-only hosts like Vercel): {e}")
-
-
-    def log(self, user_input, model_used, start_time, status="SUCCESS"):
-        duration = round(time.time() - start_time, 2)
-        try:
-            with open(self.log_file, mode='a', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                writer.writerow([
-                    datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    user_input[:50] + "...",
-                    model_used,
-                    duration,
-                    status
-                ])
-        except Exception as e:
-            print(f"[LOG ERROR] {e}")
-        return duration
-
-
-# --- 2. THE LIBRARIAN (Manajemen Konteks) ---
-class Librarian:
-    def __init__(self):
-        self.raw_history = []
-        self.summary = ""
-    
-    def add_interaction(self, user, ai):
-        self.raw_history.append(f"User: {user}")
-        self.raw_history.append(f"ATOM: {ai}")
-        if len(self.raw_history) > 8:
-            self.raw_history = self.raw_history[-6:]
-            
-    def get_context(self):
-        return "\n".join(self.raw_history)
-    
-    def clear(self):
-        self.raw_history = []
-        self.summary = ""
-
-
-# --- 3. THE DISPATCHER (Router Cepat) ---
-class NeuralRouter:
-    """Router berbasis keyword untuk kecepatan maksimal."""
-    
-    def decide_route(self, user_input):
-        txt = user_input.lower().strip()
-        
-        # Jika berupa pertanyaan atau eksplorasi konsep, selalu arahkan ke rute AI / Knowledge
-        is_question = any(q in txt for q in ["bagaimana", "jelaskan", "apa itu", "mengapa", "kenapa", "ceritakan", "siapa", "how", "what is", "why"]) or txt.endswith("?")
-        
-        if not is_question:
-            action_kw = ["buka notepad", "buka calculator", "buka spotify", "buka browser", "buka youtube", "cek baterai", "matikan laptop", "restart"]
-            if any(kw in txt for kw in action_kw):
-                return "ACTION"
-        
-        crew_kw = ["riset mendalam:", "deep research:", "investigasi komprehensif:"]
-        if CREW_AVAILABLE and any(kw in txt for kw in crew_kw):
-            return "CREW"
-        
-        return "AI"  # Changed from "CLOUD" to "AI" for new logic
+# --- MODULAR SUB-COMPONENTS (Imported & Re-exported for Backward Compatibility) ---
+from modules.core.sentinel import Sentinel
+from modules.core.librarian import Librarian
+from modules.core.router import NeuralRouter
+from modules.core.utils import read_file_content, scrape_url
 
 
 # --- SYSTEM PROMPT DENGAN SELF-KNOWLEDGE (Identitas, Pembuat, Cortex, CrewAI, Arsitektur) ---
@@ -233,13 +168,18 @@ CARA KERJA CORTEX (Neural Router v4.0):
     * Tier 1 (LPU Instant Speed): Groq (LLaMA 3.3 70B Versatile) untuk kecepatan inferensi kilat (~500 token/detik).
     * Tier 2 (Deep Reasoning): DeepSeek Cloud (V3/V4 Cloud) untuk sintesis analitis dan pemecahan masalah rumit.
     * Tier 3 (Open Model Hub): OpenRouter (katalog model global seperti Gemma 4, Qwen Coder, Nemotron).
-    * Tier 4 (Cloud Resilience & Multimodal Vision Fallback): Google Gemini Flash 2.5 untuk pemrosesan gambar/dokumen visual dan jaring pengaman failover utama saat provider lain mengalami limit kuota atau timeout.
-  - Self-Healing / Failover Otomatis: Jika provider utama timeout atau rate-limited, Cortex secara otomatis mengalihkan permintaan ke provider cadangan tanpa memutuskan percakapan pengguna.
+    * Tier 4 (Cloud Resilience & Multimodal Vision Fallback): Google Gemini Flash 2.5 untuk
+      pemrosesan gambar/dokumen visual dan jaring pengaman failover utama saat provider lain
+      mengalami limit kuota atau timeout.
+  - Self-Healing / Failover Otomatis: Jika provider utama timeout atau rate-limited,
+    Cortex secara otomatis mengalihkan permintaan ke provider cadangan tanpa memutuskan percakapan pengguna.
 
 APA ITU CREWAI DI A.T.O.M.:
 - CrewAI adalah framework orkestrasi multi-agent otonom yang diintegrasikan dalam modul `modules/core/crew.py`.
 - Peran dalam A.T.O.M.: Bertindak sebagai "Autonomous Research Squad" saat pengguna meminta investigasi mendalam, riset komprehensif, atau studi topik rumit.
-- Cara Kerja Crew: Cortex mendelegasikan tugas ke skuad agen AI independen dengan peran spesifik (Senior Researcher untuk pengumpulan wawasan kunci dan Content Writer untuk menyusun artikel komprehensif). Agen-agen ini bekerja secara kolaboratif (sequential process) hingga menghasilkan laporan riset terstruktur dalam format Markdown.
+- Cara Kerja Crew: Cortex mendelegasikan tugas ke skuad agen AI independen dengan peran spesifik
+  (Senior Researcher untuk pengumpulan wawasan kunci dan Content Writer untuk menyusun artikel komprehensif).
+  Agen-agen ini bekerja secara kolaboratif (sequential process) hingga menghasilkan laporan riset terstruktur dalam format Markdown.
 
 ATURAN FORMAT JAWABAN:
 - Jawab to the point, terstruktur rapi, dan mudah dipahami.
@@ -290,6 +230,10 @@ class ATOMCortex:
         # OTAK CLOUD: DEEPSEEK
         if DEEPSEEK_AVAILABLE:
             print(f"[OK] CLOUD: DeepSeek Model: {os.getenv('DEEPSEEK_MODEL')}")
+            
+        # OTAK CLOUD: HUGGING FACE
+        if HUGGINGFACE_AVAILABLE:
+            print(f"[OK] CLOUD: Hugging Face Model: {os.getenv('HUGGINGFACE_MODEL', 'deepseek-ai/DeepSeek-V4.1-Flash')}")
         
         # OTAK CADANGAN: GEMINI (Last Resort)
         self.gemini_brain = None
@@ -474,6 +418,38 @@ class ATOMCortex:
             raise ValueError("OpenRouter not configured")
 
 
+        def try_huggingface(model_override=None):
+            if HUGGINGFACE_AVAILABLE:
+                self._update_status("🤗 Cloud (Hugging Face)...")
+                raw_models = model_override if model_override else os.getenv("HUGGINGFACE_MODELS", os.getenv("HUGGINGFACE_MODEL", "deepseek-ai/DeepSeek-V4.1-Flash"))
+                models = [m.strip() for m in raw_models.split(",") if m.strip()]
+                for fallback in [
+                    "deepseek-ai/DeepSeek-V4.1-Flash",
+                    "meta-llama/Llama-3.1-8B-Instruct",
+                    "Jackrong/Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled",
+                    "empero-ai/Qwythos-9B-Claude-Mythos-5-1M",
+                    "google/gemma-4-26B-A4B-it"
+                ]:
+                    if fallback not in models:
+                        models.append(fallback)
+                api_key = os.getenv("HUGGINGFACE_API_KEY") or os.getenv("HF_TOKEN")
+                last_err = None
+                for model in models:
+                    try:
+                        content = self._call_openai_compatible(
+                            "https://router.huggingface.co/v1/chat/completions",
+                            api_key,
+                            model,
+                            messages
+                        )
+                        return content, f"HF-{model.split('/')[-1]}", False
+                    except Exception as he:
+                        last_err = he
+                        continue
+                if last_err:
+                    raise last_err
+            raise ValueError("Hugging Face not configured")
+
         def try_deepseek():
             if DEEPSEEK_AVAILABLE:
                 self._update_status("🐳 Cloud (DeepSeek)...")
@@ -504,11 +480,12 @@ class ATOMCortex:
                 return res, f"Ollama-{os.getenv('OLLAMA_MODEL', 'deepseek-v4-flash:cloud')}", False
             raise ValueError("Ollama not configured")
 
-        if pref_provider in ["groq", "fireworks", "openrouter", "deepseek", "gemini", "ollama"]:
+        if pref_provider in ["groq", "fireworks", "openrouter", "deepseek", "gemini", "ollama", "huggingface", "hf"]:
             try:
                 if pref_provider == "groq":
                     return try_groq(pref_model)
-
+                elif pref_provider in ["huggingface", "hf"]:
+                    return try_huggingface(pref_model)
                 elif pref_provider == "fireworks":
                     return try_fireworks(pref_model)
                 elif pref_provider == "openrouter":
@@ -599,6 +576,15 @@ class ATOMCortex:
                 print(f"   [!] DeepSeek error: {e}")
                 self._update_status("⚠️ DeepSeek error. Trying Gemini...")
         
+        # === PHASE 2.4: CLOUD RESCUE (HUGGING FACE) ===
+        if HUGGINGFACE_AVAILABLE:
+            try:
+                res, model_label, _ = try_huggingface()
+                return res, f"{model_label}", True
+            except Exception as e:
+                print(f"   [!] Hugging Face error: {e}")
+                self._update_status("⚠️ Hugging Face error. Trying Gemini...")
+
         # === PHASE 3: LAST RESORT (GEMINI) ===
         if self.gemini_brain:
             self._update_status("🔄 Fallback to Gemini...")
@@ -715,99 +701,6 @@ KONTEKS PERCAKAPAN:
         print(f"   > Done in {duration}s via {model_name}")
         
         return response, thinking
-
-
-# --- HELPER FUNCTIONS FOR MULTIMODAL INPUT ---
-
-def read_file_content(uploaded_file) -> str:
-    """
-    Read content from an uploaded file.
-    Supports: .txt, .md, .py, .json, .csv, .pdf
-    
-    Args:
-        uploaded_file: Streamlit UploadedFile object
-        
-    Returns:
-        String content of the file
-    """
-    try:
-        filename = uploaded_file.name.lower()
-        
-        # Text-based files
-        if filename.endswith(('.txt', '.md', '.py', '.json', '.csv', '.html', '.css', '.js')):
-            return uploaded_file.read().decode('utf-8')
-        
-        # PDF files
-        elif filename.endswith('.pdf'):
-            try:
-                # pyrefly: ignore [missing-import]
-                import PyPDF2
-                import io
-                
-                pdf_reader = PyPDF2.PdfReader(io.BytesIO(uploaded_file.read()))
-                text = ""
-                for page in pdf_reader.pages:
-                    text += page.extract_text() + "\n"
-                return text.strip()
-            except ImportError:
-                return "[ERROR] PyPDF2 not installed. Run: pip install PyPDF2"
-            except Exception as e:
-                return f"[ERROR] Failed to read PDF: {e}"
-        
-        else:
-            return f"[ERROR] Unsupported file type: {filename}"
-            
-    except Exception as e:
-        return f"[ERROR] Failed to read file: {e}"
-
-
-def scrape_url(url: str) -> str:
-    """
-    Scrape text content from a URL.
-    
-    Args:
-        url: Web URL to scrape
-        
-    Returns:
-        String content of the webpage (text only)
-    """
-    try:
-        import requests
-        # pyrefly: ignore [missing-import]
-        from bs4 import BeautifulSoup
-        
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-        
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-        
-        soup = BeautifulSoup(response.content, 'html.parser')
-        
-        # Remove script and style elements
-        for element in soup(['script', 'style', 'nav', 'footer', 'header', 'aside']):
-            element.decompose()
-        
-        # Get text
-        text = soup.get_text(separator='\n', strip=True)
-        
-        # Clean up whitespace
-        lines = [line.strip() for line in text.splitlines() if line.strip()]
-        clean_text = '\n'.join(lines)
-        
-        # Limit length
-        if len(clean_text) > 10000:
-            clean_text = clean_text[:10000] + "\n\n[Content truncated...]"
-        
-        return clean_text
-        
-    except ImportError:
-        return "[ERROR] BeautifulSoup not installed. Run: pip install beautifulsoup4"
-    except requests.RequestException as e:
-        return f"[ERROR] Failed to fetch URL: {e}"
-    except Exception as e:
-        return f"[ERROR] Failed to scrape URL: {e}"
 
 
 # Backward compatibility alias

@@ -95,25 +95,113 @@ def invoke_llm_safely(prompt_or_messages, temperature: float = 0.3):
     raise RuntimeError("Tidak ada AI provider yang aktif atau kuota habis.")
 
 
-def refine_text(raw_text: str) -> str:
-    """Clean up messy text into structured markdown article."""
-    system = SystemMessage(content="""Kamu adalah Editor Artikel Profesional.
-Tugasmu: terima teks mentah → susun ulang menjadi Artikel Markdown rapi (Heading, Bullet points).
+def refine_text(raw_text: str, style: str = "structured") -> str:
+    """Clean up messy text into structured markdown article with multiple style presets."""
+    style_prompts = {
+        "structured": """Kamu adalah Editor Artikel Profesional A.T.O.M.
+Tugasmu: terima teks mentah → susun ulang menjadi Artikel Markdown terstruktur dan rapi.
 ATURAN:
-1. Gunakan heading (##, ###) untuk struktur
-2. Gunakan bullet points untuk list  
-3. Perbaiki typo dan tata bahasa
-4. Pertahankan semua informasi penting
-5. Buat paragraf yang rapi
-6. Jangan tambahkan informasi baru""")
+1. Gunakan heading hierarkis (##, ###) yang jelas
+2. Gunakan bullet points atau penomoran untuk daftar fakta/poin
+3. Perbaiki typo, ejaan, dan tata bahasa (Bahasa Indonesia yang baik dan natural)
+4. Pertahankan semua informasi penting, istilah teknis, dan konteks asli
+5. Buat paragraf yang mengalir rapi dan nyaman dibaca
+6. Jangan menambahkan informasi spekulatif yang tidak ada di teks mentah""",
 
-    user = HumanMessage(content=f"TEKS MENTAH:\n---\n{raw_text[:4000]}\n---\nRapihkan menjadi artikel Markdown terstruktur:")
+        "minutes": """Kamu adalah Notulis Profesional Rapat & Proyek A.T.O.M.
+Tugasmu: ubah teks mentah/catatan bebas menjadi Format Notulensi & Action Items Profesional.
+STRUKTUR WAJIB:
+- ## 📌 Ringkasan Eksekutif (1-2 paragraf singkat)
+- ## 🗣️ Poin-Poin Pembahasan Utama (bullet points dengan bold keyword)
+- ## ✅ Action Items & To-Do (gunakan checklist markdown: `- [ ] Tugas (PIC / Catatan)`)
+- ## ⚖️ Keputusan yang Disepakati
+ATURAN:
+1. Ekstrak tindakan atau tugas yang harus dikerjakan ke dalam checklist
+2. Jangan hapus nama orang, tanggal, atau target waktu jika ada
+3. Buat pembaca bisa langsung paham langkah selanjutnya dalam 30 detik""",
+
+        "summary": """Kamu adalah Eksekutif Ringkasan Cepat A.T.O.M.
+Tugasmu: buat ringkasan super padat, tajam, dan langsung ke inti (TL;DR).
+STRUKTUR:
+- ## ⚡ Executive Summary (Maksimal 3-4 kalimat padat)
+- ## 🎯 5 Poin Inti Terpenting (Bullet points ringkas & to-the-point)
+- ## 💡 Key Takeaway (1 kalimat pesan utama)
+ATURAN:
+1. Hindari basa-basi atau kata pengantar klise
+2. Fokus pada substansi terpenting""",
+
+        "grammar": """Kamu adalah Proofreader dan Editor Presisi A.T.O.M.
+Tugasmu: merapikan kesalahan bahasa, tanda baca, dan format markdown TANPA merombak susunan kalimat asli.
+ATURAN:
+1. Pertahankan urutan dan struktur kalimat penulis asli sedekat mungkin
+2. Perbaiki kesalahan ketik (typo), tanda baca, huruf kapital, dan format markdown
+3. Rapikan spasi ganda, baris baru yang rusak, atau list yang tidak sejajar
+4. Jangan menghapus atau menulis ulang dengan kata-kata berbeda kecuali memang salah fatal"""
+    }
+
+    selected_prompt = style_prompts.get(style, style_prompts["structured"])
+    system = SystemMessage(content=selected_prompt)
+    user = HumanMessage(content=f"TEKS MENTAH:\n---\n{raw_text[:6000]}\n---\nRapihkan menjadi artikel Markdown sesuai instruksi di atas:")
     
     try:
         response = invoke_llm_safely([system, user], 0.3)
         return response.content
     except Exception as e:
         return f"[ERROR] Gagal merapihkan: {str(e)}"
+
+
+def process_micro_ai(snippet: str, micro_type: str = "refine") -> str:
+    """Process focused micro AI actions on selected text snippet."""
+    micro_prompts = {
+        "refine": """Kamu adalah Micro-Editor A.T.O.M.
+Tugasmu: rapikan dan poles potongan teks yang dipilih pengguna.
+ATURAN:
+1. Perbaiki typo, tata bahasa, dan tanda baca
+2. Buat kalimat lebih mengalir, jelas, dan profesional
+3. Pertahankan arti asli dan jangan buat terlalu panjang
+4. Langsung berikan teks hasil perbaikan saja tanpa kata pengantar atau tanda kutip pembuka/penutup""",
+
+        "summarize": """Kamu adalah Micro-Summarizer A.T.O.M.
+Tugasmu: ringkas potongan teks terpilih menjadi 1-2 bullet point atau 1 kalimat super padat.
+ATURAN:
+1. Tangkap esensi terpenting saja
+2. Gunakan Bahasa Indonesia yang ringkas dan lugas
+3. Langsung berikan hasil ringkasan tanpa basa-basi""",
+
+        "explain": """Kamu adalah Micro-Explainer A.T.O.M.
+Tugasmu: jelaskan konsep, istilah, atau kalimat berikut secara singkat dan mudah dimengerti.
+ATURAN:
+1. Berikan penjelasan ringkas maksimal 2-3 kalimat
+2. Jelaskan artinya secara esensial dan kontekstual
+3. Gunakan Bahasa Indonesia yang ramah dan jelas
+4. Langsung berikan penjelasan tanpa basa-basi""",
+
+        "translate": """Kamu adalah Penerjemah Dwibahasa Presisi A.T.O.M.
+Tugasmu: jika teks sumber adalah Bahasa Indonesia, terjemahkan ke Bahasa Inggris yang natural. Jika teks sumber Bahasa Inggris atau bahasa asing lain, terjemahkan ke Bahasa Indonesia yang baik dan benar.
+ATURAN:
+1. Terjemahan harus akurat, natural, dan kontekstual
+2. Langsung berikan hasil terjemahan saja tanpa teks pengantar""",
+
+        "todo": """Kamu adalah Action-Item Extractor A.T.O.M.
+Tugasmu: ubah potongan teks berikut menjadi daftar checklist to-do Markdown (`- [ ]`).
+ATURAN:
+1. Buat butir checklist tindakan yang jelas, diawali kata kerja aksi
+2. Format: `- [ ] Tindakan spesifik`
+3. Langsung berikan daftar checklist tanpa basa-basi"""
+    }
+
+    selected_prompt = micro_prompts.get(micro_type, micro_prompts["refine"])
+    system = SystemMessage(content=selected_prompt)
+    user = HumanMessage(content=f"POTONGAN TEKS TERPILIH:\n---\n{snippet[:2500]}\n---\nHASIL:")
+
+    try:
+        response = invoke_llm_safely([system, user], 0.2)
+        content = response.content.strip()
+        if content.startswith('"') and content.endswith('"'):
+            content = content[1:-1].strip()
+        return content
+    except Exception as e:
+        return f"[ERROR] Gagal memproses micro AI: {str(e)}"
 
 
 def auto_tag(text: str) -> list:
@@ -140,21 +228,27 @@ TAGS:"""
 
 
 def chat_with_context(context_text: str, question: str) -> str:
-    """Answer question based ONLY on provided note content."""
-    system = SystemMessage(content="""Kamu adalah ATOM Knowledge Assistant.
-RULES:
-1. Jawab pertanyaan HANYA berdasarkan CONTEXT yang diberikan
-2. Kalau jawabannya tidak ada di context, katakan "Informasi tersebut tidak ada dalam catatan ini."
-3. Be concise and direct
-4. Gunakan Bahasa Indonesia
-5. Quote bagian relevan dari context kalau helpful""")
-    
-    user = HumanMessage(content=f"""CONTEXT (Isi Catatan):
+    """Answer question based on provided note contents (NotebookLM Multi-Note style)."""
+    system = SystemMessage(content="""Kamu adalah ATOM Knowledge Assistant (Multi-Note Intelligence Co-Pilot).
+TUGAS & ATURAN PENTING:
+1. Jawab pertanyaan HANYA berdasarkan KUMPULAN DOKUMEN / SUMBER CATATAN yang disertakan dalam konteks.
+2. CITATION / RUJUKAN SUMBER (WAJIB):
+   - Setiap kali Anda mengutip fakta, data, atau informasi dari dokumen tertentu, sertakan rujukan dokumen di akhir kalimat/poin dengan format: `[Sumber: Judul Dokumen]`.
+   - Jika pengguna meminta perbandingan atau sintesis dari beberapa dokumen, bandingkan secara eksplisit poin-poin persamaan dan perbedaannya.
+3. KETIADAAN INFORMASI:
+   - Jika jawaban tidak ditemukan sama sekali di kumpulan catatan yang disertakan, katakan terus terang: "Informasi tersebut tidak ditemukan dalam kumpulan catatan sumber yang dipilih."
+4. TATA BAHASA & STRUKTUR:
+   - Gunakan Bahasa Indonesia yang profesional, ramah, dan terstruktur rapi (gunakan bolding dan bullet points jika menjabarkan).
+   - Buat jawaban padat dan berbobot tanpa basa-basi berlebihan.""")
+
+    user = HumanMessage(content=f"""KUMPULAN CATATAN SUMBER KNOWLEDGE BASE:
 ---
-{context_text}
+{context_text[:12000]}
 ---
-PERTANYAAN: {question}
-Jawab berdasarkan CONTEXT di atas:""")
+PERTANYAAN PENGGUNA:
+{question}
+
+Berikan jawaban terstruktur dan sertakan rujukan sumber dokumen:""")
     
     try:
         response = invoke_llm_safely([system, user], 0.2)
@@ -241,7 +335,15 @@ class handler(BaseHTTPRequestHandler):
             if not content:
                 self._send_json({"error": "content is required for refine"}, 400)
                 return
-            result = refine_text(content)
+            style = data.get("style", "structured")
+            result = refine_text(content, style=style)
+
+        elif action == "micro":
+            if not content:
+                self._send_json({"error": "content is required for micro AI"}, 400)
+                return
+            micro_type = data.get("micro_type", "refine")
+            result = process_micro_ai(content, micro_type=micro_type)
 
         elif action == "autotag":
             if not content:

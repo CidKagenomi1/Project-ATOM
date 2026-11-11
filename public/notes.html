@@ -6,7 +6,7 @@
   <title>A.T.O.M. — Magic Notes</title>
   <meta name="description" content="ATOM Magic Notes — Obsidian-style knowledge management with AI features">
   <link rel="stylesheet" href="assets/css/main.css?v=4.6">
-  <link rel="stylesheet" href="assets/css/components.css?v=4.6">
+  <link rel="stylesheet" href="assets/css/components.css?v=5.1">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
@@ -94,7 +94,16 @@
           <span class="nav-icon">
             <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
               <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0
+                  l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2
+                  2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06
+                  a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82
+                  1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9
+                  a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06
+                  a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2
+                  v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0
+                  2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21
+                  a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
             </svg>
           </span>
           Settings
@@ -124,8 +133,8 @@
           <span class="status-label">Agent CrewAI</span>
         </div>
         <div class="status-row">
-          <div class="status-dot offline" id="dot-gemini"></div>
-          <span class="status-label">Fallback (Gemini)</span>
+          <div class="status-dot offline" id="dot-openrouter"></div>
+          <span class="status-label">OpenRouter Hub</span>
         </div>
       </div>
       <div class="sidebar-credit">initiate by alif rahmadi</div>
@@ -211,6 +220,9 @@
               <span id="tags-display"></span>
               <input type="text" id="tags-input" class="form-input" placeholder="tag1, tag2..." style="flex:1;min-width:120px;max-width:200px;font-size:0.78rem;padding:4px 8px;height:auto;">
               <button class="btn btn-ghost btn-sm" id="btn-autotag" title="AI Auto-Tag">🤖 Auto-Tag</button>
+              <button class="btn btn-ghost btn-sm" id="btn-toggle-connections" title="Buka panel relasi pengetahuan" style="margin-left:auto;font-size:0.75rem;gap:4px;">
+                🔗 <span id="connections-count">0 Relasi</span>
+              </button>
             </div>
 
             <!-- Note Body -->
@@ -237,26 +249,100 @@
 ## Heading 2
   
 - Bullet point
-- Another item
+- Hubungkan catatan lain dengan [[Nama Catatan]]
   
 **Bold** *Italic* `code`"
                   style="flex:1;min-height:400px;font-family:var(--font-mono);font-size:0.85rem;"
                 ></textarea>
               </div>
 
-              <!-- Chat Mode -->
+              <!-- Chat Mode (NotebookLM Multi-Note Knowledge Co-Pilot) -->
               <div id="note-chat-content" class="note-chat-area" style="display:none;">
-                <div style="background:var(--bg-elevated);border-radius:var(--radius-md);padding:var(--space-3);margin-bottom:var(--space-3);font-size:0.8rem;color:var(--text-secondary);">
-                  💡 Chat ini menjawab berdasarkan <strong>isi note saja</strong> (seperti NotebookLM).
+                <!-- Multi-Note Sources Context Banner -->
+                <div class="chat-sources-banner">
+                  <div class="chat-sources-header">
+                    <div class="flex items-center gap-2">
+                      <span class="chat-sources-badge">📚 SUMBER MULTI-NOTE</span>
+                      <span id="chat-sources-summary" class="chat-sources-summary">1 Catatan Aktif Terpilih</span>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" id="btn-open-sources-modal" title="Pilih catatan tambahan sebagai konteks" style="padding:4px 10px;font-size:0.75rem;">
+                      ⚙️ Atur Sumber Catatan
+                    </button>
+                  </div>
+                  <!-- Active Sources Pills -->
+                  <div class="chat-sources-pills" id="chat-sources-pills"></div>
                 </div>
+
+                <!-- Chat Messages Scroll Area -->
                 <div class="note-chat-messages" id="note-chat-messages"></div>
-                <div class="note-chat-input-row">
-                  <input type="text" class="form-input" id="note-chat-input" placeholder="Tanya tentang catatan ini..." style="flex:1;">
-                  <button class="btn btn-primary btn-sm" id="btn-note-chat-send">Kirim</button>
+
+                <!-- Prompt Starters / Synthesis Pills -->
+                <div class="chat-starters-bar" id="chat-starters-bar">
+                  <span class="chat-starters-label">⚡ Tanya Cepat:</span>
+                  <button class="starter-chip" data-prompt="Bandingkan poin-poin utama, kesamaan, dan perbedaan antara catatan-catatan yang dipilih ini.">
+                    ⚖️ Bandingkan Catatan
+                  </button>
+                  <button class="starter-chip" data-prompt="Buat ringkasan eksekutif komprehensif yang mensintesis seluruh catatan terpilih menjadi satu kesimpulan utuh.">
+                    📑 Sintesis Eksekutif
+                  </button>
+                  <button class="starter-chip" data-prompt="Ekstrak semua action items, to-do list, dan rencana tindakan dari kumpulan catatan ini.">
+                    ✅ Action Items Gabungan
+                  </button>
+                  <button class="starter-chip" data-prompt="Apa benang merah, korelasi ide, dan wawasan terpenting yang menghubungkan catatan-catatan ini?">
+                    💡 Analisis Benang Merah
+                  </button>
                 </div>
-                <button class="btn btn-ghost btn-sm" id="btn-clear-note-chat" style="margin:var(--space-2) var(--space-4);">🗑 Clear Chat</button>
+
+                <!-- Chat Input Row -->
+                <div class="note-chat-input-row">
+                  <input type="text" class="form-input" id="note-chat-input" placeholder="Tanya tentang kumpulan catatan ini (misal: 'Apa kesimpulan dari dokumen A dan B?')..." style="flex:1;">
+                  <button class="btn btn-primary btn-sm" id="btn-note-chat-send">
+                    <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:0.85rem;height:0.85rem;display:inline-block;vertical-align:middle;margin-right:4px;"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    Kirim
+                  </button>
+                </div>
+                <div class="flex items-center justify-between" style="padding:0 var(--space-4) var(--space-2) var(--space-4);">
+                  <span style="font-size:0.72rem;color:var(--text-muted);">💡 Jawaban berbasis bukti dokumen dengan rujukan <code>[Sumber: ...]</code></span>
+                  <button class="btn btn-ghost btn-sm" id="btn-clear-note-chat">🗑 Bersihkan Chat</button>
+                </div>
               </div>
 
+            </div>
+
+            <!-- ============ KNOWLEDGE INTERCONNECTION DRAWER ============ -->
+            <div id="knowledge-panel" class="knowledge-panel">
+              <div class="knowledge-panel-header" id="knowledge-panel-header" title="Klik untuk membuka/menutup panel relasi">
+                <div class="knowledge-panel-title">
+                  <span class="knowledge-atom-icon">⚛️</span>
+                  <span>Knowledge Interconnection</span>
+                  <span class="knowledge-badge" id="knowledge-badge">0 Links</span>
+                </div>
+                <button class="knowledge-panel-toggle" id="btn-knowledge-toggle">▲</button>
+              </div>
+              <div class="knowledge-panel-body" id="knowledge-panel-body" style="display:none;">
+                <div class="knowledge-grid">
+                  <!-- Linked Mentions / Backlinks -->
+                  <div class="knowledge-section">
+                    <div class="knowledge-section-header">
+                      <span>📥 Linked Mentions (Backlinks)</span>
+                      <span class="knowledge-pill" id="backlinks-count">0</span>
+                    </div>
+                    <div class="knowledge-list" id="backlinks-list">
+                      <p class="knowledge-empty">Tidak ada catatan lain yang menautkan catatan ini.</p>
+                    </div>
+                  </div>
+                  <!-- Outbound Links -->
+                  <div class="knowledge-section">
+                    <div class="knowledge-section-header">
+                      <span>📤 Outbound References (Wikilinks)</span>
+                      <span class="knowledge-pill" id="outbound-count">0</span>
+                    </div>
+                    <div class="knowledge-list" id="outbound-list">
+                      <p class="knowledge-empty">Belum ada rujukan. Ketik <code>[[Nama Catatan]]</code> di teks untuk menghubungkan.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -289,7 +375,175 @@
 
 
 
+  <!-- ============ WIKILINK AUTOCOMPLETE DROPDOWN ============ -->
+  <div id="wikilink-autocomplete" class="wikilink-autocomplete hidden">
+    <div class="wikilink-autocomplete-header">
+      <span>🔗 Tautkan Catatan (Wikilink)</span>
+      <span class="wikilink-esc-hint">Esc untuk batal</span>
+    </div>
+    <div class="wikilink-autocomplete-list" id="wikilink-autocomplete-list"></div>
+  </div>
+
   <div class="toast-container" id="toast-container"></div>
+
+  <!-- ============ MULTI-NOTE SOURCES SELECTOR MODAL ============ -->
+  <div id="sources-modal" class="safe-refine-overlay hidden">
+    <div class="sources-modal-card">
+      <div class="safe-refine-header">
+        <div class="safe-refine-title-wrap">
+          <span class="safe-refine-badge">📚 KNOWLEDGE CONTEXT</span>
+          <h3 class="safe-refine-title">Pilih Catatan Sumber (Multi-Note)</h3>
+        </div>
+        <button class="safe-refine-close-btn" id="btn-close-sources-modal" title="Tutup">✕</button>
+      </div>
+
+      <div class="sources-modal-filter-bar">
+        <input type="text" id="sources-search-input" class="form-input" placeholder="Cari catatan berdasarkan judul atau tag..." style="flex:1;">
+        <button class="btn btn-ghost btn-sm" id="btn-sources-select-all">Pilih Semua</button>
+        <button class="btn btn-ghost btn-sm" id="btn-sources-active-only">Hanya Aktif</button>
+      </div>
+
+      <div class="sources-modal-list" id="sources-modal-list">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="sources-modal-footer">
+        <div class="sources-modal-stats">
+          <span id="sources-modal-count" style="font-weight:700;color:var(--gold-light);">1 catatan terpilih</span>
+          <span class="text-stat" id="sources-modal-words">~0 kata total</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="btn btn-secondary btn-sm" id="btn-cancel-sources">Batal</button>
+          <button class="btn btn-primary btn-sm" id="btn-apply-sources">
+            ✅ Terapkan Sumber Konteks
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SAFE AI REFINE MODAL ============ -->
+  <div id="safe-refine-modal" class="safe-refine-overlay hidden">
+    <div class="safe-refine-card">
+      <!-- Header -->
+      <div class="safe-refine-header">
+        <div class="safe-refine-title-wrap">
+          <span class="safe-refine-badge">✨ SAFE AI REFINE</span>
+          <h3 class="safe-refine-title">Review & Bandingkan Perubahan AI</h3>
+        </div>
+        <button class="safe-refine-close-btn" id="btn-close-refine-modal" title="Tutup (Esc)">✕</button>
+      </div>
+
+      <!-- Controls: Presets & View Modes -->
+      <div class="safe-refine-controls">
+        <div class="safe-refine-presets">
+          <span class="safe-refine-label">Gaya Refine:</span>
+          <button class="preset-chip active" data-style="structured">📑 Terstruktur</button>
+          <button class="preset-chip" data-style="minutes">📋 Notulensi Rapat</button>
+          <button class="preset-chip" data-style="summary">⚡ Ringkasan Kunci</button>
+          <button class="preset-chip" data-style="grammar">🪄 Rapikan & Grammar</button>
+        </div>
+        <div class="safe-refine-view-toggles">
+          <button class="view-chip active" id="btn-view-split" title="Tampilan Berdampingan">⚖️ Side-by-Side</button>
+          <button class="view-chip" id="btn-view-preview" title="Hasil Render Markdown">👁️ Render Preview</button>
+          <button class="view-chip" id="btn-view-raw" title="Teks Markdown Asli">📝 Raw Markdown</button>
+        </div>
+      </div>
+
+      <!-- Body: Comparison Columns -->
+      <div class="safe-refine-body">
+        <!-- Original Column -->
+        <div class="safe-refine-col" id="refine-col-original">
+          <div class="safe-refine-col-header">
+            <span>📄 Teks Asli Saat Ini</span>
+            <span class="text-stat" id="refine-stat-original">0 kata</span>
+          </div>
+          <div class="safe-refine-content" id="refine-original-text"></div>
+        </div>
+
+        <!-- Refined Column -->
+        <div class="safe-refine-col" id="refine-col-result">
+          <div class="safe-refine-col-header">
+            <span>✨ Rekomendasi Hasil AI</span>
+            <div class="flex items-center gap-2">
+              <span class="text-stat" id="refine-stat-result">0 kata</span>
+              <span class="refine-diff-badge" id="refine-diff-badge">+0%</span>
+            </div>
+          </div>
+          <!-- Loading state -->
+          <div id="refine-loading" class="refine-loading-box" style="display:none;">
+            <div class="nucleus-spinner"></div>
+            <span>Cortex AI sedang menganalisis & merapihkan catatan...</span>
+          </div>
+          <!-- Preview container -->
+          <div class="safe-refine-content markdown-view" id="refine-result-preview"></div>
+          <textarea class="safe-refine-content form-textarea" id="refine-result-raw" style="display:none;"></textarea>
+        </div>
+      </div>
+
+      <!-- Footer Actions -->
+      <div class="safe-refine-footer">
+        <div class="safe-refine-footer-left">
+          <button class="btn btn-ghost btn-sm" id="btn-refine-regen" title="Generate ulang dengan preset saat ini">
+            🔄 Regenerate
+          </button>
+          <span class="safe-refine-tip">💡 Catatan Anda aman & tidak berubah sebelum Anda mengklik "Terapkan Perubahan".</span>
+        </div>
+        <div class="safe-refine-footer-right">
+          <button class="btn btn-secondary btn-sm" id="btn-refine-cancel">❌ Batalkan</button>
+          <button class="btn btn-primary btn-sm" id="btn-refine-apply">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:0.9rem;height:0.9rem;display:inline-block;vertical-align:middle;margin-right:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Terapkan Perubahan (Accept)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MICRO AI CONTEXTUAL FLOATING MENU (VERTICAL) ============ -->
+  <div id="micro-ai-toolbar" class="micro-ai-toolbar hidden">
+    <div class="micro-ai-pills">
+      <div class="micro-ai-badge">
+        <span>⚛️ Cortex AI</span>
+        <button id="btn-close-micro-toolbar" class="micro-popover-close" style="font-size:0.75rem;padding:0 3px;" title="Tutup">✕</button>
+      </div>
+      <button class="micro-btn" data-micro="refine" title="Rapihkan potongan teks yang diblok">
+        <span class="micro-icon">🪄</span> <span>Rapikan Teks</span>
+      </button>
+      <button class="micro-btn" data-micro="summarize" title="Ringkas jadi poin kunci singkat">
+        <span class="micro-icon">📝</span> <span>Ringkas Inti</span>
+      </button>
+      <button class="micro-btn" data-micro="explain" title="Jelaskan istilah / konsep ini">
+        <span class="micro-icon">🔍</span> <span>Jelaskan Konsep</span>
+      </button>
+      <button class="micro-btn" data-micro="translate" title="Terjemahkan dwibahasa (ID ⇄ EN)">
+        <span class="micro-icon">🌐</span> <span>Terjemahkan</span>
+      </button>
+      <button class="micro-btn" data-micro="todo" title="Ubah menjadi checklist to-do">
+        <span class="micro-icon">⚡</span> <span>Jadikan To-Do</span>
+      </button>
+    </div>
+
+    <!-- Micro AI Result Card / Popover -->
+    <div id="micro-ai-popover" class="micro-ai-popover hidden">
+      <div class="micro-popover-header">
+        <span id="micro-popover-title" class="micro-popover-title">✨ Hasil Cortex AI</span>
+        <button id="btn-close-micro-popover" class="micro-popover-close" title="Tutup">✕</button>
+      </div>
+      <div id="micro-popover-content" class="micro-popover-content"></div>
+      <div class="micro-popover-footer">
+        <button id="btn-micro-replace" class="btn btn-primary btn-sm" title="Ganti teks yang diblok dengan hasil ini">
+          ✏️ Ganti Teks
+        </button>
+        <button id="btn-micro-insert" class="btn btn-secondary btn-sm" title="Sisipkan di bawah teks yang diblok">
+          ➕ Sisipkan di Bawah
+        </button>
+        <button id="btn-micro-copy" class="btn btn-ghost btn-sm" title="Salin ke clipboard">
+          📋 Salin
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- AI Status overlay -->
   <div id="ai-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;">
@@ -301,7 +555,12 @@
 
   <script src="assets/js/particles.js?v=4.8"></script>
   <script src="assets/js/app.js?v=5.1"></script>
-  <script src="assets/js/notes.js?v=4.9"></script>
+  <script src="assets/js/notes/notes-api.js?v=5.5"></script>
+  <script src="assets/js/notes/notes-bubbles.js?v=5.5"></script>
+  <script src="assets/js/notes/notes-wikilinks.js?v=5.5"></script>
+  <script src="assets/js/notes/notes-ai.js?v=5.5"></script>
+  <script src="assets/js/notes/notes-editor.js?v=5.5"></script>
+  <script src="assets/js/notes.js?v=5.5"></script>
   <script src="assets/js/mobile-ui.js"></script>
 </body>
 </html>

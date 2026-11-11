@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>A.T.O.M. — Autonomous Task Orchestration Machine</title>
-  <meta name="description" content="ATOM: AI assistant powered by Gemini & Groq. Smart, fast, and intelligent.">
+  <meta name="description" content="ATOM: AI assistant powered by Groq & OpenRouter. Smart, fast, and intelligent.">
   <link rel="stylesheet" href="assets/css/main.css?v=4.6">
   <link rel="stylesheet" href="assets/css/components.css?v=4.6">
   <!-- marked.js for markdown rendering -->
@@ -100,7 +100,16 @@
           <span class="nav-icon">
             <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
               <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0
+                  l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2
+                  2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06
+                  a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82
+                  1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9
+                  a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06
+                  a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2
+                  v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0
+                  2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21
+                  a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
             </svg>
           </span>
           Settings
@@ -148,8 +157,8 @@
           <span class="status-label">Agent CrewAI</span>
         </div>
         <div class="status-row">
-          <div class="status-dot offline" id="dot-gemini"></div>
-          <span class="status-label">Fallback (Gemini)</span>
+          <div class="status-dot offline" id="dot-openrouter"></div>
+          <span class="status-label">OpenRouter Hub</span>
         </div>
       </div>
       <div class="sidebar-credit">initiate by alif rahmadi</div>
@@ -229,10 +238,10 @@
                 <span class="status-pill-label">CrewAI</span>
                 <span class="status-pill-sub">Agents</span>
               </div>
-              <div class="status-pill offline" id="pill-gemini" title="Multimodal Vision Fallback">
+              <div class="status-pill offline" id="pill-openrouter" title="OpenRouter Model Hub Fallback">
                 <span class="status-dot-indicator"></span>
-                <span class="status-pill-label">Fallback</span>
-                <span class="status-pill-sub">Gemini</span>
+                <span class="status-pill-label">Hub</span>
+                <span class="status-pill-sub">OpenRouter</span>
               </div>
             </div>
           </div>
@@ -303,7 +312,7 @@
                   </svg>
                 </div>
                 <div class="suggestion-title">Cara Kerja Cortex</div>
-                <div class="suggestion-desc">Mekanisme perutean cerdas dan failover multi-tier Groq, DeepSeek, & Gemini</div>
+                <div class="suggestion-desc">Mekanisme perutean cerdas dan failover multi-tier Groq & OpenRouter</div>
               </button>
 
               <!-- Card 4: Apa itu CrewAI? -->
@@ -432,8 +441,6 @@
                       <select class="api-provider-select" id="api-provider-select" aria-label="Pilih Provider API">
                         <option value="groq" selected>⚡ Groq Cloud</option>
                         <option value="openrouter">🌐 OpenRouter (Nemotron)</option>
-                        <option value="gemini" disabled class="disabled-option">♊ Google Gemini (Disabled)</option>
-                        <option value="deepseek" disabled class="disabled-option">🐳 DeepSeek (Disabled)</option>
                         <option value="ollama" disabled class="disabled-option">🧠 Local Ollama (Disabled)</option>
                       </select>
                       <svg class="select-chevron-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -492,6 +499,8 @@
   <div class="toast-container" id="toast-container"></div>
 
   <script src="assets/js/particles.js"></script>
+  <script src="assets/js/modules/attachment-manager.js"></script>
+  <script src="assets/js/modules/session-store.js"></script>
   <script src="assets/js/app.js"></script>
   <script src="assets/js/chat.js"></script>
   <script src="assets/js/mobile-ui.js"></script>

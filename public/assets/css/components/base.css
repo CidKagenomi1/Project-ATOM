@@ -1,0 +1,717 @@
+/* ─── Search Input ─── */
+.search-input {
+  position: relative;
+}
+
+.search-input input {
+  padding-left: 2.25rem;
+}
+
+.search-input .search-icon {
+  position: absolute;
+  left: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+  font-size: 0.9rem;
+}
+
+/* ─── Mobile Notes ─── */
+@media (max-width: 768px) {
+  .notes-layout {
+    flex-direction: column;
+  }
+
+  .notes-sidebar {
+    width: 100%;
+    height: auto;
+    max-height: 250px;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .note-toolbar {
+    padding: var(--space-3);
+  }
+
+  .atom-header {
+    padding: var(--space-4) var(--space-2) var(--space-2) var(--space-2);
+  }
+
+  .atom-title {
+    font-size: 2.2rem;
+    letter-spacing: -0.04em;
+    margin-right: 0;
+  }
+
+  .atom-subtitle {
+    font-size: 0.8rem;
+    letter-spacing: -0.01em;
+    padding: 0 8px;
+  }
+
+  .chat-layout {
+    height: calc(100vh - var(--topbar-height));
+    height: calc(100dvh - var(--topbar-height));
+    padding: 0 10px;
+  }
+
+  .message-body {
+    max-width: 90%;
+  }
+
+  /* Prevent browser auto-zoom glitch on mobile (requires font-size >= 16px) */
+  .chat-input,
+  .model-select,
+  .rp-role-select,
+  .settings-select,
+  .search-input input,
+  select,
+  textarea,
+  input[type="text"] {
+    font-size: 16px !important;
+  }
+
+  .rp-selectors-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .rp-select-wrapper,
+  .model-select-wrapper {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .rp-role-select,
+  .model-select {
+    flex: 1;
+    min-width: 0;
+    max-width: calc(100% - 75px);
+  }
+
+  .input-area {
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  .input-row {
+    padding: 6px 10px;
+  }
+
+  .suggestions-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .suggestion-chip.suggestion-card {
+    padding: 8px 10px;
+  }
+}
+
+/* ─── Chat Model Bar & Auto/Advance Switch (DESIGN.md Vercel & Linear Precision) ─── */
+.chat-model-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0;
+  flex-wrap: wrap;
+  z-index: 2;
+}
+
+/* Saklar Segmented Auto | Advance */
+.model-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(10, 13, 18, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-full);
+  padding: 2px;
+  gap: 2px;
+  user-select: none;
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+.mode-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.mode-switch-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Low-Glow Rule: Active state border tajam & solid tint, TANPA box-shadow halo */
+.mode-switch-btn.active {
+  background: rgba(235, 179, 56, 0.14);
+  color: var(--gold-light);
+  border-color: rgba(235, 179, 56, 0.35);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+.mode-switch-btn[data-mode="auto"].active {
+  background: rgba(59, 130, 246, 0.14);
+  color: #93c5fd;
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+.mode-switch-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.mode-svg-icon {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2.2;
+  transition: transform var(--transition-fast);
+}
+
+.mode-switch-btn:hover .mode-svg-icon {
+  transform: scale(1.08);
+}
+
+/* Auto Mode Badge */
+.auto-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text-secondary);
+  padding: 0 9px;
+  border-radius: var(--radius-full);
+  background: rgba(14, 18, 24, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  animation: fadeIn 0.2s ease-in;
+}
+
+.auto-mode-badge.hidden {
+  display: none !important;
+}
+
+.auto-badge-svg {
+  width: 12px;
+  height: 12px;
+  color: #60a5fa;
+  stroke-width: 2;
+  opacity: 0.9;
+}
+
+.auto-badge-dot {
+  color: var(--success);
+  font-size: 0.6rem;
+  animation: pulseGreenDot 2s infinite ease-in-out;
+}
+
+@keyframes pulseGreenDot {
+  0%, 100% { opacity: 0.6; transform: scale(0.95); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+/* ─── Advance Mode Controls & Selector Pills (DESIGN.md Precision) ─── */
+.advance-model-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.advance-model-controls.hidden {
+  display: none !important;
+}
+
+/* Precision Pill Capsule */
+.advance-select-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  background: rgba(14, 18, 24, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-full);
+  padding: 0 9px;
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.advance-select-box:hover {
+  background: rgba(20, 26, 36, 0.85);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.10);
+  transform: translateY(-1px);
+}
+
+.advance-select-box:focus-within {
+  background: rgba(18, 23, 32, 0.95);
+  border-color: rgba(235, 179, 56, 0.45);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.10);
+  transform: translateY(-1px);
+}
+
+.advance-mini-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--gold-light);
+  opacity: 0.95;
+  padding-right: 5px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.select-label-svg {
+  width: 10px;
+  height: 10px;
+  color: var(--gold-primary);
+  stroke-width: 2.2;
+}
+
+.select-chevron-svg {
+  width: 10px;
+  height: 10px;
+  color: var(--text-muted);
+  stroke-width: 2.2;
+  pointer-events: none;
+  opacity: 0.75;
+  margin-left: 1px;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.advance-select-box:hover .select-chevron-svg {
+  color: var(--text-primary);
+  opacity: 0.95;
+}
+
+.api-provider-select,
+.advance-model-controls .model-select,
+#rp-role-select,
+#model-select-wrapper select {
+  background: transparent;
+  color: var(--text-primary);
+  border: none;
+  border-radius: var(--radius-full);
+  padding: 1px 2px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-family: var(--font-ui);
+  outline: none;
+  cursor: pointer;
+  max-width: 220px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  line-height: 1;
+}
+
+.api-provider-select option,
+.advance-model-controls .model-select option,
+.model-select option,
+.api-model-select option,
+#rp-role-select option {
+  background: #0d1117;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  padding: 6px 10px;
+}
+
+.api-provider-select option:disabled,
+.advance-model-controls .model-select option:disabled,
+.model-select option:disabled,
+.api-model-select option:disabled,
+select option:disabled,
+select option[disabled],
+.disabled-option {
+  color: rgba(148, 163, 184, 0.35) !important;
+  background-color: #080b10 !important;
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .chat-input-wrapper.input-row,
+  .input-row {
+    padding: 8px 10px 8px 10px;
+    border-radius: var(--radius-lg);
+  }
+  .input-bottom-bar {
+    gap: 6px;
+  }
+  .chat-model-bar {
+    gap: 4px;
+    margin-bottom: 0;
+  }
+  .api-provider-select,
+  .advance-model-controls .model-select,
+  #rp-role-select,
+  #model-select-wrapper select {
+    max-width: 120px;
+    font-size: 0.70rem;
+  }
+  .mode-switch-btn {
+    padding: 2px 7px;
+    font-size: 0.68rem;
+  }
+}
+
+.model-select {
+  background: rgba(22, 27, 34, 0.45);
+  color: var(--text-secondary);
+  border: var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-family: var(--font-ui);
+  outline: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+}
+
+.model-select:hover {
+  border-color: var(--border-gold);
+  color: var(--gold-primary);
+  background: rgba(33, 38, 45, 0.55);
+}
+
+.model-select:focus {
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 0 2px var(--gold-glow);
+}
+
+/* ─── Note Chat bubbles ─── */
+.chat-message-item {
+  border-radius: var(--radius-lg);
+  padding: 10px 14px;
+  font-family: var(--font-chat);
+  font-style: normal;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  box-shadow: var(--glass-shadow);
+  border-width: 1px;
+  border-style: solid;
+}
+
+.chat-message-item.chat-user {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-gold);
+}
+
+.chat-message-item.chat-ai {
+  background: rgba(28, 33, 40, 0.45);
+  border-color: var(--border-color);
+}
+
+.chat-message-sender {
+  display: block;
+  font-family: var(--font-ui);
+  font-style: italic;
+  font-size: 0.72rem;
+  margin-bottom: 4px;
+}
+
+.chat-message-item.chat-user .chat-message-sender {
+  color: var(--gold-light);
+}
+
+.chat-message-item.chat-ai .chat-message-sender {
+  color: var(--gold-primary);
+}
+
+.chat-message-content {
+  line-height: 1.5;
+}
+
+/* ─── RP Dual Selectors Row (Bersebelahan & Mobile Friendly) ─── */
+.rp-selectors-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.selector-mini-label {
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--gold-light);
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+
+.rp-select-wrapper,
+.model-select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 20;
+}
+
+.rp-role-select {
+  background: rgba(10, 10, 10, 0.45);
+  color: var(--text-secondary);
+  border: var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-family: var(--font-ui);
+  outline: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+}
+
+.rp-role-select:hover,
+.rp-role-select:focus {
+  border-color: var(--border-gold);
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+/* ─── Custom Model Select Dropdown ─── */
+.custom-select-trigger {
+  background: rgba(10, 10, 10, 0.45);
+  color: var(--text-secondary);
+  border: var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-family: var(--font-ui);
+  outline: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: var(--glass-shadow);
+}
+
+.custom-select-trigger::after {
+  content: '▲';
+  font-size: 0.55rem;
+  transition: transform var(--transition-normal);
+  color: var(--text-muted);
+}
+
+.model-select-wrapper.open .custom-select-trigger::after {
+  transform: rotate(180deg);
+}
+
+.custom-select-trigger:hover {
+  border-color: var(--border-gold);
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.custom-select-options {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: var(--space-2);
+  background: rgba(5, 5, 5, 0.85);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-shadow);
+  width: max-content;
+  min-width: 180px;
+  max-height: 250px;
+  overflow-y: auto;
+  opacity: 0;
+  transform: translateY(10px) scale(0.95);
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+}
+
+.model-select-wrapper.open .custom-select-options {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: all;
+}
+
+.custom-select-option {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-family: var(--font-ui);
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  text-align: left;
+}
+
+.custom-select-option:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.custom-select-option.selected {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* ─── Mobile Enhancements & Touch Animations ─── */
+.touch-active {
+  transform: scale(0.96) !important;
+  transition: transform 0.1s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.mobile-mode .model-select-wrapper {
+  margin-bottom: 0;
+  align-self: center;
+  margin-right: 4px;
+}
+
+body.mobile-mode .custom-select-trigger.compact-mobile {
+  padding: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+
+body.mobile-mode .custom-select-trigger.compact-mobile::after {
+  display: none; /* Hide the arrow since it's just a compact circular badge now */
+}
+
+body.mobile-mode .custom-select-options {
+  bottom: 45px;
+  left: 0;
+}
+
+.mobile-logo-badge {
+  font-size: 1.1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Denser grid system for Floating Bubbles on Mobile */
+body.mobile-mode .bubble-grid.dense-grid {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+body.mobile-mode .bubble-grid.dense-grid .bubble-card {
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  gap: var(--space-2);
+}
+
+body.mobile-mode .bubble-grid.dense-grid .bubble-text {
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+body.mobile-mode .bubble-grid.dense-grid .bubble-footer {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+body.mobile-mode .bubble-grid.dense-grid .bubble-date {
+  font-size: 0.65rem;
+}
+
+body.mobile-mode .bubble-grid.dense-grid .bubble-actions {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+body.mobile-mode .bubble-grid.dense-grid .bubble-actions .btn {
+  flex: 1;
+  padding: 3px 6px;
+  font-size: 0.68rem;
+  height: 24px;
+}
+
+/* Enhancing input row for integration */
+body.mobile-mode .input-row {
+  display: flex; /* Pastikan flexbox aktif */
+  padding: var(--space-3); /* Sedikit disesuaikan agar tidak terlalu sempit */
+  border-radius: var(--radius-lg);
+  align-items: center; /* Menyelaraskan semua item (avatar, input, button) tepat di tengah secara vertikal */
+  gap: var(--space-2); /* Memberikan jarak konsisten antar elemen di dalamnya */
+}
+
+body.mobile-mode .chat-input {
+  flex: 1; /* Memaksa input untuk mengisi sisa ruang kosong yang tersedia */
+  padding-left: var(--space-2); /* Mengganti 4px agar jarak dari avatar lebih proporsional */
+  border: none;
+  background: transparent;
+  outline: none;
+  /* Hapus align-self: center karena sudah dihandle oleh .input-row */
+}
+
+body.mobile-mode .input-actions {
+  display: flex;
+  align-items: center;
+  /* Hapus align-self: center */
+}
+

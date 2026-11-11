@@ -100,7 +100,16 @@
           <span class="nav-icon">
             <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
               <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0
+                  l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2
+                  2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06
+                  a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82
+                  1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9
+                  a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06
+                  a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2
+                  v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0
+                  2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21
+                  a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
             </svg>
           </span>
           Settings
@@ -148,8 +157,8 @@
           <span class="status-label">Agent CrewAI</span>
         </div>
         <div class="status-row">
-          <div class="status-dot offline" id="dot-gemini"></div>
-          <span class="status-label">Fallback (Gemini)</span>
+          <div class="status-dot offline" id="dot-openrouter"></div>
+          <span class="status-label">OpenRouter Hub</span>
         </div>
       </div>
       <div class="sidebar-credit">initiate by alif rahmadi</div>
@@ -306,9 +315,7 @@
                     <option value="openrouter:nvidia/nemotron-3.5-lightning:free">⚡ Nemotron 3.5 Lightning (Free)</option>
                     <option value="openrouter:cohere/north-mini-code:free">💻 Cohere North Mini Code (Free)</option>
                     <option value="auto" disabled class="disabled-option">🤖 Auto Route (Disabled)</option>
-                    <option value="ollama" disabled class="disabled-option">🧠 Ollama (DeepSeek V4) (Disabled)</option>
-                    <option value="deepseek" disabled class="disabled-option">🐳 DeepSeek (V3) (Disabled)</option>
-                    <option value="gemini" disabled class="disabled-option">♊ Gemini (Flash 2.5) (Disabled)</option>
+                    <option value="ollama" disabled class="disabled-option">🧠 Local Ollama (Disabled)</option>
                   </select>
                   <svg class="select-chevron-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="m6 9 6 6 6-6"/>
@@ -335,6 +342,8 @@
   <div class="toast-container" id="toast-container"></div>
 
   <script src="assets/js/particles.js"></script>
+  <script src="assets/js/modules/attachment-manager.js"></script>
+  <script src="assets/js/modules/session-store.js"></script>
   <script src="assets/js/app.js"></script>
   <script src="assets/js/roleplay.js"></script>
 </body>
