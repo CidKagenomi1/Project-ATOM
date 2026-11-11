@@ -74,8 +74,11 @@ async function createNote(title = 'Catatan Baru', content = '', tags = []) {
 }
 
 async function getNote(id) {
+  if (!id || id === 'undefined' || id === 'null') {
+    return null;
+  }
   try {
-    const resp = await fetch(`/api/notes/${id}`);
+    const resp = await fetch(`/api/notes/${encodeURIComponent(id)}`);
     if (!resp.ok) return null;
     return await resp.json();
   } catch (err) {
@@ -96,7 +99,10 @@ async function getAllNotes() {
 }
 
 async function updateNote(id, updates) {
-  const resp = await fetch(`/api/notes/${id}`, {
+  if (!id || id === 'undefined' || id === 'null') {
+    throw new Error('Invalid note ID');
+  }
+  const resp = await fetch(`/api/notes/${encodeURIComponent(id)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updates)
@@ -109,8 +115,11 @@ async function updateNote(id, updates) {
 }
 
 async function deleteNote(id) {
+  if (!id || id === 'undefined' || id === 'null') {
+    return false;
+  }
   try {
-    const resp = await fetch(`/api/notes/${id}`, { method: 'DELETE' });
+    const resp = await fetch(`/api/notes/${encodeURIComponent(id)}`, { method: 'DELETE' });
     return resp.ok;
   } catch (err) {
     console.error('[DELETE NOTE ERROR]', err);

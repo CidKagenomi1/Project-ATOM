@@ -139,7 +139,7 @@ async function updateKnowledgeConnections(noteId) {
         backlinksListEl.innerHTML = `<p class="knowledge-empty">Tidak ada catatan lain yang menautkan catatan ini.</p>`;
       } else {
         backlinksListEl.innerHTML = backlinks.map(b => `
-          <div class="knowledge-item" onclick="window.closeKnowledgeModal(); openNote(${b.id})">
+          <div class="knowledge-item" onclick="window.closeKnowledgeModal(); openNote('${escapeHtml(String(b.id))}')">
             <span class="knowledge-item-title">
               <span>📥</span> ${escapeHtml(b.title)}
             </span>

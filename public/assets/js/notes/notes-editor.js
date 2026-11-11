@@ -105,7 +105,7 @@ async function renderNotesGallery(query = '', filterTag = null) {
     }
 
     return `
-      <div class="note-card" data-id="${note.id}" onclick="openNote(${note.id})">
+      <div class="note-card" data-id="${escapeHtml(String(note.id))}" onclick="openNote('${escapeHtml(String(note.id))}')">
         <div class="note-card-header">
           <div class="note-card-title-group">
             <span class="note-card-icon">
@@ -113,7 +113,7 @@ async function renderNotesGallery(query = '', filterTag = null) {
             </span>
             <h3 class="note-card-title" title="${escapeHtml(note.title || 'Untitled Note')}">${escapeHtml(note.title || 'Untitled Note')}</h3>
           </div>
-          <button class="note-card-delete-btn" onclick="confirmDeleteNote(event, ${note.id})" title="Hapus catatan" aria-label="Delete">
+          <button class="note-card-delete-btn" onclick="confirmDeleteNote(event, '${escapeHtml(String(note.id))}')" title="Hapus catatan" aria-label="Delete">
             <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
           </button>
         </div>
@@ -147,8 +147,14 @@ window.renderNotesList = async function(query = '') {
 
 // ─── Open Document View ────────────────────────────────────
 async function openNote(id, targetMode = null) {
+  if (!id || id === 'undefined' || id === 'null') {
+    return;
+  }
   const note = await getNote(id);
-  if (!note) return;
+  if (!note) {
+    showToast('Catatan tidak ditemukan atau telah dihapus', 'warning');
+    return;
+  }
 
   currentNoteId = id;
   noteChatHistory = [];
@@ -541,7 +547,7 @@ function renderQuickSwitcherResults(query = '') {
   }
 
   container.innerHTML = filtered.map((note, idx) => `
-    <div class="quick-switcher-item ${idx === quickSwitcherActiveIndex ? 'selected' : ''}" onclick="selectQuickSwitcherNote(${note.id})">
+    <div class="quick-switcher-item ${idx === quickSwitcherActiveIndex ? 'selected' : ''}" onclick="selectQuickSwitcherNote('${escapeHtml(String(note.id))}')">
       <div class="quick-switcher-item-left">
         <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.85rem;height:0.85rem;color:var(--text-muted);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
         <span class="quick-switcher-item-title">${escapeHtml(note.title || 'Untitled Note')}</span>

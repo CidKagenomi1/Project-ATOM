@@ -82,7 +82,9 @@ async def list_tags():
     return get_all_tags()
 
 @router.get("/notes/{id}")
-async def retrieve_note(id: int):
+async def retrieve_note(id: str):
+    if not id or id in ("undefined", "null", "[object Object]"):
+        raise HTTPException(status_code=400, detail="Invalid note ID")
     from modules.notes.note_storage import get_note
     note = get_note(id)
     if not note:
@@ -98,23 +100,31 @@ async def create_new_note(request: NoteCreate):
         raise HTTPException(status_code=500, detail=f"Failed to create note: {e}")
 
 @router.put("/notes/{id}")
-async def update_existing_note(id: int, request: NoteUpdate):
+async def update_existing_note(id: str, request: NoteUpdate):
+    if not id or id in ("undefined", "null", "[object Object]"):
+        raise HTTPException(status_code=400, detail="Invalid note ID")
     from modules.notes.note_storage import update_note
     try:
         note = update_note(note_id=id, title=request.title, content=request.content, tags=request.tags)
         if not note:
             raise HTTPException(status_code=404, detail="Note not found")
         return note
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update note: {e}")
 
 @router.delete("/notes/{id}")
-async def delete_existing_note(id: int):
+async def delete_existing_note(id: str):
+    if not id or id in ("undefined", "null", "[object Object]"):
+        raise HTTPException(status_code=400, detail="Invalid note ID")
     from modules.notes.note_storage import delete_note
     try:
         success = delete_note(id)
         if not success:
             raise HTTPException(status_code=404, detail="Note not found")
         return {"status": "success"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete note: {e}")

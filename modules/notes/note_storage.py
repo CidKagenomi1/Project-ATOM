@@ -84,6 +84,24 @@ if MONGODB_CONNECTED:
         print(f"[WARN] DATABASE: Auto-migration failed: {e}")
 
 
+def _build_id_query(note_id: Any) -> Dict[str, Any]:
+    """Build resilient MongoDB query matching integer ID, string ID, or ObjectId."""
+    queries = [{"id": note_id}]
+    try:
+        queries.append({"id": int(note_id)})
+    except (ValueError, TypeError):
+        pass
+    queries.append({"id": str(note_id)})
+
+    try:
+        from bson import ObjectId
+        if ObjectId.is_valid(str(note_id)):
+            queries.append({"_id": ObjectId(str(note_id))})
+    except Exception:
+        pass
+    return {"$or": queries}
+
+
 # === CRUD OPERATIONS ===
 
 def create_note(
@@ -96,9 +114,9 @@ def create_note(
     """Create a new note."""
     if MONGODB_CONNECTED:
         try:
-            # Generate new integer ID by finding max current ID
-            max_note = db["notes"].find_one(sort=[("id", -1)])
-            new_id = (max_note["id"] + 1) if max_note else 1
+            # Generate new integer ID by finding max current numeric ID
+            max_note = db["notes"].find_one({"id": {"$exists": True, "$type": "number"}}, sort=[("id", -1)])
+            new_id = (max_note.get("id", 0) + 1) if max_note else 1
             
             note = {
                 "id": new_id,
@@ -136,12 +154,18 @@ def create_note(
     return note
 
 
-def get_note(note_id: int) -> Optional[Dict[str, Any]]:
+def get_note(note_id: Any) -> Optional[Dict[str, Any]]:
     """Get a note by ID."""
+    if not note_id or str(note_id).lower() in ("undefined", "null", ""):
+        return None
+
     if MONGODB_CONNECTED:
         try:
-            note = db["notes"].find_one({"id": note_id})
+            query = _build_id_query(note_id)
+            note = db["notes"].find_one(query)
             if note:
+                if "id" not in note or note["id"] is None:
+                    note["id"] = str(note.get("_id", ""))
                 note.pop("_id", None)
                 return note
             return None
@@ -150,8 +174,8 @@ def get_note(note_id: int) -> Optional[Dict[str, Any]]:
             
     # Local Fallback
     db_local = _load_local_db()
-    for note in db_local["notes"]:
-        if note["id"] == note_id:
+    for note in db_local.get("notes", []):
+        if str(note.get("id")) == str(note_id):
             return note
     return None
 
@@ -163,6 +187,8 @@ def get_all_notes() -> List[Dict[str, Any]]:
             cursor = db["notes"].find().sort("updated_at", -1)
             notes_list = []
             for note in cursor:
+                if "id" not in note or note["id"] is None:
+                    note["id"] = str(note.get("_id", ""))
                 note.pop("_id", None)
                 notes_list.append(note)
             return notes_list
@@ -171,17 +197,20 @@ def get_all_notes() -> List[Dict[str, Any]]:
             
     # Local Fallback
     db_local = _load_local_db()
-    return sorted(db_local["notes"], key=lambda x: x.get("updated_at", ""), reverse=True)
+    return sorted(db_local.get("notes", []), key=lambda x: x.get("updated_at", ""), reverse=True)
 
 
 def update_note(
-    note_id: int,
+    note_id: Any,
     title: str = None,
     content: str = None,
     tags: List[str] = None,
     links: List[int] = None
 ) -> Optional[Dict[str, Any]]:
     """Update an existing note."""
+    if not note_id or str(note_id).lower() in ("undefined", "null", ""):
+        return None
+
     if MONGODB_CONNECTED:
         try:
             update_fields = {"updated_at": datetime.now().isoformat()}
@@ -194,12 +223,15 @@ def update_note(
             if links is not None:
                 update_fields["links"] = links
                 
+            query = _build_id_query(note_id)
             res = db["notes"].find_one_and_update(
-                {"id": note_id},
+                query,
                 {"$set": update_fields},
                 return_document=True
             )
             if res:
+                if "id" not in res or res["id"] is None:
+                    res["id"] = str(res.get("_id", ""))
                 res.pop("_id", None)
                 return res
             return None
@@ -208,8 +240,8 @@ def update_note(
             
     # Local Fallback
     db_local = _load_local_db()
-    for note in db_local["notes"]:
-        if note["id"] == note_id:
+    for note in db_local.get("notes", []):
+        if str(note.get("id")) == str(note_id):
             if title is not None:
                 note["title"] = title
             if content is not None:
@@ -224,27 +256,35 @@ def update_note(
     return None
 
 
-def delete_note(note_id: int) -> bool:
+def delete_note(note_id: Any) -> bool:
     """Delete a note by ID."""
+    if not note_id or str(note_id).lower() in ("undefined", "null", ""):
+        return False
+
     if MONGODB_CONNECTED:
         try:
-            res = db["notes"].delete_one({"id": note_id})
+            query = _build_id_query(note_id)
+            res = db["notes"].delete_one(query)
             # Remove from links in other notes
-            db["notes"].update_many(
-                {"links": note_id},
-                {"$pull": {"links": note_id}}
-            )
+            try:
+                numeric_id = int(note_id)
+                db["notes"].update_many(
+                    {"links": numeric_id},
+                    {"$pull": {"links": numeric_id}}
+                )
+            except:
+                pass
             return res.deleted_count > 0
         except Exception as e:
             print(f"[DB ERROR] delete_note failed: {e}. Falling back to local.")
             
     # Local Fallback
     db_local = _load_local_db()
-    original_len = len(db_local["notes"])
-    db_local["notes"] = [n for n in db_local["notes"] if n["id"] != note_id]
+    original_len = len(db_local.get("notes", []))
+    db_local["notes"] = [n for n in db_local.get("notes", []) if str(n.get("id")) != str(note_id)]
     
     # Remove from links in other notes
-    for note in db_local["notes"]:
+    for note in db_local.get("notes", []):
         if note_id in note.get("links", []):
             note["links"].remove(note_id)
             
