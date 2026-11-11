@@ -146,11 +146,17 @@ window.renderNotesList = async function(query = '') {
 };
 
 // ─── Open Document View ────────────────────────────────────
-async function openNote(id, targetMode = null) {
+async function openNote(id, targetMode = null, existingNoteObj = null) {
   if (!id || id === 'undefined' || id === 'null') {
     return;
   }
-  const note = await getNote(id);
+  let note = existingNoteObj;
+  if (!note && Array.isArray(allNotesCache)) {
+    note = allNotesCache.find(n => String(n.id) === String(id));
+  }
+  if (!note) {
+    note = await getNote(id);
+  }
   if (!note) {
     showToast('Catatan tidak ditemukan atau telah dihapus', 'warning');
     return;
@@ -460,8 +466,10 @@ window.createNewNoteFlow = async function() {
 
   try {
     const note = await createNote('Catatan Baru', '', []);
-    await renderNotesGallery();
-    await openNote(note.id, 'edit');
+    if (!Array.isArray(allNotesCache)) allNotesCache = [];
+    allNotesCache.unshift(note);
+    await openNote(note.id, 'edit', note);
+    renderNotesGallery();
     const titleInput = document.getElementById('note-title-input');
     if (titleInput) {
       titleInput.focus();
@@ -559,7 +567,8 @@ function renderQuickSwitcherResults(query = '') {
 
 window.selectQuickSwitcherNote = async function(id) {
   closeQuickSwitcher();
-  await openNote(id);
+  const cached = Array.isArray(allNotesCache) ? allNotesCache.find(n => String(n.id) === String(id)) : null;
+  await openNote(id, null, cached);
 };
 
 const quickSwitcherInput = document.getElementById('quick-switcher-input');
@@ -602,8 +611,10 @@ quickSwitcherInput?.addEventListener('keydown', async (e) => {
       const newTitle = quickSwitcherInput.value.trim();
       closeQuickSwitcher();
       const newNote = await createNote(newTitle, '', []);
-      await renderNotesGallery();
-      await openNote(newNote.id, 'edit');
+      if (!Array.isArray(allNotesCache)) allNotesCache = [];
+      allNotesCache.unshift(newNote);
+      await openNote(newNote.id, 'edit', newNote);
+      renderNotesGallery();
       showToast(`Catatan "${newTitle}" berhasil dibuat! ✨`, 'success');
     }
     return;

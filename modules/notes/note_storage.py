@@ -39,8 +39,8 @@ TMP_NOTES_DB = "/tmp/atom_smart_notes.json"
 
 
 def _load_local_db() -> Dict[str, Any]:
-    """Load notes database from local file or /tmp fallback."""
-    for path in [NOTES_DB, TMP_NOTES_DB]:
+    """Load notes database from /tmp (if modified in serverless) or local file fallback."""
+    for path in [TMP_NOTES_DB, NOTES_DB]:
         if os.path.exists(path):
             try:
                 with open(path, 'r', encoding='utf-8') as f:
