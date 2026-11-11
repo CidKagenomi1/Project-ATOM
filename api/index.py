@@ -96,13 +96,5 @@ try:
                 local_chat["type"] = "chat"
                 db["sessions"].update_one({"type": "chat"}, {"$set": local_chat}, upsert=True)
                 safe_print("[OK] DATABASE: Migrated local chat sessions to MongoDB.")
-
-        rp_sess_file = "data/atom_rp_sessions.json"
-        if db["sessions"].count_documents({"type": "roleplay"}) == 0 and os.path.exists(rp_sess_file):
-            local_rp = safe_load_json(rp_sess_file, None)
-            if local_rp and local_rp.get("sessions"):
-                local_rp["type"] = "roleplay"
-                db["sessions"].update_one({"type": "roleplay"}, {"$set": local_rp}, upsert=True)
-                safe_print("[OK] DATABASE: Migrated local roleplay sessions to MongoDB.")
 except Exception as db_e:
     safe_print(f"[WARN] DATABASE init/migration warning: {db_e}")

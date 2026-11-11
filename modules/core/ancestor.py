@@ -27,8 +27,7 @@ Saya bukan sekadar chatbot biasa, Sir. Saya adalah **Neural AI Orchestrator** da
 #### Kapabilitas Inti Saya:
 1. **Cortex Neural Routing:** Menghubungkan Anda ke jaringan multi-provider awan tercepat (Groq LPU, DeepSeek, OpenRouter, dan Gemini) dengan proteksi pemulihan otomatis (*failover*) jika terjadi gangguan jaringan.
 2. **Autonomous Research Squad:** Mengerahkan tim agen otonom CrewAI untuk melakukan investigasi dan riset topik kompleks secara mendalam.
-3. **Ideation & Roleplay Sandbox:** Mensimulasikan diskusi strategis bersama berbagai persona ahli (Co-Founder, Tech Architect, Operations Director, hingga Shark Investor).
-4. **Magic Notes & Concept Bubbles:** Menangkap kilatan ide singkat dan mengembangkannya menjadi artikel terstruktur bergaya Zettelkasten & NotebookLM.
+3. **Crew Notes & Concept Bubbles:** Menangkap kilatan ide singkat dan mengembangkannya menjadi artikel terstruktur bergaya Zettelkasten & NotebookLM.
 
 *Sistem aktif, latensi optimal. Apa misi atau ide yang ingin kita bedah hari ini, Sir?*""",
 
@@ -85,7 +84,7 @@ A.T.O.M. dibangun dengan arsitektur modular berlapis yang efisien dan tangguh:
 ┌────────────────────────────────────────────────────────┐
 │               FRONTEND COCKPIT (Vanilla ES6)           │
 │  Cyber Glassmorphism · Nuclear Gold · Vapor Chamber   │
-│  [Neural Chat] [Roleplay Sandbox] [Magic Notes] [Bubbles]│
+│  [Neural Chat] [Crew Notes] [Concept Bubbles]         │
 └───────────────────────────┬────────────────────────────┘
                             │ HTTP / JSON API
 ┌───────────────────────────▼────────────────────────────┐
@@ -221,10 +220,6 @@ class AncestorEngine:
         if any(k in p for k in ["cortex", "failover", "librarian", "sentinel", "telemetri", "token", "circuit breaker"]):
             if "vol2_neural_core_deepdive.md" in self._cache:
                 selected_docs.append(self._cache["vol2_neural_core_deepdive.md"])
-
-        if any(k in p for k in ["roleplay", "persona", "co_founder", "investor", "shark", "tech lead", "operations"]):
-            if "vol3_roleplay_personas.md" in self._cache:
-                selected_docs.append(self._cache["vol3_roleplay_personas.md"])
 
         if any(k in p for k in ["notes", "zettelkasten", "bubble", "notebooklm", "catatan", "pydantic"]):
             if "vol4_ideation_lab_notes.md" in self._cache:

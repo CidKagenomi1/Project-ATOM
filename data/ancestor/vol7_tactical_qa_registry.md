@@ -73,7 +73,7 @@ CrewAI dirancang dengan paradigma peran manusia (*Role-Playing Architecture*) ya
 **Jawaban Ancestor:**
 Sistem A.T.O.M. tidak akan crash atau menampilkan halaman blank:
 1. Fitur **Ancestor Echo** tetap dapat menjawab kartu Quick Action (pengenalan sistem, identitas Alif Rahmadi, panduan arsitektur) secara offline 100%.
-2. Fitur lokal seperti editor catatan Markdown di Magic Notes, penataan Concept Bubbles, dan inspeksi Telemetry tetap berfungsi normal.
+2. Fitur lokal seperti editor catatan Markdown di Crew Notes, penataan Concept Bubbles, dan inspeksi Telemetry tetap berfungsi normal.
 3. Antarmuka chat akan menampilkan notifikasi elegan bahwa sistem saat ini berada dalam mode siaga lokal (*Local Standby Protocol*).
 
 #### Q11: "Bagaimana jika koneksi internet pengguna terputus saat sedang mengetik pesan?"

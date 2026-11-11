@@ -158,8 +158,7 @@ ARSITEKTUR SISTEM A.T.O.M.:
 4. Telemetri & Monitoring:
    - Modul Sentinel: Mencatat durasi latensi eksekusi, token, rute model, dan status failover secara real-time ke database telemetri.
 5. Modul Pendukung:
-   - Magic Notes & Concept Bubbles: Manajemen catatan dan ide kilat bergaya Obsidian/Zettelkasten dengan auto-tagging dan AI summarization.
-   - RP Model (Roleplay Sandbox): Ruang simulasi peran strategis (Co-Founder, Operations Director, Shark Investor, Tech Architect).
+   - Crew Notes & Concept Bubbles: Manajemen catatan dan ide kilat bergaya Obsidian/Zettelkasten dengan auto-tagging dan AI summarization.
 
 CARA KERJA CORTEX (Neural Router v4.0):
 - Cortex adalah otak utama dan pengatur lalu lintas AI (Neural Router) di A.T.O.M. yang bekerja dengan mekanisme Multi-Tier Failover & Auto-Routing cerdas:

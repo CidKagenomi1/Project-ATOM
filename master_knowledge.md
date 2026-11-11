@@ -16,8 +16,7 @@
    - 2.4 CrewAI Autonomous Research Squad
 3. [BAB III — MODUL OPERASIONAL & EKOSISTEM FITUR](#bab-iii--modul-operasional--ekosistem-fitur)
    - 3.1 Neural Chat (Multi-Session & Multimodal Vision)
-   - 3.2 Roleplay Incubator (Multi-Persona Strategic Sandbox)
-   - 3.3 Magic Notes (Obsidian & NotebookLM Hybrid Engine)
+   - 3.2 Crew Notes (Obsidian & NotebookLM Hybrid Engine)
    - 3.4 Floating Concept Bubbles (Micro-Ideation to Full Article)
    - 3.5 Telemetry Monitor & Observability Dashboard
    - 3.6 Settings & Provider Configuration
@@ -127,22 +126,11 @@ A.T.O.M. v4.0 dirancang dengan antarmuka modular yang terbagi ke dalam berbagai 
 * **Rendering Markdown & Syntax Highlighting:** Didukung oleh Marked.js dengan blok kode pemrograman yang rapi dilengkapi tombol salin satu-klik (*Copy Code*).
 * **Model Preference Selector:** Pengguna dapat membiarkan Cortex memilihkan model otomatis (`Auto - Cortex Routed`), atau secara eksplisit memilih provider favorit (`Groq LPU`, `OpenRouter Cloud`, `Google Gemini`, `DeepSeek`).
 
-### 3.2 Roleplay Incubator (RP Model — BETA)
-Ruang simulasi peran strategis (*Cognitive Sparring Sandbox*) yang dirancang untuk membedah ide dari berbagai sudut pandang profesional:
-1. **Chief Innovation Officer (Co-Founder Mode):**
-   * *Fokus:* Validasi ide gila, pencarian keunikan pasar, perumusan Unique Selling Proposition (USP), dan penentuan roadmap produk.
-2. **Executive Operations (Operations Mode):**
-   * *Fokus:* Pemecahan visi abstrak menjadi alur kerja Standar Operasional Prosedur (SOP) nyata, pembagian tanggung jawab tim, timeline sprint, dan mitigasi risiko operasional.
-3. **Shark Angel Investor (Investor Shark):**
-   * *Fokus:* Pengujian kelayakan bisnis secara dingin dan kritis, evaluasi parit pertahanan (*moat*), kalkulasi *unit economics*, dan pencarian kelemahan ide sebelum diuji ke pasar nyata.
-4. **Chief Tech Architect (Tech Lead):**
-   * *Fokus:* Pembuatan blueprint arsitektur sistem IT skala tinggi, desain database, integrasi microservices, skalabilitas komputasi, dan pemilihan teknologi yang tepat.
-
-### 3.3 Magic Notes (Obsidian & NotebookLM Hybrid Engine)
+### 3.2 Crew Notes (Obsidian & NotebookLM Hybrid Engine)
 Modul pengorganisasian catatan pintar yang memadukan fleksibilitas Markdown ala Obsidian dengan kecerdasan dokumen ala Google NotebookLM:
 * **Mode 👁 View:** Tampilan pembaca Markdown yang elegan dengan tipografi bersih.
 * **Mode ✏️ Edit:** Editor teks Markdown langsung dengan penyimpanan lokal & cloud.
-* **Fitur AI Cerdas di Magic Notes:**
+* **Fitur AI Cerdas di Crew Notes:**
   * **✨ Rapihkan (AI Refine):** Memperbaiki tata bahasa, struktur paragraf, dan alur tulisan tanpa mengubah inti substansi.
   * **🏷️ Gen Title:** AI secara otomatis membaca isi catatan dan merekomendasikan judul yang ringkas dan padat.
   * **🤖 Auto-Tagging:** Mengidentifikasi kata kunci utama dari catatan dan menyematkan tag kategori secara otomatis.
@@ -251,8 +239,7 @@ Saya bukan sekadar chatbot biasa, Sir. Saya adalah **Neural AI Orchestrator** da
 #### Kapabilitas Inti Saya:
 1. **Cortex Neural Routing:** Menghubungkan Anda ke jaringan multi-provider awan tercepat (Groq LPU, DeepSeek, OpenRouter, dan Gemini) dengan proteksi pemulihan otomatis (*failover*) jika terjadi gangguan jaringan.
 2. **Autonomous Research Squad:** Mengerahkan tim agen otonom CrewAI untuk melakukan investigasi dan riset topik kompleks secara mendalam.
-3. **Ideation & Roleplay Sandbox:** Mensimulasikan diskusi strategis bersama berbagai persona ahli (Co-Founder, Tech Architect, Operations Director, hingga Shark Investor).
-4. **Magic Notes & Concept Bubbles:** Menangkap kilatan ide singkat dan mengembangkannya menjadi artikel terstruktur bergaya Zettelkasten & NotebookLM.
+3. **Crew Notes & Concept Bubbles:** Menangkap kilatan ide singkat dan mengembangkannya menjadi artikel terstruktur bergaya Zettelkasten & NotebookLM.
 
 *Sistem aktif, latensi optimal. Apa misi atau ide yang ingin kita bedah hari ini, Sir?*
 ```
@@ -337,7 +324,7 @@ A.T.O.M. dibangun dengan arsitektur modular berlapis yang efisien dan tangguh:
 ┌────────────────────────────────────────────────────────┐
 │               FRONTEND COCKPIT (Vanilla ES6)           │
 │  Cyber Glassmorphism · Nuclear Gold · Vapor Chamber   │
-│  [Neural Chat] [Roleplay Sandbox] [Magic Notes] [Bubbles]│
+│  [Neural Chat] [Crew Notes] [Concept Bubbles]         │
 └───────────────────────────┬────────────────────────────┘
                             │ HTTP / JSON API
 ┌───────────────────────────▼────────────────────────────┐

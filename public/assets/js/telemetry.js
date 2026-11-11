@@ -613,8 +613,8 @@ const FLOW_STEPS_INFO = {
   1: {
     icon: '💬',
     title: 'Tahap 1: Input & Injeksi Konteks Pengguna',
-    file: 'public/assets/js/chat.js · roleplay.js',
-    body: 'Ketika pengguna mengetik pesan di kotak input dan menekan kirim (atau Enter), sistem membaca teks prompt, mengekstrak dokumen lampiran (jika ada), menyisipkan persona/karakter roleplay yang sedang aktif, serta mengambil riwayat 6 percakapan terakhir (sliding window) dari sesi saat ini untuk dikirimkan sebagai memori kontekstual.'
+    file: 'public/assets/js/chat.js',
+    body: 'Ketika pengguna mengetik pesan di kotak input dan menekan kirim (atau Enter), sistem membaca teks prompt, mengekstrak dokumen lampiran (jika ada), serta mengambil riwayat 6 percakapan terakhir (sliding window) dari sesi saat ini untuk dikirimkan sebagai memori kontekstual.'
   },
   2: {
     icon: '⚡',
@@ -650,7 +650,7 @@ const FLOW_STEPS_INFO = {
     icon: '💾',
     title: 'Tahap 7: Multi-Tier Persistence & Telemetry Logging',
     file: 'data/atom_chat_sessions.json · localStorage · api/index.py',
-    body: 'Hasil akhir disimpan secara berlapis:\n1. File Fisik Proyek: Ditulis ke data/atom_chat_sessions.json atau atom_rp_sessions.json agar tercatat permanen di Git.\n2. Local Cache: Diperbarui di localStorage browser untuk loading instan berikutnya.\n3. Telemetry Store: Metrik token, latensi, dan model yang bertugas dikirimkan ke dasbor Telemetry ini.'
+    body: 'Hasil akhir disimpan secara berlapis:\n1. File Fisik Proyek: Ditulis ke data/atom_chat_sessions.json agar tercatat permanen di Git.\n2. Local Cache: Diperbarui di localStorage browser untuk loading instan berikutnya.\n3. Telemetry Store: Metrik token, latensi, dan model yang bertugas dikirimkan ke dasbor Telemetry ini.'
   }
 };
 

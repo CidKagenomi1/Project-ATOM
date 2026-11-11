@@ -528,7 +528,7 @@ function updateReaderBookmarkBtn() {
     }
 }
 
-// ─── Actions: Bookmark, AI Summary, Magic Notes, Chat ───
+// ─── Actions: Bookmark, AI Summary, Crew Notes, Chat ───
 
 async function toggleBookmark(article, btnElement = null) {
     const isMarked = bookmarkedIds.has(article.id);
@@ -641,12 +641,12 @@ function sendCurrentToNotes() {
             tags: ['intel', 'news', (currentArticle.source || 'media').toLowerCase().replace(/\s+/g, '-')]
         };
         localStorage.setItem('atom_draft_imported_note', JSON.stringify(notePayload));
-        showToast('Tersimpan! Mengalihkan ke Magic Notes...');
+        showToast('Tersimpan! Mengalihkan ke Crew Notes...');
         setTimeout(() => {
             window.location.href = 'notes.html?action=import';
         }, 800);
     } catch (err) {
-        showToast('Gagal mentransfer ke Magic Notes');
+        showToast('Gagal mentransfer ke Crew Notes');
     }
 }
 

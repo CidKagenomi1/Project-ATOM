@@ -1,6 +1,6 @@
 // ─── ATOM Notes: API & State ─────────────────────────────
 /**
- * A.T.O.M. — Magic Notes & Magic Bubbles Logic
+ * A.T.O.M. — Crew Notes & Concept Bubbles Logic
  * Full CRUD, real-time auto-save, resilient error handling, and AI augmentation
  */
 

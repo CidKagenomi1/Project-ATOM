@@ -26,7 +26,7 @@ Sebagian besar platform chatbot publik menggunakan percakapan pengguna sebagai b
 
 Dalam arsitektur A.T.O.M., Alif Rahmadi menerapkan doktrin **Zero-Tracking**:
 * **Nol Pelacak Pihak Ketiga (No Third-Party Trackers):** Antarmuka web A.T.O.M. tidak memuat skrip pelacak eksternal apa pun. Tidak ada cookies pelacak pihak ketiga yang disematkan ke peramban pengguna.
-* **Local-First Session Storage:** Seluruh riwayat obrolan di Neural Chat (`localStorage['atom_chat_sessions']`) dan Roleplay Incubator (`localStorage['atom_rp_sessions']`) disimpan langsung di memori lokal peramban perangkat pengguna.
+* **Local-First Session Storage:** Seluruh riwayat obrolan di Neural Chat (`localStorage['atom_chat_sessions']`) disimpan langsung di memori lokal peramban perangkat pengguna.
 * **Kedaulatan Kepemilikan Data:** Pengguna memegang kendali 100% atas memorinya. Data percakapan tidak dapat diakses atau dijual kepada pihak luar.
 
 ---
@@ -73,7 +73,7 @@ A.T.O.M. menggunakan pustaka `Marked.js` untuk merender sintaks Markdown menjadi
 Salah satu risiko terbesar dalam aplikasi web modern adalah kebocoran kredensial API ke sisi klien (*Client-Side Leakage*).
 
 #### 4.1 Pemisahan Arsitektur Server vs Klien
-* **Nol API Key di Frontend:** Kode JavaScript di folder `public/assets/js/` (seperti `chat.js`, `notes.js`, `roleplay.js`) **sama sekali tidak memiliki akses langsung** ke kunci API Groq, Gemini, DeepSeek, atau OpenRouter.
+* **Nol API Key di Frontend:** Kode JavaScript di folder `public/assets/js/` (seperti `chat.js`, `notes.js`, `topics.js`) **sama sekali tidak memiliki akses langsung** ke kunci API Groq, Gemini, DeepSeek, atau OpenRouter.
 * **Backend Proxy Gateway:** Frontend hanya berkomunikasi dengan endpoint internal server lokal/Vercel (`/api/chat`, `/api/notes_ai`).
 * Backend Python bertindak sebagai gerbang terisolasi yang membaca kredensial dari environment server (`os.getenv("GROQ_API_KEY")`) lalu meneruskannya ke provider AI melalui saluran HTTPS terenkripsi TLS 1.3.
 
@@ -118,7 +118,6 @@ Untuk menjamin kedaulatan privasi total bagi pengguna, A.T.O.M. menyediakan prot
 Pada antarmuka pengaturan dan panel telemetri, pengguna memiliki tombol pembersihan menyeluruh (*Purge All Data*):
 1. **Pembersihan Sisi Klien:** Menghapus seluruh sesi `localStorage`:
    * `localStorage.removeItem('atom_chat_sessions')`
-   * `localStorage.removeItem('atom_rp_sessions')`
    * `localStorage.removeItem('atom_telemetry_logs')`
 2. **Pembersihan Sisi Server (Opsional):** Melalui rute `DELETE /api/telemetry`, seluruh riwayat metrik di MongoDB Atlas atau file CSV lokal dibersihkan seketika.
 3. **Hasil:** Sistem kembali ke kondisi pabrik (*Clean State*) dalam waktu kurang dari 100 milidetik tanpa meninggalkan jejak percakapan masa lalu.

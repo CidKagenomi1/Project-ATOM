@@ -99,7 +99,7 @@ Perjalanan A.T.O.M. adalah cerita tentang iterasi tanpa henti dari sebuah protot
 * **Ciri Khas Arsitektur:**
   * **Neural Cortex Router v4.0:** Sistem failover 4 lapis (Groq LPU ➔ DeepSeek Reasoning ➔ OpenRouter Catalog ➔ Gemini Multimodal).
   * **Cyber Glassmorphism Cockpit:** Antarmuka HTML5/CSS3 murni bertema Nuclear Gold dengan simulasi canvas partikel Vapor Chamber.
-  * **Ekosistem Fitur Terpadu:** Roleplay Incubator, Magic Notes dengan Zettelkasten & AI Tools, Floating Concept Bubbles, dan Sentinel Telemetry Observer.
+  * **Ekosistem Fitur Terpadu:** Crew Notes dengan Zettelkasten & AI Tools, Floating Concept Bubbles, dan Sentinel Telemetry Observer.
   * **Ancestor Grounding Engine:** Penyimpanan pengetahuan lokal permanen yang beroperasi dengan dual-mode: *Zero-LLM Echo* untuk efisiensi kuota 100% dan *LangChain Synthesis* untuk tanya-jawab mendalam.
 
 ---
@@ -135,7 +135,7 @@ Desain antarmuka A.T.O.M. v4.0 dibangun dengan standar estetika taktis yang sang
 * Komponen interaktif memberikan umpan balik taktil seketika melalui perubahan specular glow dan border elevation.
 
 #### 5.3 Modular Spatial Organization
-* Antarmuka memisahkan fungsi secara tegas: Ruang percakapan murni di *Neural Chat*, ruang simulasi karakter di *Roleplay Incubator*, ruang arsip pemikiran di *Magic Notes*, dan ruang telemetri di *Sentinel Monitor*.
+* Antarmuka memisahkan fungsi secara tegas: Ruang percakapan murni di *Neural Chat*, ruang arsip pemikiran di *Crew Notes*, ruang topik di *Topic Explorer*, dan ruang telemetri di *Sentinel Monitor*.
 
 ---
 

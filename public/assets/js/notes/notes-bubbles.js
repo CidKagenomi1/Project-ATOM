@@ -205,7 +205,7 @@ window.expandBubble = async function(id, event) {
       throw new Error(err.detail || `HTTP ${resp.status}`);
     }
     const res = await resp.json();
-    showToast('Bubble berhasil diekspansi menjadi Magic Note! 🚀', 'success');
+    showToast('Bubble berhasil diekspansi menjadi Crew Note! 🚀', 'success');
     await renderBubbles();
     if (res.note && res.note.id) {
       switchTab('notes');

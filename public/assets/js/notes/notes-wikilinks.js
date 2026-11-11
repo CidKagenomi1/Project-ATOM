@@ -26,6 +26,7 @@ function escapeRegex(str) {
 
 window.openNoteByTitle = async function(title) {
   if (!title) return;
+  window.closeKnowledgeModal();
   const notes = await getAllNotes();
   allNotesCache = notes;
   const found = notes.find(n => n.title && n.title.toLowerCase().trim() === title.toLowerCase().trim());
@@ -49,14 +50,20 @@ window.createAndOpenWikilink = async function(title) {
   }
 };
 
+window.openKnowledgeModal = function() {
+  const modal = document.getElementById('knowledge-modal');
+  if (modal) modal.classList.remove('hidden');
+};
+
+window.closeKnowledgeModal = function() {
+  const modal = document.getElementById('knowledge-modal');
+  if (modal) modal.classList.add('hidden');
+};
+
 window.toggleKnowledgePanel = function() {
-  const body = document.getElementById('knowledge-panel-body');
-  const toggleBtn = document.getElementById('btn-knowledge-toggle');
-  if (!body) return;
-  const isClosed = body.style.display === 'none';
-  body.style.display = isClosed ? 'block' : 'none';
-  if (toggleBtn) {
-    toggleBtn.textContent = isClosed ? '▼' : '▲';
+  const modal = document.getElementById('knowledge-modal');
+  if (modal) {
+    modal.classList.toggle('hidden');
   }
 };
 
@@ -132,7 +139,7 @@ async function updateKnowledgeConnections(noteId) {
         backlinksListEl.innerHTML = `<p class="knowledge-empty">Tidak ada catatan lain yang menautkan catatan ini.</p>`;
       } else {
         backlinksListEl.innerHTML = backlinks.map(b => `
-          <div class="knowledge-item" onclick="openNote(${b.id})">
+          <div class="knowledge-item" onclick="window.closeKnowledgeModal(); openNote(${b.id})">
             <span class="knowledge-item-title">
               <span>📥</span> ${escapeHtml(b.title)}
             </span>
@@ -246,16 +253,33 @@ document.getElementById('note-textarea')?.addEventListener('keyup', (e) => {
   }
 });
 
-document.getElementById('knowledge-panel-header')?.addEventListener('click', () => {
-  toggleKnowledgePanel();
+// Knowledge Modal Triggers & Controls
+document.getElementById('btn-toggle-connections')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  window.toggleKnowledgePanel();
 });
 
-document.getElementById('btn-toggle-connections')?.addEventListener('click', () => {
-  const body = document.getElementById('knowledge-panel-body');
-  if (body && body.style.display === 'none') {
-    toggleKnowledgePanel();
+document.getElementById('btn-close-knowledge-modal')?.addEventListener('click', () => {
+  window.closeKnowledgeModal();
+});
+
+document.getElementById('btn-close-knowledge-footer')?.addEventListener('click', () => {
+  window.closeKnowledgeModal();
+});
+
+document.getElementById('knowledge-modal')?.addEventListener('click', (e) => {
+  if (e.target.id === 'knowledge-modal') {
+    window.closeKnowledgeModal();
   }
-  document.getElementById('knowledge-panel')?.scrollIntoView({ behavior: 'smooth' });
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('knowledge-modal');
+    if (modal && !modal.classList.contains('hidden')) {
+      window.closeKnowledgeModal();
+    }
+  }
 });
 
 document.addEventListener('click', (e) => {

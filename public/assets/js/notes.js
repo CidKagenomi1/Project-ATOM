@@ -35,20 +35,16 @@ async function init() {
       const note = await createNote(draft.title || 'Catatan Berita', draft.content || '', draft.tags || ['intel', 'news']);
       await renderNotesList();
       await openNote(note.id, 'edit');
-      showToast('Berita berhasil diimpor ke Magic Note! ✨', 'success');
+      showToast('Berita berhasil diimpor ke Crew Note! ✨', 'success');
       return;
     } catch (e) {
       console.warn('Failed to parse imported note:', e);
     }
   }
 
+  // In Document & Gallery Mode, users land on the Knowledge Hub (Gallery View)
+  // unless there is an imported draft note from Topics.
   await renderNotesList();
-  
-  // If there are existing notes, auto-select the latest one so screen is never blank
-  const notes = await getAllNotes();
-  if (notes.length > 0 && !currentNoteId) {
-    await openNote(notes[0].id);
-  }
 }
 
 init();

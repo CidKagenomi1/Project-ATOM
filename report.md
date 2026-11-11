@@ -30,7 +30,7 @@ graph TD
         UI1["Desktop & Mobile Cockpit (Vanilla HTML5 / Modern ES6+)"]
         UI2["Cyber Glassmorphism & Nuclear Gold Theme"]
         UI3["Vapor Chamber Interactive Particle Canvas"]
-        UI4["Feature Modules: Chat UI, Notes, Roleplay, Telemetry"]
+        UI4["Feature Modules: Chat UI, Notes, Telemetry, Topics"]
     end
 
     subgraph L2["2. API & SERVICE GATEWAY LAYER"]
@@ -224,14 +224,13 @@ Sistem A.T.O.M. menggunakan database dokumen **MongoDB Atlas** (`atom_db`) denga
 ```mermaid
 erDiagram
     SESSIONS ||--o{ CHAT_MESSAGES : contains
-    SESSIONS ||--o{ ROLEPLAY_MESSAGES : contains
     NOTES ||--o{ TAGS : categorized_by
     BUBBLES ||--o{ BUBBLE_EXPANSION : generates
     TELEMETRY ||--|| SESSIONS : tracks
 
     SESSIONS {
         string _id PK "MongoDB ObjectId"
-        string type "chat | roleplay"
+        string type "chat"
         string active_id "UUID Sesi yang Sedang Aktif"
         array sessions "Daftar Objek Sesi Percakapan"
         datetime updated_at "Waktu Terakhir Disimpan"
@@ -293,7 +292,7 @@ A clean, elegant technical Entity-Relationship Diagram (ERD) and database archit
 Rendered on an ultra-dark navy/obsidian matte backdrop with warm amber-gold table headers and cybernetic cyan connector lines showing entity relationships.
 
 Depicted as 5 modular database collection cards with glowing frosted glass styling:
-1. "sessions" Collection: fields include _id (PK), type (chat/roleplay), active_id, sessions array, updated_at.
+1. "sessions" Collection: fields include _id (PK), type (chat), active_id, sessions array, updated_at.
 2. "notes" Collection: fields include _id, id (UK), title, content (Markdown), tags array, created_at, updated_at.
 3. "bubbles" Collection: fields include _id, id (UK), text, expanded (Boolean), created_at.
 4. "telemetry" Collection: fields include _id, timestamp, user_input, model_used, response_time (float), status (SUCCESS/FAILOVER).
@@ -311,7 +310,7 @@ Diagram skema basis data Entity-Relationship (ERD) teknis untuk database cloud "
 Tampilan berlatar belakang gelap obsidian matte dengan kartu tabel kaca transparan (glassmorphism), header tabel berwarna emas reaktor (#ebb338), dan garis relasi antartabel berwarna biru cyan.
 
 Menampilkan 5 entitas koleksi data utama:
-1. Koleksi "sessions": Menyimpan riwayat multi-sesi obrolan chat dan roleplay.
+1. Koleksi "sessions": Menyimpan riwayat multi-sesi obrolan chat.
 2. Koleksi "notes": Menyimpan catatan terstruktur zettelkasten, tag pencarian, dan artikel markdown.
 3. Koleksi "bubbles": Menyimpan tangkapan ide kilat (concept bubbles) dan status ekspansi.
 4. Koleksi "telemetry": Menyimpan data pemantauan real-time seperti nama model, durasi respon (detik), dan status failover.

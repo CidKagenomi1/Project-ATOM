@@ -339,20 +339,13 @@
             </svg>
           </span>Topics <span class="beta-pill" style="background:rgba(52,211,153,0.15);color:#34d399;border-color:rgba(52,211,153,0.3);">LIVE</span>
         </a>
-        <a href="roleplay.html" id="nav-roleplay">
-          <span class="nav-icon">
-            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-            </svg>
-          </span>RP Model <span class="beta-pill">BETA</span>
-        </a>
         <a href="notes.html" id="nav-notes">
           <span class="nav-icon">
             <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
               <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z"/>
             </svg>
-          </span>Magic Notes <span class="beta-pill">BETA</span>
+          </span>Crew Notes
         </a>
         <a href="telemetry.html" id="nav-telemetry">
           <span class="nav-icon">
@@ -723,7 +716,7 @@
             <div class="settings-row">
               <div class="settings-info">
                 <span class="settings-name" style="color: #ff5555;">Pembersihan Cache Lokal</span>
-                <span class="settings-detail">Menghapus seluruh riwayat obrolan, sesi roleplay, dan pengaturan tersimpan di peramban ini.</span>
+                <span class="settings-detail">Menghapus seluruh riwayat obrolan dan pengaturan tersimpan di peramban ini.</span>
               </div>
               <div class="settings-control">
                 <button class="btn btn-secondary btn-sm" onclick="clearStorageData()" style="color: #ff5555; border-color: rgba(255,85,85,0.4);">
@@ -969,8 +962,7 @@
     function updateStorageStats() {
       try {
         const chatSessions = JSON.parse(localStorage.getItem('atom_chat_sessions') || '[]');
-        const rpSessions = JSON.parse(localStorage.getItem('atom_rp_sessions') || '[]');
-        const text = `${chatSessions.length} sesi Chat Utama, ${rpSessions.length} sesi Roleplay tersimpan di localStorage.`;
+        const text = `${chatSessions.length} sesi Chat Utama tersimpan di localStorage.`;
         const el = document.getElementById('storage-stats-text');
         if (el) el.textContent = text;
       } catch (e) {
@@ -985,7 +977,6 @@
           version: '4.0',
           backupDate: new Date().toISOString(),
           chatSessions: JSON.parse(localStorage.getItem('atom_chat_sessions') || '[]'),
-          rpSessions: JSON.parse(localStorage.getItem('atom_rp_sessions') || '[]'),
           settings: {
             uiTheme: localStorage.getItem('atom_ui_theme') || 'default',
             accent: localStorage.getItem('atom_accent') || 'gold',

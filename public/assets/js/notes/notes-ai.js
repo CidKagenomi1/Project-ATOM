@@ -295,46 +295,149 @@ function formatCitations(text) {
   });
 }
 
+let isCopilotGenerating = false;
+
 function renderNoteChatMessages() {
   const msgArea = document.getElementById('note-chat-messages');
   if (!msgArea) return;
-  if (noteChatHistory.length === 0) {
+
+  if (noteChatHistory.length === 0 && !isCopilotGenerating) {
     msgArea.innerHTML = `
-      <div style="text-align:center;color:var(--text-muted);font-size:0.82rem;padding:var(--space-6);line-height:1.7;">
-        <div style="font-size:1.8rem;margin-bottom:8px;">🧠</div>
-        <p><strong>ATOM Multi-Note Knowledge Co-Pilot</strong></p>
-        <p style="font-size:0.75rem;color:var(--text-secondary);">Tanyakan kesimpulan, persamaan, kontradiksi, atau minta perbandingan antar catatan yang Anda pilih di atas.</p>
-      </div>`;
+      <div class="copilot-empty-state">
+        <div class="copilot-empty-icon">
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.6rem;height:1.6rem;"><circle cx="12" cy="12" r="3"></circle><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(30 12 12)"></ellipse><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(90 12 12)"></ellipse><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(150 12 12)"></ellipse></svg>
+        </div>
+        <h2 class="copilot-empty-title">Knowledge Co-Pilot Studio</h2>
+        <p class="copilot-empty-desc">Tanyakan wawasan tersembunyi, analisis benang merah, atau minta sintesis menyeluruh dari dokumen catatan Anda.</p>
+        
+        <div class="copilot-starters-grid">
+          <div class="starter-card" onclick="sendStarterPrompt('Buat ringkasan eksekutif komprehensif yang mensintesis seluruh catatan terpilih menjadi satu kesimpulan utuh.')">
+            <span class="starter-card-icon">📑</span>
+            <div>
+              <div class="starter-card-title">Sintesis Eksekutif</div>
+              <div class="starter-card-desc">Rangkum inti pemikiran dokumen menjadi kesimpulan padat</div>
+            </div>
+          </div>
+          <div class="starter-card" onclick="sendStarterPrompt('Bandingkan poin-poin utama, kesamaan, dan perbedaan antara catatan-catatan yang dipilih ini.')">
+            <span class="starter-card-icon">⚖️</span>
+            <div>
+              <div class="starter-card-title">Bandingkan Konsep</div>
+              <div class="starter-card-desc">Cari benang merah, kesamaan, dan kontradiksi ide</div>
+            </div>
+          </div>
+          <div class="starter-card" onclick="sendStarterPrompt('Ekstrak semua action items, to-do list, dan rencana tindakan konkret dari catatan ini.')">
+            <span class="starter-card-icon">✅</span>
+            <div>
+              <div class="starter-card-title">Ekstrak Action Items</div>
+              <div class="starter-card-desc">Ubah catatan menjadi checklist langkah tindak lanjut</div>
+            </div>
+          </div>
+          <div class="starter-card" onclick="sendStarterPrompt('Apa benang merah, korelasi ide, dan wawasan terpenting yang menghubungkan catatan-catatan ini?')">
+            <span class="starter-card-icon">💡</span>
+            <div>
+              <div class="starter-card-title">Analisis Benang Merah</div>
+              <div class="starter-card-desc">Temukan korelasi dan peluang ide baru yang tersembunyi</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
     return;
   }
+
   const renderer = window.renderMarkdown || marked.parse;
-  msgArea.innerHTML = noteChatHistory.map(m => {
-    let body = '';
+  let html = noteChatHistory.map((m, idx) => {
     if (m.role === 'user') {
-      body = escapeHtml(m.content);
+      return `
+        <div class="chat-message-item chat-user">
+          <div class="chat-message-content">${escapeHtml(m.content)}</div>
+        </div>
+      `;
     } else {
       let rendered = renderer(m.content);
       rendered = formatCitations(rendered);
-      body = rendered;
+      return `
+        <div class="chat-message-item chat-ai">
+          <div class="chat-ai-header">
+            <div class="chat-ai-identity">
+              <span class="chat-ai-avatar">✨</span>
+              <span class="chat-ai-name">Cortex Knowledge AI</span>
+              <span class="chat-ai-badge">Sintesis Dokumen</span>
+            </div>
+          </div>
+          <div class="chat-message-content">${rendered}</div>
+          <div class="chat-ai-actions">
+            <button class="chat-action-btn" onclick="copyCopilotResponse(${idx})" title="Salin jawaban ini">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+              <span>Salin</span>
+            </button>
+            <button class="chat-action-btn" onclick="insertCopilotResponseToNote(${idx})" title="Sisipkan jawaban ini ke dalam catatan aktif">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><path d="M12 5v14M19 12l-7 7-7-7"></path></svg>
+              <span>Sisipkan ke Catatan</span>
+            </button>
+          </div>
+        </div>
+      `;
     }
-    return `
-      <div class="chat-message-item ${m.role === 'user' ? 'chat-user' : 'chat-ai'}">
-        <strong class="chat-message-sender">${m.role === 'user' ? '🧑 You' : '⚛️ ATOM'}</strong>
-        <div class="chat-message-content">${body}</div>
+  }).join('');
+
+  if (isCopilotGenerating) {
+    html += `
+      <div class="chat-message-item chat-ai" style="padding:14px 18px;width:fit-content;">
+        <div class="chat-thinking-bubble">
+          <span class="thinking-dot"></span>
+          <span class="thinking-dot"></span>
+          <span class="thinking-dot"></span>
+          <span class="thinking-text">Cortex AI sedang menganalisis dokumen...</span>
+        </div>
       </div>
     `;
-  }).join('');
+  }
+
+  msgArea.innerHTML = html;
   msgArea.scrollTop = msgArea.scrollHeight;
 }
+
+window.sendStarterPrompt = function(promptText) {
+  const input = document.getElementById('note-chat-input');
+  if (input) {
+    input.value = promptText;
+    sendNoteChatMessage();
+  }
+};
+
+window.copyCopilotResponse = function(idx) {
+  const item = noteChatHistory[idx];
+  if (item && item.content) {
+    navigator.clipboard.writeText(item.content);
+    showToast('Jawaban AI disalin ke clipboard! 📋', 'success');
+  }
+};
+
+window.insertCopilotResponseToNote = async function(idx) {
+  const item = noteChatHistory[idx];
+  if (!item || !item.content || !currentNoteId) {
+    showToast('Tidak ada catatan aktif untuk disisipkan', 'warning');
+    return;
+  }
+  const textarea = document.getElementById('note-textarea');
+  if (textarea) {
+    const currentVal = textarea.value || '';
+    const addition = `\n\n---\n### 💡 Ringkasan Co-Pilot\n${item.content}\n`;
+    textarea.value = currentVal.trim() + addition;
+    triggerAutoSave(true);
+    showToast('Jawaban Co-Pilot berhasil disisipkan ke catatan! 📥', 'success');
+  }
+};
 
 function renderChatSourcesUI() {
   if (selectedChatSourceIds.size === 0 && currentNoteId) {
     selectedChatSourceIds.add(currentNoteId);
   }
 
-  const pillsContainer = document.getElementById('chat-sources-pills');
   const summaryEl = document.getElementById('chat-sources-summary');
-  if (!pillsContainer || !summaryEl) return;
+  const pillsContainer = document.getElementById('chat-sources-pills');
+  if (!summaryEl) return;
 
   const selectedNotes = allNotesCache.filter(n => selectedChatSourceIds.has(n.id));
   let totalWords = 0;
@@ -345,19 +448,31 @@ function renderChatSourcesUI() {
     totalWords += countWords(text);
   });
 
-  summaryEl.textContent = `${selectedNotes.length} Catatan Terpilih (~${totalWords} kata)`;
-
-  if (selectedNotes.length === 0) {
-    pillsContainer.innerHTML = `<span style="font-size:0.72rem;color:#ef4444;">⚠️ Belum ada catatan yang dipilih sebagai sumber.</span>`;
-    return;
+  const count = selectedNotes.length;
+  if (count === 0) {
+    summaryEl.textContent = `0 Catatan (Pilih Konteks)`;
+  } else if (count === 1) {
+    const noteTitle = selectedNotes[0]?.title || 'Catatan Aktif';
+    const shortTitle = noteTitle.length > 22 ? noteTitle.substring(0, 20) + '...' : noteTitle;
+    summaryEl.textContent = `${shortTitle} (~${totalWords} kata)`;
+  } else {
+    summaryEl.textContent = `${count} Catatan Terpilih (~${totalWords} kata)`;
   }
 
-  pillsContainer.innerHTML = selectedNotes.map(n => `
-    <span class="source-pill" title="${escapeHtml(n.title)}">
-      <span>📄 ${escapeHtml(n.title || 'Untitled')}</span>
-      ${selectedNotes.length > 1 ? `<span class="source-pill-remove" onclick="removeChatSource(${n.id})" title="Hapus dari konteks">✕</span>` : ''}
-    </span>
-  `).join('');
+  if (pillsContainer) {
+    if (selectedNotes.length === 0) {
+      pillsContainer.innerHTML = `<span style="font-size:0.72rem;color:#ef4444;">⚠️ Belum ada catatan yang dipilih sebagai sumber.</span>`;
+      return;
+    }
+
+    pillsContainer.innerHTML = selectedNotes.map(n => `
+      <span class="source-pill" title="${escapeHtml(n.title)}">
+        <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;color:var(--gold-primary);flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+        <span>${escapeHtml(n.title || 'Untitled')}</span>
+        ${selectedNotes.length > 1 ? `<span class="source-pill-remove" onclick="removeChatSource(${n.id})" title="Hapus dari konteks">✕</span>` : ''}
+      </span>
+    `).join('');
+  }
 }
 
 window.removeChatSource = function(id) {
@@ -449,9 +564,9 @@ window.toggleSourceSelection = function(id) {
 };
 
 async function sendNoteChatMessage() {
-  const input    = document.getElementById('note-chat-input');
+  const input = document.getElementById('note-chat-input');
   const question = input?.value.trim();
-  if (!question) return;
+  if (!question || isCopilotGenerating) return;
 
   if (selectedChatSourceIds.size === 0 && currentNoteId) {
     selectedChatSourceIds.add(currentNoteId);
@@ -474,29 +589,38 @@ async function sendNoteChatMessage() {
   }
 
   input.value = '';
+  input.style.height = 'auto'; // reset textarea height
   noteChatHistory.push({ role: 'user', content: question });
+  
+  isCopilotGenerating = true;
   renderNoteChatMessages();
 
   try {
     const result = await callNotesAI('chat', { content: combinedContext, question });
     noteChatHistory.push({ role: 'assistant', content: result || 'Tidak ada respons dari AI.' });
-    renderNoteChatMessages();
   } catch (e) {
-    noteChatHistory.push({ role: 'assistant', content: `[ERROR] ${e.message}` });
+    noteChatHistory.push({ role: 'assistant', content: `[ERROR] Gagal mendapatkan jawaban dari Cortex AI: ${e.message}` });
+  } finally {
+    isCopilotGenerating = false;
     renderNoteChatMessages();
+    setTimeout(() => {
+      input.focus();
+    }, 50);
   }
 }
 
-// Prompt starters click
-document.querySelectorAll('.starter-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    const prompt = chip.dataset.prompt;
-    const input = document.getElementById('note-chat-input');
-    if (input && prompt) {
-      input.value = prompt;
-      sendNoteChatMessage();
-    }
-  });
+// Auto-expand textarea & Keydown listener
+const copilotTextareaEl = document.getElementById('note-chat-input');
+copilotTextareaEl?.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+});
+
+copilotTextareaEl?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendNoteChatMessage();
+  }
 });
 
 // Sources Modal Events
@@ -531,16 +655,11 @@ document.getElementById('btn-apply-sources')?.addEventListener('click', () => {
 });
 
 document.getElementById('btn-note-chat-send')?.addEventListener('click', sendNoteChatMessage);
-document.getElementById('note-chat-input')?.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendNoteChatMessage();
-  }
-});
 
 document.getElementById('btn-clear-note-chat')?.addEventListener('click', () => {
   noteChatHistory = [];
   renderNoteChatMessages();
+  showToast('Riwayat Co-Pilot dibersihkan', 'info');
 });
 
 // ─── API Call Helper ──────────────────────────────────────
@@ -585,10 +704,77 @@ document.addEventListener('mouseup', (e) => {
   lastMouseUpPos = { x: e.clientX, y: e.clientY };
 });
 
+function clampToolbarToViewport() {
+  const toolbar = document.getElementById('micro-ai-toolbar');
+  if (!toolbar || toolbar.classList.contains('hidden')) return;
+
+  requestAnimationFrame(() => {
+    const margin = 16;
+    const topbarHeight = 65;
+    const rect = toolbar.getBoundingClientRect();
+
+    // Vertical clamping: if bottom goes below viewport, move top upwards
+    if (rect.bottom > window.innerHeight - margin) {
+      const overflowY = rect.bottom - (window.innerHeight - margin);
+      const currentTop = parseFloat(toolbar.style.top) || rect.top;
+      let newTop = currentTop - overflowY;
+      if (newTop < topbarHeight) {
+        newTop = topbarHeight;
+      }
+      toolbar.style.top = `${newTop}px`;
+    }
+
+    // Horizontal clamping: if right goes beyond viewport, move left
+    const updatedRect = toolbar.getBoundingClientRect();
+    if (updatedRect.right > window.innerWidth - margin) {
+      const overflowX = updatedRect.right - (window.innerWidth - margin);
+      const currentLeft = parseFloat(toolbar.style.left) || updatedRect.left;
+      let newLeft = Math.max(margin, currentLeft - overflowX);
+      toolbar.style.left = `${newLeft}px`;
+    }
+  });
+}
+
+let lastTriggerPos     = { x: 0, y: 0 };
+
+function hideMicroTrigger() {
+  const trigger = document.getElementById('micro-ai-trigger');
+  if (trigger) trigger.classList.add('hidden');
+}
+
+function showMicroTrigger(x, y, snippet, source, range = null) {
+  microSnippet = snippet;
+  microSource  = source;
+  if (range) microTextRange = range;
+  lastTriggerPos = { x, y };
+
+  const trigger = document.getElementById('micro-ai-trigger');
+  if (!trigger) return;
+
+  // Position trigger floating calmly right above the selection point
+  let posX = x;
+  let posY = y - 36;
+
+  // Keep within viewport boundaries
+  if (posX + 130 > window.innerWidth - 16) {
+    posX = window.innerWidth - 146;
+  }
+  if (posX < 16) posX = 16;
+  if (posY < 65) posY = y + 24;
+
+  trigger.style.left = `${posX}px`;
+  trigger.style.top  = `${posY}px`;
+  trigger.classList.remove('hidden');
+}
+
 function hideMicroToolbar() {
+  hideMicroTrigger();
   const toolbar = document.getElementById('micro-ai-toolbar');
   const popover = document.getElementById('micro-ai-popover');
-  if (toolbar) toolbar.classList.add('hidden');
+  if (toolbar) {
+    toolbar.classList.add('hidden');
+    toolbar.classList.remove('has-result');
+  }
   if (popover) {
     popover.classList.add('hidden');
     const popContent = document.getElementById('micro-popover-content');
@@ -600,6 +786,7 @@ function hideMicroToolbar() {
 }
 
 function showMicroToolbar(x, y, snippet, source, range = null) {
+  hideMicroTrigger();
   microSnippet = snippet;
   microSource  = source;
   if (range) microTextRange = range;
@@ -608,6 +795,7 @@ function showMicroToolbar(x, y, snippet, source, range = null) {
   const popover = document.getElementById('micro-ai-popover');
   if (!toolbar) return;
 
+  toolbar.classList.remove('has-result');
   if (popover) {
     popover.classList.add('hidden');
     const popContent = document.getElementById('micro-popover-content');
@@ -616,7 +804,7 @@ function showMicroToolbar(x, y, snippet, source, range = null) {
   document.querySelectorAll('.micro-btn').forEach(btn => btn.classList.remove('active', 'loading'));
 
   // Calculate coordinates clamped to viewport (Vertical Menu Layout)
-  const menuWidth  = 185;
+  const menuWidth  = 190;
   const menuHeight = 220;
   let posX = x + 12;
   let posY = y - 10;
@@ -636,7 +824,16 @@ function showMicroToolbar(x, y, snippet, source, range = null) {
   toolbar.style.left = `${posX}px`;
   toolbar.style.top  = `${posY}px`;
   toolbar.classList.remove('hidden');
+
+  clampToolbarToViewport();
 }
+
+// Click trigger pill to reveal the full contextual actions menu
+document.getElementById('btn-micro-trigger')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  hideMicroTrigger();
+  showMicroToolbar(lastTriggerPos.x, lastTriggerPos.y, microSnippet, microSource, microTextRange);
+});
 
 function checkTextareaSelection() {
   const ta = document.getElementById('note-textarea');
@@ -649,7 +846,7 @@ function checkTextareaSelection() {
       const rect = ta.getBoundingClientRect();
       const x = lastMouseUpPos.x > 0 ? lastMouseUpPos.x : (rect.left + 40);
       const y = lastMouseUpPos.y > 0 ? lastMouseUpPos.y : (rect.top + 50);
-      showMicroToolbar(x, y, selected, 'textarea', { start, end });
+      showMicroTrigger(x, y, selected, 'textarea', { start, end });
       return;
     }
   }
@@ -667,7 +864,7 @@ function checkViewSelection() {
       try {
         const range = sel.getRangeAt(0);
         const rect = range.getBoundingClientRect();
-        showMicroToolbar(rect.right, rect.top, selected, 'view');
+        showMicroTrigger(rect.right, rect.top, selected, 'view');
         return;
       } catch (err) {
         console.warn('Range rect error:', err);
@@ -702,20 +899,26 @@ if (noteViewContent) {
   });
 }
 
-// Click outside dismissal: any click outside toolbar dismisses it immediately
+// Click outside dismissal: any click outside toolbar and trigger dismisses them immediately
 document.addEventListener('mousedown', (e) => {
   const toolbar = document.getElementById('micro-ai-toolbar');
-  if (toolbar && !toolbar.classList.contains('hidden')) {
-    if (!toolbar.contains(e.target)) {
-      hideMicroToolbar();
-    }
+  const trigger = document.getElementById('micro-ai-trigger');
+  
+  const inToolbar = toolbar && !toolbar.classList.contains('hidden') && toolbar.contains(e.target);
+  const inTrigger = trigger && !trigger.classList.contains('hidden') && trigger.contains(e.target);
+  
+  if (!inToolbar && !inTrigger) {
+    hideMicroToolbar();
   }
 });
 
 // Selection change listener: dismiss if selection collapses anywhere
 document.addEventListener('selectionchange', () => {
   const toolbar = document.getElementById('micro-ai-toolbar');
-  if (!toolbar || toolbar.classList.contains('hidden')) return;
+  const trigger = document.getElementById('micro-ai-trigger');
+  const isToolbarOpen = toolbar && !toolbar.classList.contains('hidden');
+  const isTriggerOpen = trigger && !trigger.classList.contains('hidden');
+  if (!isToolbarOpen && !isTriggerOpen) return;
 
   const ta = document.getElementById('note-textarea');
   if (document.activeElement === ta && ta) {
@@ -724,7 +927,7 @@ document.addEventListener('selectionchange', () => {
     }
   } else {
     const sel = window.getSelection();
-    if (sel && sel.isCollapsed && !toolbar.contains(document.activeElement)) {
+    if (sel && sel.isCollapsed && (!toolbar || !toolbar.contains(document.activeElement)) && (!trigger || !trigger.contains(document.activeElement))) {
       hideMicroToolbar();
     }
   }
@@ -743,6 +946,7 @@ document.querySelectorAll('.micro-btn').forEach(btn => {
     document.querySelectorAll('.micro-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active', 'loading');
 
+    const toolbar     = document.getElementById('micro-ai-toolbar');
     const popover     = document.getElementById('micro-ai-popover');
     const popTitle    = document.getElementById('micro-popover-title');
     const popContent  = document.getElementById('micro-popover-content');
@@ -758,7 +962,12 @@ document.querySelectorAll('.micro-btn').forEach(btn => {
 
     if (popTitle) popTitle.textContent = titles[microType] || '✨ Hasil Cortex AI';
     if (popContent) popContent.innerHTML = '<div style="color:var(--gold-light);display:flex;align-items:center;gap:8px;"><div class="nucleus-spinner" style="width:18px;height:18px;border-width:2px;"></div> Memproses dengan Neural Cortex...</div>';
+    
+    if (toolbar) toolbar.classList.add('has-result');
     if (popover) popover.classList.remove('hidden');
+
+    // Clamp immediately so popover expansion stays within viewport
+    clampToolbarToViewport();
 
     // Explain might not necessarily replace, but keep available
     if (replaceBtn) {
@@ -786,9 +995,14 @@ document.querySelectorAll('.micro-btn').forEach(btn => {
       }
     } finally {
       btn.classList.remove('loading');
+      // Re-clamp after content is rendered
+      clampToolbarToViewport();
     }
   });
 });
+
+// Window resize listener to keep toolbar clamped
+window.addEventListener('resize', clampToolbarToViewport);
 
 // Popover action buttons
 document.getElementById('btn-close-micro-toolbar')?.addEventListener('click', (e) => {
@@ -798,7 +1012,13 @@ document.getElementById('btn-close-micro-toolbar')?.addEventListener('click', (e
 
 document.getElementById('btn-close-micro-popover')?.addEventListener('click', (e) => {
   e.stopPropagation();
-  hideMicroToolbar();
+  const toolbar = document.getElementById('micro-ai-toolbar');
+  const popover = document.getElementById('micro-ai-popover');
+  if (popover) popover.classList.add('hidden');
+  if (toolbar) toolbar.classList.remove('has-result');
+  document.querySelectorAll('.micro-btn').forEach(b => b.classList.remove('active', 'loading'));
+  currentMicroResult = '';
+  clampToolbarToViewport();
 });
 
 document.getElementById('btn-micro-copy')?.addEventListener('click', async (e) => {
@@ -874,4 +1094,29 @@ document.getElementById('btn-micro-insert')?.addEventListener('click', (e) => {
     }
   }
 });
+
+// ─── AI Studio Dropdown Menu Toggle ────────────────────────
+const aiStudioToggle = document.getElementById('btn-ai-studio-toggle');
+const aiStudioMenu   = document.getElementById('ai-studio-menu');
+
+if (aiStudioToggle && aiStudioMenu) {
+  aiStudioToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    aiStudioMenu.classList.toggle('hidden');
+  });
+
+  // Clicking an item in the menu automatically closes it
+  aiStudioMenu.querySelectorAll('.ai-menu-item').forEach(item => {
+    item.addEventListener('click', () => {
+      aiStudioMenu.classList.add('hidden');
+    });
+  });
+
+  // Click outside closes menu
+  document.addEventListener('click', (e) => {
+    if (!aiStudioMenu.classList.contains('hidden') && !aiStudioMenu.contains(e.target) && !aiStudioToggle.contains(e.target)) {
+      aiStudioMenu.classList.add('hidden');
+    }
+  });
+}
 

@@ -265,38 +265,6 @@ function backfillTelemetryFromSessions() {
         }
       });
     }
-
-    // 2. Ambil dari roleplay sessions
-    const rawRp = localStorage.getItem('atom_rp_sessions');
-    if (rawRp) {
-      const rpSessions = JSON.parse(rawRp);
-      rpSessions.forEach(sess => {
-        const msgs = sess.messages || [];
-        for (let i = 0; i < msgs.length; i++) {
-          if (msgs[i].role === 'user' && msgs[i + 1] && msgs[i + 1].role === 'assistant') {
-            const userMsg = msgs[i];
-            const aiMsg = msgs[i + 1];
-            const pLen = (userMsg.content || '').length;
-            const rLen = (aiMsg.content || '').length;
-            const model = aiMsg.model || 'Groq Cloud';
-            syntheticLogs.push({
-              id: 'bfrp_' + (userMsg.timestamp || sess.updatedAt || Date.now()) + '_' + i,
-              timestamp: new Date(sess.updatedAt || Date.now()).toISOString(),
-              user_input: userMsg.content || '',
-              model_used: model,
-              response_time: 1.65,
-              status: 'SUCCESS',
-              ai_response: aiMsg.content || '',
-              tokens: {
-                prompt: Math.max(1, Math.ceil(pLen / 4)),
-                completion: Math.max(1, Math.ceil(rLen / 4)),
-                total: Math.max(2, Math.ceil((pLen + rLen) / 4))
-              }
-            });
-          }
-        }
-      });
-    }
   } catch (e) {
     console.warn('[ATOM] Backfill calculation error:', e);
   }

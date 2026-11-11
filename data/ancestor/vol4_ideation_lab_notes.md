@@ -2,14 +2,14 @@
 ## KNOWLEDGE MANAGEMENT & IDEATION LAB
 > **Arsip:** `data/ancestor/vol4_ideation_lab_notes.md`  
 > **Klasifikasi:** Sistem Catatan Pintar, Zettelkasten, & Ekosistem Ide Mikro  
-> **Modul Terkait:** Magic Notes & Concept Bubbles (`public/notes.html`, `public/assets/js/notes.js`)  
+> **Modul Terkait:** Crew Notes & Concept Bubbles (`public/notes.html`, `public/assets/js/notes.js`)  
 > **Inisiator & Arsitek Utama:** Alif Rahmadi  
 > **Kapasitas Target:** ~8.000 Token  
 
 ---
 
 ### DAFTAR ISI VOLUME IV
-1. [Paradigma Magic Notes: Evolusi Catatan Statis Menjadi Jaringan Pemikiran](#1-paradigma-magic-notes-evolusi-catatan-statis-menjadi-jaringan-pemikiran)
+1. [Paradigma Crew Notes: Evolusi Catatan Statis Menjadi Jaringan Pemikiran](#1-paradigma-crew-notes-evolusi-catatan-statis-menjadi-jaringan-pemikiran)
 2. [Metodologi Zettelkasten dalam Arsitektur A.T.O.M.](#2-metodologi-zettelkasten-dalam-arsitektur-atom)
 3. [Protokol AI Note Enhancers (Refine, Title, & Auto-Tag)](#3-protokol-ai-note-enhancers-refine-title--auto-tag)
 4. [Ekstraksi Metadata Cerdas Menggunakan Pydantic AI](#4-ekstraksi-metadata-cerdas-menggunakan-pydantic-ai)
@@ -19,11 +19,11 @@
 
 ---
 
-### 1. PARADIGMA MAGIC NOTES: EVOLUSI CATATAN STATIS MENJADI JARINGAN PEMIKIRAN
+### 1. PARADIGMA CREW NOTES: EVOLUSI CATATAN STATIS MENJADI JARINGAN PEMIKIRAN
 
 Kebanyakan aplikasi pencatat digital bertindak seperti kuburan teks (*Text Graveyard*). Pengguna mencatat sesuatu, menyimpannya di dalam folder hierarkis yang rumit, dan setelah itu catatan tersebut dilupakan untuk selamanya.
 
-Alif Rahmadi merancang **Magic Notes** di A.T.O.M. dengan paradigma yang berbeda:
+Alif Rahmadi merancang **Crew Notes** di A.T.O.M. dengan paradigma yang berbeda:
 * **Catatan yang Hidup (*Active Knowledge Network*):** Catatan bukan sekadar teks beku, melainkan entitas yang dapat diajak berdiskusi, dirapikan secara otomatis oleh kecerdasan buatan, dan dihubungkan satu sama lain menggunakan tag semantik.
 * **Tiga Mode Kerja Fleksibel dalam Satu Antarmuka:**
   * **Mode 👁 View:** Membaca catatan dalam format Markdown yang bersih dan tipografi berstandar tinggi.
@@ -34,7 +34,7 @@ Alif Rahmadi merancang **Magic Notes** di A.T.O.M. dengan paradigma yang berbeda
 
 ### 2. METODOLOGI ZETTELKASTEN DALAM ARSITEKTUR A.T.O.M.
 
-Magic Notes mengadopsi prinsip dasar metode *Zettelkasten* yang dipopulerkan oleh sosiolog Niklas Luhmann:
+Crew Notes mengadopsi prinsip dasar metode *Zettelkasten* yang dipopulerkan oleh sosiolog Niklas Luhmann:
 
 #### 2.1 Fleeting Notes (Catatan Kilat / Gelembung Ide)
 * Catatan cepat tentang kilatan pemikiran saat membaca buku, browsing web, atau melamun.
@@ -51,7 +51,7 @@ Magic Notes mengadopsi prinsip dasar metode *Zettelkasten* yang dipopulerkan ole
 
 ### 3. PROTOKOL AI NOTE ENHANCERS (REFINE, TITLE, & AUTO-TAG)
 
-Melalui modul `api/notes_ai.py`, Magic Notes menyediakan alat bantu pengayaan catatan berbasis model AI berlatensi rendah:
+Melalui modul `api/notes_ai.py`, Crew Notes menyediakan alat bantu pengayaan catatan berbasis model AI berlatensi rendah:
 
 #### 3.1 Fitur ✨ Rapihkan Teks (AI Refine)
 * **Tujuan:** Mengubah tulisan yang berantakan atau penuh singkatan menjadi artikel terstruktur rapi.
@@ -70,7 +70,7 @@ Melalui modul `api/notes_ai.py`, Magic Notes menyediakan alat bantu pengayaan ca
 * **Tujuan:** Mengelompokkan catatan secara dinamis tanpa perlu membuat hierarki folder yang kaku.
 * **Prinsip Operasional:**
   * AI membaca keseluruhan teks dan mengekstrak 3 sampai 5 kata kunci paling esensial dalam format huruf kecil (*lowercase tags*).
-  * Tag ini langsung terhubung dengan bilah pencarian dan filter sidebar Magic Notes.
+  * Tag ini langsung terhubung dengan bilah pencarian dan filter sidebar Crew Notes.
 
 ---
 
@@ -92,7 +92,7 @@ Dengan validasi ini, metadata yang dihasilkan AI dijamin tidak akan mengalami er
 
 ### 5. MODE CHAT TERISOLASI ALA GOOGLE NOTEBOOKLM
 
-Salah satu fitur paling kuat di Magic Notes adalah **Note Chat**:
+Salah satu fitur paling kuat di Crew Notes adalah **Note Chat**:
 
 ```
 [Pengguna Bertanya: "Berapa target margin di catatan ini?"]
@@ -135,7 +135,7 @@ Ketika sebuah gelembung berisi ide singkat (contoh: *"Eksplorasi energi fusi nuk
 1. Backend [api/index.py](file:///d:/Data%20Project/Personal%20Project/PROJECT%20ATOM/api/index.py) memicu fungsi ekspansi cerdas (`/api/bubbles/{id}/expand`).
 2. Skuad AI (Cortex / CrewAI) langsung menguraikan topik tersebut menjadi riset mendalam.
 3. Menghasilkan artikel lengkap berformat Markdown sepanjang **5.000 hingga 8.000 karakter** mencakup latar belakang, terobosan fisika, analisis pasar, dan roadmap implementasi.
-4. Artikel tersebut **otomatis disimpan sebagai catatan baru** di Magic Notes dengan tag `bubble-expanded`, sementara gelembung asli ditandai statusnya menjadi `expanded: true`.
+4. Artikel tersebut **otomatis disimpan sebagai catatan baru** di Crew Notes dengan tag `bubble-expanded`, sementara gelembung asli ditandai statusnya menjadi `expanded: true`.
 
 ---
 

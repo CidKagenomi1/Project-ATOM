@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>A.T.O.M. — Magic Notes</title>
-  <meta name="description" content="ATOM Magic Notes — Obsidian-style knowledge management with AI features">
-  <link rel="stylesheet" href="assets/css/main.css?v=4.6">
-  <link rel="stylesheet" href="assets/css/components.css?v=5.1">
+  <title>A.T.O.M. — Crew Notes</title>
+  <meta name="description" content="ATOM Crew Notes — Obsidian-style knowledge management with AI features">
+  <link rel="stylesheet" href="assets/css/main.css?v=4.8">
+  <link rel="stylesheet" href="assets/css/components.css?v=8.0">
+  <link rel="stylesheet" href="assets/css/components/notes.css?v=8.5">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
@@ -40,7 +41,7 @@
         </span>
         <div class="atom-brand">
           <div class="atom-brand-title">A.T.O.M.</div>
-          <div class="atom-brand-sub">Magic Notes <span class="beta-pill" style="font-size:0.5rem;padding:0 4px;">BETA</span></div>
+          <div class="atom-brand-sub">Crew Notes</div>
         </div>
       </div>
       <nav class="sidebar-nav">
@@ -63,14 +64,6 @@
           </span>
           Topics <span class="beta-pill" style="background:rgba(52,211,153,0.15);color:#34d399;border-color:rgba(52,211,153,0.3);">LIVE</span>
         </a>
-        <a href="roleplay.html" id="nav-roleplay">
-          <span class="nav-icon">
-            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-            </svg>
-          </span>
-          RP Model <span class="beta-pill">BETA</span>
-        </a>
         <a href="notes.html" class="active" id="nav-notes">
           <span class="nav-icon">
             <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
@@ -78,7 +71,7 @@
               <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z"/>
             </svg>
           </span>
-          Magic Notes <span class="beta-pill">BETA</span>
+          Crew Notes
         </a>
         <a href="telemetry.html" id="nav-telemetry">
           <span class="nav-icon">
@@ -145,208 +138,246 @@
     <main class="app-main">
       <header class="app-topbar">
         <div class="flex items-center gap-3">
-          <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
-          <span class="topbar-title">Magic Notes <span class="beta-pill">BETA</span></span>
+          <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle Menu">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.1rem;height:1.1rem;"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          </button>
+          <span class="topbar-title">Crew Notes</span>
         </div>
         <div class="topbar-actions">
-          <!-- Tab switch: Notes / Bubbles -->
-          <div class="mode-tabs">
-            <button class="mode-tab active" id="tab-notes-btn" onclick="switchTab('notes')">📝 Notes</button>
-            <button class="mode-tab" id="tab-bubbles-btn" onclick="switchTab('bubbles')">🫧 Bubbles</button>
+          <!-- Segmented Tab Switch: Notes / Quick Bubbles -->
+          <div class="notes-scope-switcher">
+            <button class="scope-toggle-btn active" id="tab-notes-btn" onclick="switchTab('notes')">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.85rem;height:0.85rem;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+              <span>Notes</span>
+            </button>
+            <button class="scope-toggle-btn" id="tab-bubbles-btn" onclick="switchTab('bubbles')">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.85rem;height:0.85rem;"><circle cx="12" cy="12" r="10"></circle><path d="m4.93 4.93 4.24 4.24"></path><path d="m14.83 9.17 4.24-4.24"></path><path d="m14.83 14.83 4.24 4.24"></path><path d="m9.17 14.83-4.24 4.24"></path><circle cx="12" cy="12" r="4"></circle></svg>
+              <span>Bubbles</span>
+            </button>
           </div>
         </div>
       </header>
 
-      <!-- ============ NOTES TAB ============ -->
-      <div id="tab-notes" class="notes-layout">
+      <!-- ============ NOTES TAB (DOCUMENT & GALLERY MODE) ============ -->
+      <div id="tab-notes" class="notes-layout doc-mode-layout">
 
-        <!-- Notes Sidebar -->
-        <aside class="notes-sidebar">
-          <div class="notes-sidebar-header">
-            <button class="btn btn-primary btn-sm w-full" id="btn-new-note" style="margin-bottom:var(--space-3); gap: 6px;">
-              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width: 0.85rem; height: 0.85rem;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> New Note
-            </button>
-            <div class="search-input">
-              <span class="search-icon-svg">
-                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="position: absolute; left: var(--space-3); top: 50%; transform: translateY(-50%); width: 0.95rem; height: 0.95rem; color: var(--text-secondary); pointer-events: none;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              </span>
-              <input type="text" class="form-input" id="notes-search" placeholder="Search notes...">
-            </div>
-          </div>
-
-          <div class="notes-list" id="notes-list">
-            <!-- Populated by JS -->
-          </div>
-
-          <div class="notes-sidebar-footer" id="notes-stats">
-            0 notes · 0 tags
-          </div>
-        </aside>
-
-        <!-- Note Content Area -->
-        <div class="note-content-area" id="note-content-area">
-
-          <!-- Empty placeholder -->
-          <div id="note-placeholder" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-muted);gap:var(--space-3);text-align:center;padding:var(--space-8);">
-            <span style="opacity:0.45; display:flex; align-items:center; justify-content:center;">
-              <svg class="svg-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width: 3.5rem; height: 3.5rem;">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
-                <polyline points="10 9 9 9 8 9"/>
-              </svg>
-            </span>
-            <p>Pilih note dari sidebar<br>atau buat note baru</p>
-          </div>
-
-          <!-- Note Editor (hidden until note selected) -->
-          <div id="note-editor" class="hidden" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
-            <!-- Toolbar -->
-            <div class="note-toolbar">
-              <input type="text" class="note-title-input" id="note-title-input" placeholder="Judul note...">
-              <div class="mode-tabs">
-                <button class="mode-tab active" id="mode-view-btn" onclick="setNoteMode('view')">👁 View</button>
-                <button class="mode-tab" id="mode-edit-btn" onclick="setNoteMode('edit')">✏️ Edit</button>
-                <button class="mode-tab" id="mode-chat-btn" onclick="setNoteMode('chat')">💬 Chat</button>
+        <!-- 1. GALLERY / KNOWLEDGE HUB VIEW -->
+        <div id="notes-gallery-view" class="notes-gallery-view">
+          <!-- Gallery Top Header -->
+          <div class="gallery-header">
+            <div class="gallery-header-info">
+              <div class="gallery-title-row">
+                <h1 class="gallery-title">Catatan Saya</h1>
+                <span class="gallery-stats-pill" id="gallery-stats-pill">0 Catatan</span>
               </div>
-              <span id="note-save-status" style="font-size:0.72rem;color:var(--text-muted);font-family:var(--font-mono);margin-left:auto;margin-right:8px;letter-spacing:0.04em;"></span>
-              <button class="btn btn-secondary btn-sm" id="btn-save-note">💾 Save</button>
-              <button class="btn btn-danger btn-sm" id="btn-delete-note">🗑</button>
+              <p class="gallery-subtitle">Dokumentasikan pemikiran, riset, dan ide dengan AI Knowledge Studio.</p>
             </div>
+            <div class="gallery-header-actions">
+              <button class="btn btn-primary btn-new-doc" id="btn-new-note" title="Buat Catatan Baru">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:0.85rem;height:0.85rem;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Catatan Baru</span>
+              </button>
+            </div>
+          </div>
 
-            <!-- Tags Bar -->
-            <div id="tags-bar" style="padding:0 var(--space-5) var(--space-2) var(--space-5);display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;border-bottom:1px solid var(--border-color);">
-              <span id="tags-display"></span>
-              <input type="text" id="tags-input" class="form-input" placeholder="tag1, tag2..." style="flex:1;min-width:120px;max-width:200px;font-size:0.78rem;padding:4px 8px;height:auto;">
-              <button class="btn btn-ghost btn-sm" id="btn-autotag" title="AI Auto-Tag">🤖 Auto-Tag</button>
-              <button class="btn btn-ghost btn-sm" id="btn-toggle-connections" title="Buka panel relasi pengetahuan" style="margin-left:auto;font-size:0.75rem;gap:4px;">
-                🔗 <span id="connections-count">0 Relasi</span>
+          <!-- Gallery Control & Filter Bar -->
+          <div class="gallery-filter-bar">
+            <div class="gallery-search-wrap">
+              <svg class="search-icon svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" class="gallery-search-input" id="notes-search" placeholder="Cari catatan berdasarkan judul, isi, atau tag... (Ctrl+K)">
+              <button class="gallery-search-clear hidden" id="btn-clear-search" title="Bersihkan pencarian">✕</button>
+            </div>
+            <!-- Quick Tag Filter Chips -->
+            <div class="gallery-tag-pills" id="gallery-tag-pills">
+              <button class="tag-filter-chip active" data-tag="">Semua</button>
+            </div>
+          </div>
+
+          <!-- Gallery Cards Grid -->
+          <div class="gallery-cards-container">
+            <div class="gallery-grid" id="notes-grid">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. FULLSCREEN DOCUMENT VIEW (EDITOR & VIEWER) -->
+        <div id="notes-document-view" class="notes-document-view hidden" style="display:none;">
+          <!-- Document Top Toolbar -->
+          <div class="doc-toolbar">
+            <!-- Left: Back Navigation & Breadcrumb -->
+            <div class="doc-nav-group">
+              <button class="btn-back-gallery" id="btn-back-gallery" onclick="closeDocumentView()" title="Kembali ke Galeri (Esc)">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:0.9rem;height:0.9rem;"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                <span>Semua Catatan</span>
+              </button>
+              <div class="doc-nav-divider">/</div>
+              <button class="btn-quick-switcher-trigger" id="btn-quick-switcher-trigger" onclick="openQuickSwitcher()" title="Cari cepat & lompat ke catatan lain (Ctrl+K)">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <span class="switcher-hint">Cari (Ctrl+K)</span>
               </button>
             </div>
 
-            <!-- Note Body -->
-            <div class="note-body" id="note-body">
+            <!-- Center: Title Input -->
+            <input type="text" class="doc-title-input" id="note-title-input" placeholder="Judul catatan...">
+
+            <!-- Right: View Modes & Actions -->
+            <div class="doc-actions-group">
+              <!-- Mode Segmented Control: Baca | Edit | Split | Co-Pilot -->
+              <div class="note-mode-segmented" id="note-mode-switcher">
+                <button class="mode-tab active" id="mode-view-btn" onclick="setNoteMode('view')" title="Mode Baca (Preview)">
+                  <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  <span>Baca</span>
+                </button>
+                <button class="mode-tab" id="mode-edit-btn" onclick="setNoteMode('edit')" title="Mode Tulis (Markdown)">
+                  <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path></svg>
+                  <span>Edit</span>
+                </button>
+                <button class="mode-tab mode-tab-split" id="mode-split-btn" onclick="setNoteMode('split')" title="Live Split View (Tulis & Preview)">
+                  <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><rect width="18" height="18" x="3" y="3" rx="2"></rect><line x1="12" x2="12" y1="3" y2="21"></line></svg>
+                  <span>Split</span>
+                </button>
+                <button class="mode-tab" id="mode-chat-btn" onclick="setNoteMode('chat')" title="Knowledge Co-Pilot Chat">
+                  <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                  <span>Co-Pilot</span>
+                </button>
+              </div>
+
+              <div class="note-save-status-wrap">
+                <span class="micro-reaktor-dot" style="width:5px;height:5px;"></span>
+                <span id="note-save-status">Saved</span>
+              </div>
+              <button class="btn btn-secondary btn-sm note-action-btn" id="btn-save-note" title="Simpan catatan (Ctrl+S)">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.8rem;height:0.8rem;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+              </button>
+              <button class="btn btn-ghost btn-sm note-action-btn btn-danger-hover" id="btn-delete-note" title="Hapus catatan">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.8rem;height:0.8rem;"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+              </button>
+            </div>
+          </div>
+
+            <!-- Consolidated Studio Sub-Bar (Tags & AI Tools in 1 Clean Row) -->
+            <div id="tags-bar" class="note-meta-bar">
+              <div class="note-meta-left">
+                <div id="tags-display" class="note-tags-display"></div>
+                <input type="text" id="tags-input" class="form-input note-tags-input" placeholder="+ tag..." title="Ketik tag lalu tekan Enter" style="display:none;">
+                <button class="btn btn-ghost btn-sm note-pill-btn" id="btn-toggle-connections" title="Buka panel relasi pengetahuan">
+                  <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                  <span id="connections-count">0 Relasi</span>
+                </button>
+              </div>
+              <div class="note-meta-right">
+                <!-- Clean AI Studio Dropdown -->
+                <div class="ai-studio-dropdown-wrap" id="ai-studio-dropdown-wrap">
+                  <button class="btn btn-secondary btn-sm note-pill-btn ai-studio-trigger" id="btn-ai-studio-toggle" type="button" title="Menu Alat AI Studio">
+                    <span class="micro-reaktor-dot" style="width:5px;height:5px;"></span>
+                    <span>✨ AI Studio</span>
+                    <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:0.65rem;height:0.65rem;margin-left:2px;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </button>
+                  <div class="ai-studio-menu hidden" id="ai-studio-menu">
+                    <button class="ai-menu-item" id="btn-refine" type="button">
+                      <span class="ai-menu-icon">🪄</span>
+                      <div class="ai-menu-text">
+                        <strong>Poles AI (Refine)</strong>
+                        <small>Perbaiki struktur & tata bahasa</small>
+                      </div>
+                    </button>
+                    <button class="ai-menu-item" id="btn-gen-title" type="button">
+                      <span class="ai-menu-icon">🏷️</span>
+                      <div class="ai-menu-text">
+                        <strong>Buat Judul Cerdas</strong>
+                        <small>Generate judul dari konten</small>
+                      </div>
+                    </button>
+                    <button class="ai-menu-item" id="btn-metadata" type="button">
+                      <span class="ai-menu-icon">📊</span>
+                      <div class="ai-menu-text">
+                        <strong>Ekstrak Metadata</strong>
+                        <small>Ringkasan & info terstruktur</small>
+                      </div>
+                    </button>
+                    <button class="ai-menu-item" id="btn-autotag" type="button">
+                      <span class="ai-menu-icon">✨</span>
+                      <div class="ai-menu-text">
+                        <strong>AI Auto-Tagging</strong>
+                        <small>Pasang tag otomatis</small>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Note Body (Canvas) -->
+            <div class="note-body mode-view" id="note-body">
 
               <!-- View Mode -->
-              <div id="note-view-content" class="markdown-view" title="Klik untuk mengedit catatan ini">
+              <div id="note-view-content" class="markdown-view">
                 <p style="color:var(--text-muted);font-style:italic;">Empty note. Switch to Edit mode to start writing.</p>
               </div>
 
               <!-- Edit Mode -->
-              <div id="note-edit-content" style="display:none;flex-direction:column;gap:var(--space-3);height:100%;">
-                <div class="flex gap-2" style="flex-shrink:0;">
-                  <button class="btn btn-secondary btn-sm" id="btn-refine" title="AI rapihkan teks">✨ Rapihkan (AI)</button>
-                  <button class="btn btn-secondary btn-sm" id="btn-gen-title" title="AI generate judul">🏷️ Gen Title</button>
-                  <button class="btn btn-secondary btn-sm" id="btn-metadata" title="AI ekstrak metadata (Pydantic AI)">📊 AI Metadata</button>
-                </div>
+              <div id="note-edit-content" class="note-edit-wrap" style="display:none;">
                 <textarea
                   id="note-textarea"
-                  class="form-textarea"
+                  class="form-textarea note-editor-textarea"
                   placeholder="Tulis catatan dalam Markdown...
-  
+
 # Heading 1
 ## Heading 2
-  
-- Bullet point
+
+- Poin pemikiran
 - Hubungkan catatan lain dengan [[Nama Catatan]]
-  
+
 **Bold** *Italic* `code`"
-                  style="flex:1;min-height:400px;font-family:var(--font-mono);font-size:0.85rem;"
                 ></textarea>
               </div>
 
               <!-- Chat Mode (NotebookLM Multi-Note Knowledge Co-Pilot) -->
               <div id="note-chat-content" class="note-chat-area" style="display:none;">
-                <!-- Multi-Note Sources Context Banner -->
-                <div class="chat-sources-banner">
-                  <div class="chat-sources-header">
-                    <div class="flex items-center gap-2">
-                      <span class="chat-sources-badge">📚 SUMBER MULTI-NOTE</span>
-                      <span id="chat-sources-summary" class="chat-sources-summary">1 Catatan Aktif Terpilih</span>
-                    </div>
-                    <button class="btn btn-secondary btn-sm" id="btn-open-sources-modal" title="Pilih catatan tambahan sebagai konteks" style="padding:4px 10px;font-size:0.75rem;">
-                      ⚙️ Atur Sumber Catatan
-                    </button>
-                  </div>
-                  <!-- Active Sources Pills -->
-                  <div class="chat-sources-pills" id="chat-sources-pills"></div>
+                <!-- Co-Pilot Ultra-Compact Context Button Bar -->
+                <div class="copilot-context-bar">
+                  <button class="copilot-context-btn" id="btn-open-sources-modal" title="Pilih atau ubah catatan sumber konteks AI">
+                    <span class="micro-reaktor-dot"></span>
+                    <span class="copilot-context-btn-text">
+                      <strong>Konteks AI:</strong>
+                      <span id="chat-sources-summary">1 Catatan (~1079 kata)</span>
+                    </span>
+                    <svg class="svg-icon chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </button>
+                  <button class="btn btn-ghost btn-xs copilot-clear-btn" id="btn-clear-note-chat" title="Bersihkan riwayat percakapan">
+                    <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                  </button>
                 </div>
 
                 <!-- Chat Messages Scroll Area -->
-                <div class="note-chat-messages" id="note-chat-messages"></div>
-
-                <!-- Prompt Starters / Synthesis Pills -->
-                <div class="chat-starters-bar" id="chat-starters-bar">
-                  <span class="chat-starters-label">⚡ Tanya Cepat:</span>
-                  <button class="starter-chip" data-prompt="Bandingkan poin-poin utama, kesamaan, dan perbedaan antara catatan-catatan yang dipilih ini.">
-                    ⚖️ Bandingkan Catatan
-                  </button>
-                  <button class="starter-chip" data-prompt="Buat ringkasan eksekutif komprehensif yang mensintesis seluruh catatan terpilih menjadi satu kesimpulan utuh.">
-                    📑 Sintesis Eksekutif
-                  </button>
-                  <button class="starter-chip" data-prompt="Ekstrak semua action items, to-do list, dan rencana tindakan dari kumpulan catatan ini.">
-                    ✅ Action Items Gabungan
-                  </button>
-                  <button class="starter-chip" data-prompt="Apa benang merah, korelasi ide, dan wawasan terpenting yang menghubungkan catatan-catatan ini?">
-                    💡 Analisis Benang Merah
-                  </button>
+                <div class="note-chat-messages" id="note-chat-messages">
+                  <!-- Rendered dynamically by notes-ai.js -->
                 </div>
 
-                <!-- Chat Input Row -->
-                <div class="note-chat-input-row">
-                  <input type="text" class="form-input" id="note-chat-input" placeholder="Tanya tentang kumpulan catatan ini (misal: 'Apa kesimpulan dari dokumen A dan B?')..." style="flex:1;">
-                  <button class="btn btn-primary btn-sm" id="btn-note-chat-send">
-                    <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:0.85rem;height:0.85rem;display:inline-block;vertical-align:middle;margin-right:4px;"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                    Kirim
-                  </button>
-                </div>
-                <div class="flex items-center justify-between" style="padding:0 var(--space-4) var(--space-2) var(--space-4);">
-                  <span style="font-size:0.72rem;color:var(--text-muted);">💡 Jawaban berbasis bukti dokumen dengan rujukan <code>[Sumber: ...]</code></span>
-                  <button class="btn btn-ghost btn-sm" id="btn-clear-note-chat">🗑 Bersihkan Chat</button>
-                </div>
-              </div>
-
-            </div>
-
-            <!-- ============ KNOWLEDGE INTERCONNECTION DRAWER ============ -->
-            <div id="knowledge-panel" class="knowledge-panel">
-              <div class="knowledge-panel-header" id="knowledge-panel-header" title="Klik untuk membuka/menutup panel relasi">
-                <div class="knowledge-panel-title">
-                  <span class="knowledge-atom-icon">⚛️</span>
-                  <span>Knowledge Interconnection</span>
-                  <span class="knowledge-badge" id="knowledge-badge">0 Links</span>
-                </div>
-                <button class="knowledge-panel-toggle" id="btn-knowledge-toggle">▲</button>
-              </div>
-              <div class="knowledge-panel-body" id="knowledge-panel-body" style="display:none;">
-                <div class="knowledge-grid">
-                  <!-- Linked Mentions / Backlinks -->
-                  <div class="knowledge-section">
-                    <div class="knowledge-section-header">
-                      <span>📥 Linked Mentions (Backlinks)</span>
-                      <span class="knowledge-pill" id="backlinks-count">0</span>
-                    </div>
-                    <div class="knowledge-list" id="backlinks-list">
-                      <p class="knowledge-empty">Tidak ada catatan lain yang menautkan catatan ini.</p>
-                    </div>
+                <!-- Co-Pilot Docked Input Area -->
+                <div class="copilot-input-container">
+                  <div class="copilot-input-dock">
+                    <textarea
+                      id="note-chat-input"
+                      class="copilot-textarea"
+                      rows="1"
+                      placeholder="Tanyakan analisis, rangkuman, atau benang merah dari catatan ini... (Shift+Enter untuk baris baru)"
+                    ></textarea>
+                    <button class="copilot-send-btn" id="btn-note-chat-send" title="Kirim pertanyaan (Enter)">
+                      <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
                   </div>
-                  <!-- Outbound Links -->
-                  <div class="knowledge-section">
-                    <div class="knowledge-section-header">
-                      <span>📤 Outbound References (Wikilinks)</span>
-                      <span class="knowledge-pill" id="outbound-count">0</span>
-                    </div>
-                    <div class="knowledge-list" id="outbound-list">
-                      <p class="knowledge-empty">Belum ada rujukan. Ketik <code>[[Nama Catatan]]</code> di teks untuk menghubungkan.</p>
-                    </div>
+                  <div class="copilot-input-footer">
+                    <span>💡 <strong>Tip:</strong> Jawaban disintesis langsung dari catatan yang Anda buka</span>
+                    <span class="copilot-enter-hint">Enter ↵</span>
                   </div>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
-      </div>
 
       <!-- ============ BUBBLES TAB ============ -->
       <div id="tab-bubbles" style="display:none;flex:1;height:calc(100vh - var(--topbar-height));overflow-y:auto;position:relative;">
@@ -386,12 +417,86 @@
 
   <div class="toast-container" id="toast-container"></div>
 
+  <!-- ============ QUICK SWITCHER MODAL (COMMAND PALETTE CTRL+K) ============ -->
+  <div id="quick-switcher-modal" class="safe-refine-overlay hidden">
+    <div class="quick-switcher-card">
+      <div class="quick-switcher-header">
+        <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.1rem;height:1.1rem;color:var(--text-muted);"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="quick-switcher-input" class="quick-switcher-input" placeholder="Lompat ke catatan atau ketik judul baru... (↑↓ navigasi, ↵ buka)" autocomplete="off">
+        <button class="quick-switcher-close" id="btn-close-quick-switcher" title="Tutup (Esc)">✕</button>
+      </div>
+      <div class="quick-switcher-results" id="quick-switcher-results">
+        <!-- Rendered by JS -->
+      </div>
+      <div class="quick-switcher-footer">
+        <span class="switcher-key-tip"><strong>↑</strong> <strong>↓</strong> untuk memilih</span>
+        <span class="switcher-key-tip"><strong>↵</strong> buka</span>
+        <span class="switcher-key-tip"><strong>Esc</strong> keluar</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ KNOWLEDGE INTERCONNECTION MODAL ============ -->
+  <div id="knowledge-modal" class="safe-refine-overlay hidden">
+    <div class="knowledge-modal-card">
+      <div class="safe-refine-header">
+        <div class="safe-refine-title-wrap">
+          <span class="safe-refine-badge flex items-center gap-1">
+            <svg class="svg-icon knowledge-atom-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><circle cx="12" cy="12" r="3"></circle><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(30 12 12)"></ellipse><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(90 12 12)"></ellipse><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(150 12 12)"></ellipse></svg>
+            <span>KNOWLEDGE GRAPH</span>
+          </span>
+          <h3 class="safe-refine-title">Relasi Pengetahuan (Wikilinks & Backlinks)</h3>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="knowledge-badge" id="knowledge-badge">0 LINKS</span>
+          <button class="safe-refine-close-btn" id="btn-close-knowledge-modal" title="Tutup (Esc)">✕</button>
+        </div>
+      </div>
+
+      <div class="knowledge-modal-body">
+        <div class="knowledge-grid">
+          <!-- Linked Mentions / Backlinks -->
+          <div class="knowledge-section">
+            <div class="knowledge-section-header">
+              <div class="flex items-center gap-2">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Linked Mentions (Backlinks)</span>
+              </div>
+              <span class="knowledge-pill" id="backlinks-count">0</span>
+            </div>
+            <div class="knowledge-list" id="backlinks-list">
+              <p class="knowledge-empty">Tidak ada catatan lain yang menautkan catatan ini.</p>
+            </div>
+          </div>
+          <!-- Outbound Links -->
+          <div class="knowledge-section">
+            <div class="knowledge-section-header">
+              <div class="flex items-center gap-2">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                <span>Outbound References (Wikilinks)</span>
+              </div>
+              <span class="knowledge-pill" id="outbound-count">0</span>
+            </div>
+            <div class="knowledge-list" id="outbound-list">
+              <p class="knowledge-empty">Belum ada rujukan. Ketik <code>[[Nama Catatan]]</code> di teks untuk menghubungkan.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="knowledge-modal-footer">
+        <span class="knowledge-hint">💡 Ketik <code>[[Nama Catatan]]</code> di editor untuk menghubungkan pemikiran secara dua arah.</span>
+        <button class="btn btn-secondary btn-sm" id="btn-close-knowledge-footer">Tutup</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ MULTI-NOTE SOURCES SELECTOR MODAL ============ -->
   <div id="sources-modal" class="safe-refine-overlay hidden">
     <div class="sources-modal-card">
       <div class="safe-refine-header">
         <div class="safe-refine-title-wrap">
-          <span class="safe-refine-badge">📚 KNOWLEDGE CONTEXT</span>
+          <span class="safe-refine-badge">KNOWLEDGE CONTEXT</span>
           <h3 class="safe-refine-title">Pilih Catatan Sumber (Multi-Note)</h3>
         </div>
         <button class="safe-refine-close-btn" id="btn-close-sources-modal" title="Tutup">✕</button>
@@ -415,7 +520,8 @@
         <div class="flex items-center gap-2">
           <button class="btn btn-secondary btn-sm" id="btn-cancel-sources">Batal</button>
           <button class="btn btn-primary btn-sm" id="btn-apply-sources">
-            ✅ Terapkan Sumber Konteks
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:0.85rem;height:0.85rem;margin-right:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>Terapkan Sumber Konteks</span>
           </button>
         </div>
       </div>
@@ -428,7 +534,7 @@
       <!-- Header -->
       <div class="safe-refine-header">
         <div class="safe-refine-title-wrap">
-          <span class="safe-refine-badge">✨ SAFE AI REFINE</span>
+          <span class="safe-refine-badge">SAFE AI REFINE</span>
           <h3 class="safe-refine-title">Review & Bandingkan Perubahan AI</h3>
         </div>
         <button class="safe-refine-close-btn" id="btn-close-refine-modal" title="Tutup (Esc)">✕</button>
@@ -437,16 +543,16 @@
       <!-- Controls: Presets & View Modes -->
       <div class="safe-refine-controls">
         <div class="safe-refine-presets">
-          <span class="safe-refine-label">Gaya Refine:</span>
-          <button class="preset-chip active" data-style="structured">📑 Terstruktur</button>
-          <button class="preset-chip" data-style="minutes">📋 Notulensi Rapat</button>
-          <button class="preset-chip" data-style="summary">⚡ Ringkasan Kunci</button>
-          <button class="preset-chip" data-style="grammar">🪄 Rapikan & Grammar</button>
+          <span class="safe-refine-label">GAYA REFINE:</span>
+          <button class="preset-chip active" data-style="structured"><span>📑</span> <span>Terstruktur</span></button>
+          <button class="preset-chip" data-style="minutes"><span>📋</span> <span>Notulensi Rapat</span></button>
+          <button class="preset-chip" data-style="summary"><span>⚡</span> <span>Ringkasan Kunci</span></button>
+          <button class="preset-chip" data-style="grammar"><span>🪄</span> <span>Rapikan & Grammar</span></button>
         </div>
         <div class="safe-refine-view-toggles">
-          <button class="view-chip active" id="btn-view-split" title="Tampilan Berdampingan">⚖️ Side-by-Side</button>
-          <button class="view-chip" id="btn-view-preview" title="Hasil Render Markdown">👁️ Render Preview</button>
-          <button class="view-chip" id="btn-view-raw" title="Teks Markdown Asli">📝 Raw Markdown</button>
+          <button class="view-chip active" id="btn-view-split" title="Tampilan Berdampingan">Side-by-Side</button>
+          <button class="view-chip" id="btn-view-preview" title="Hasil Render Markdown">Render Preview</button>
+          <button class="view-chip" id="btn-view-raw" title="Teks Markdown Asli">Raw Markdown</button>
         </div>
       </div>
 
@@ -455,7 +561,7 @@
         <!-- Original Column -->
         <div class="safe-refine-col" id="refine-col-original">
           <div class="safe-refine-col-header">
-            <span>📄 Teks Asli Saat Ini</span>
+            <span>Teks Asli Saat Ini</span>
             <span class="text-stat" id="refine-stat-original">0 kata</span>
           </div>
           <div class="safe-refine-content" id="refine-original-text"></div>
@@ -464,7 +570,7 @@
         <!-- Refined Column -->
         <div class="safe-refine-col" id="refine-col-result">
           <div class="safe-refine-col-header">
-            <span>✨ Rekomendasi Hasil AI</span>
+            <span>Rekomendasi Hasil AI</span>
             <div class="flex items-center gap-2">
               <span class="text-stat" id="refine-stat-result">0 kata</span>
               <span class="refine-diff-badge" id="refine-diff-badge">+0%</span>
@@ -485,26 +591,39 @@
       <div class="safe-refine-footer">
         <div class="safe-refine-footer-left">
           <button class="btn btn-ghost btn-sm" id="btn-refine-regen" title="Generate ulang dengan preset saat ini">
-            🔄 Regenerate
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.8rem;height:0.8rem;margin-right:4px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            <span>Regenerate</span>
           </button>
-          <span class="safe-refine-tip">💡 Catatan Anda aman & tidak berubah sebelum Anda mengklik "Terapkan Perubahan".</span>
+          <span class="safe-refine-tip">Catatan Anda aman & tidak berubah sebelum Anda mengklik "Terapkan Perubahan".</span>
         </div>
         <div class="safe-refine-footer-right">
-          <button class="btn btn-secondary btn-sm" id="btn-refine-cancel">❌ Batalkan</button>
+          <button class="btn btn-secondary btn-sm" id="btn-refine-cancel">Batalkan</button>
           <button class="btn btn-primary btn-sm" id="btn-refine-apply">
-            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:0.9rem;height:0.9rem;display:inline-block;vertical-align:middle;margin-right:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            Terapkan Perubahan (Accept)
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:0.85rem;height:0.85rem;margin-right:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>Terapkan Perubahan</span>
           </button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- ============ MICRO AI NON-INTRUSIVE FLOATING TRIGGER PILL ============ -->
+  <div id="micro-ai-trigger" class="micro-ai-trigger hidden">
+    <button class="micro-trigger-btn" id="btn-micro-trigger" title="Cortex AI Actions">
+      <span class="micro-reaktor-dot" style="width:6px;height:6px;"></span>
+      <span>Cortex AI</span>
+      <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </button>
+  </div>
+
   <!-- ============ MICRO AI CONTEXTUAL FLOATING MENU (VERTICAL) ============ -->
   <div id="micro-ai-toolbar" class="micro-ai-toolbar hidden">
     <div class="micro-ai-pills">
       <div class="micro-ai-badge">
-        <span>⚛️ Cortex AI</span>
+        <span class="flex items-center gap-2">
+          <span class="micro-reaktor-dot" style="width:5px;height:5px;"></span>
+          <span>CORTEX AI</span>
+        </span>
         <button id="btn-close-micro-toolbar" class="micro-popover-close" style="font-size:0.75rem;padding:0 3px;" title="Tutup">✕</button>
       </div>
       <button class="micro-btn" data-micro="refine" title="Rapihkan potongan teks yang diblok">
@@ -527,40 +646,40 @@
     <!-- Micro AI Result Card / Popover -->
     <div id="micro-ai-popover" class="micro-ai-popover hidden">
       <div class="micro-popover-header">
-        <span id="micro-popover-title" class="micro-popover-title">✨ Hasil Cortex AI</span>
+        <span id="micro-popover-title" class="micro-popover-title">Hasil Cortex AI</span>
         <button id="btn-close-micro-popover" class="micro-popover-close" title="Tutup">✕</button>
       </div>
       <div id="micro-popover-content" class="micro-popover-content"></div>
       <div class="micro-popover-footer">
         <button id="btn-micro-replace" class="btn btn-primary btn-sm" title="Ganti teks yang diblok dengan hasil ini">
-          ✏️ Ganti Teks
+          <span>Ganti Teks</span>
         </button>
         <button id="btn-micro-insert" class="btn btn-secondary btn-sm" title="Sisipkan di bawah teks yang diblok">
-          ➕ Sisipkan di Bawah
+          <span>Sisipkan di Bawah</span>
         </button>
         <button id="btn-micro-copy" class="btn btn-ghost btn-sm" title="Salin ke clipboard">
-          📋 Salin
+          <span>Salin</span>
         </button>
       </div>
     </div>
   </div>
 
   <!-- AI Status overlay -->
-  <div id="ai-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;">
-    <div class="card" style="text-align:center;padding:var(--space-8);min-width:260px;">
-      <div style="font-size:2rem;margin-bottom:var(--space-3);">⚛️</div>
-      <p id="ai-overlay-msg" style="color:var(--text-primary);font-weight:600;">AI sedang bekerja...</p>
+  <div id="ai-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(8px);">
+    <div class="card" style="text-align:center;padding:var(--space-8);min-width:280px;background:rgba(12,16,22,0.98);border:1px solid rgba(255,255,255,0.12);box-shadow:0 20px 50px rgba(0,0,0,0.8);">
+      <div class="nucleus-spinner" style="margin:0 auto var(--space-4) auto;"></div>
+      <p id="ai-overlay-msg" style="color:var(--text-primary);font-weight:600;font-family:var(--font-ui);letter-spacing:-0.01em;">AI sedang bekerja...</p>
     </div>
   </div>
 
   <script src="assets/js/particles.js?v=4.8"></script>
   <script src="assets/js/app.js?v=5.1"></script>
-  <script src="assets/js/notes/notes-api.js?v=5.5"></script>
-  <script src="assets/js/notes/notes-bubbles.js?v=5.5"></script>
-  <script src="assets/js/notes/notes-wikilinks.js?v=5.5"></script>
-  <script src="assets/js/notes/notes-ai.js?v=5.5"></script>
-  <script src="assets/js/notes/notes-editor.js?v=5.5"></script>
-  <script src="assets/js/notes.js?v=5.5"></script>
+  <script src="assets/js/notes/notes-api.js?v=5.6"></script>
+  <script src="assets/js/notes/notes-bubbles.js?v=5.6"></script>
+  <script src="assets/js/notes/notes-wikilinks.js?v=8.4"></script>
+  <script src="assets/js/notes/notes-ai.js?v=8.5"></script>
+  <script src="assets/js/notes/notes-editor.js?v=8.4"></script>
+  <script src="assets/js/notes.js?v=8.2"></script>
   <script src="assets/js/mobile-ui.js"></script>
 </body>
 </html>
