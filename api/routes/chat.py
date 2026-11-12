@@ -16,12 +16,16 @@ async def status_endpoint():
             CREW_AVAILABLE,
             HUGGINGFACE_AVAILABLE,
         )
+        from modules.core.database import get_database, MONGODB_ERROR
+        _db = get_database()
         return {
             "local": "online" if OLLAMA_AVAILABLE else "offline",
             "cloud": "online" if GROQ_AVAILABLE else "offline",
             "crew": "online" if CREW_AVAILABLE else "offline",
             "openrouter": "online" if OPENROUTER_AVAILABLE else "offline",
             "huggingface": "online" if HUGGINGFACE_AVAILABLE else "offline",
+            "mongodb": "online" if _db is not None else "offline",
+            "mongodb_error": MONGODB_ERROR,
         }
     except Exception as e:
         return {

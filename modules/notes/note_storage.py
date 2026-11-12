@@ -68,20 +68,26 @@ def _save_local_db(data: Dict[str, Any]) -> None:
 
 
 # === AUTO-MIGRATION TO MONGODB ===
-if MONGODB_CONNECTED:
-    try:
-        if db["notes"].count_documents({}) == 0:
-            local_data = _load_local_db()
-            local_notes = local_data.get("notes", [])
-            if local_notes:
-                print(f"[INFO] DATABASE: Migrating {len(local_notes)} notes from local JSON to MongoDB...")
-                # Insert notes to MongoDB, removing any _id field from previous insertions
-                for note in local_notes:
-                    note.pop("_id", None)
-                db["notes"].insert_many(local_notes)
-                print("[OK] DATABASE: Migration completed successfully.")
-    except Exception as e:
-        print(f"[WARN] DATABASE: Auto-migration failed: {e}")
+_migration_checked = False
+
+def _ensure_migrated():
+    global _migration_checked
+    if _migration_checked:
+        return
+    _migration_checked = True
+    if MONGODB_CONNECTED:
+        try:
+            if db["notes"].count_documents({}) == 0:
+                local_data = _load_local_db()
+                local_notes = local_data.get("notes", [])
+                if local_notes:
+                    print(f"[INFO] DATABASE: Migrating {len(local_notes)} notes from local JSON to MongoDB...")
+                    for note in local_notes:
+                        note.pop("_id", None)
+                    db["notes"].insert_many(local_notes)
+                    print("[OK] DATABASE: Migration completed successfully.")
+        except Exception as e:
+            print(f"[WARN] DATABASE: Auto-migration failed: {e}")
 
 
 def _build_id_query(note_id: Any) -> Dict[str, Any]:
@@ -182,6 +188,7 @@ def get_note(note_id: Any) -> Optional[Dict[str, Any]]:
 
 def get_all_notes() -> List[Dict[str, Any]]:
     """Get all notes, sorted by updated_at (newest first)."""
+    _ensure_migrated()
     if MONGODB_CONNECTED:
         try:
             cursor = db["notes"].find().sort("updated_at", -1)
