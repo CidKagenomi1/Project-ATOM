@@ -23,6 +23,12 @@ class NotesAIRequest(BaseModel):
     question: str = ""
     style: Optional[str] = "structured"
     micro_type: Optional[str] = "refine"
+    history: List[Dict[str, Any]] = []
+    web_search: bool = False
+    insert_content: str = ""
+    insert_mode: Optional[str] = "contextual"
+    target_heading: Optional[str] = ""
+    source_name: Optional[str] = ""
 
 class NotesAIResponse(BaseModel):
     result: Any
@@ -36,6 +42,12 @@ class NoteUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
     tags: Optional[List[str]] = None
+
+class FileImportRequest(BaseModel):
+    filename: str
+    content: str
+    mime_type: Optional[str] = ""
+    create_note: bool = False
 
 class BubbleCreate(BaseModel):
     text: str

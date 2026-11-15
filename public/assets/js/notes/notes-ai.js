@@ -50,7 +50,7 @@ function openSafeRefineModal() {
   safeRefineOriginalText = content;
   safeRefineResultText   = '';
   currentRefineStyle     = 'structured';
-  currentRefineView      = 'split';
+  currentRefineView      = window.innerWidth <= 768 ? 'preview' : 'split';
 
   const modal      = document.getElementById('safe-refine-modal');
   const origBox    = document.getElementById('refine-original-text');
@@ -76,7 +76,7 @@ function openSafeRefineModal() {
   });
 
   // Reset view buttons
-  updateSafeRefineViewUI('split');
+  updateSafeRefineViewUI(currentRefineView);
 
   if (modal) modal.classList.remove('hidden');
 
@@ -198,6 +198,7 @@ function applySafeRefineChanges() {
   }
 
   triggerAutoSave(true);
+  if (typeof updateEmptyNoteImportBanner === 'function') updateEmptyNoteImportBanner();
   closeSafeRefineModal();
   showToast('Perubahan AI berhasil diterapkan ke catatan! ✨', 'success');
 }
@@ -287,13 +288,76 @@ document.getElementById('btn-metadata')?.addEventListener('click', async () => {
 // ─── Multi-Note Context Note Chat (NotebookLM Style) ─────
 let selectedChatSourceIds = new Set();
 let tempSourcesSelection  = new Set();
+let isCopilotWebSearchEnabled = false;
+let lastNoteInsertSnapshot = null;
+const DEFAULT_COPILOT_PLACEHOLDER = 'Tanyakan analisis, rangkuman, atau benang merah dari catatan ini... (Shift+Enter untuk baris baru)';
+const normId = (id) => (id === null || id === undefined) ? '' : String(id);
 
 function formatCitations(text) {
   if (!text) return '';
-  return text.replace(/\[Sumber:\s*(.*?)\]/gi, (match, docTitle) => {
+  let out = text.replace(/\[Sumber:\s*(.*?)\]/gi, (match, docTitle) => {
     return `<span class="source-citation" title="Dokumen Rujukan">📌 ${escapeHtml(docTitle.trim())}</span>`;
   });
+  out = out.replace(/\[Web:\s*(.*?)\]/gi, (match, srcName) => {
+    return `<span class="web-citation" title="Referensi Web">🌐 ${escapeHtml(srcName.trim())}</span>`;
+  });
+  return out;
 }
+
+function extractNoteHeadings(markdownText) {
+  const headings = [];
+  if (!markdownText) return headings;
+  let inFence = false;
+  for (const line of String(markdownText).split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('```')) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    const m = trimmed.match(/^(#{1,4})\s+(.+?)\s*$/);
+    if (m && m[2]) {
+      headings.push(m[2].trim());
+    }
+  }
+  return headings.slice(0, 12);
+}
+
+window.toggleCopilotWebSearch = function(forceState) {
+  isCopilotWebSearchEnabled = (typeof forceState === 'boolean') ? forceState : !isCopilotWebSearchEnabled;
+  const webBtn = document.getElementById('btn-copilot-web-search');
+  const input  = document.getElementById('note-chat-input');
+
+  if (webBtn) {
+    webBtn.classList.toggle('active', isCopilotWebSearchEnabled);
+    webBtn.setAttribute('aria-pressed', isCopilotWebSearchEnabled ? 'true' : 'false');
+    webBtn.title = isCopilotWebSearchEnabled
+      ? 'Web Search AKTIF — Klik untuk mematikan pencarian internet'
+      : 'Mode Web Search: Cari fakta & referensi terbaru di internet untuk memperkaya catatan';
+  }
+  if (input) {
+    input.placeholder = isCopilotWebSearchEnabled
+      ? '🌐 Web Search Aktif: Ketik topik pencarian atau langsung Enter untuk memperkaya catatan dari internet...'
+      : DEFAULT_COPILOT_PLACEHOLDER;
+  }
+  if (typeof forceState !== 'boolean') {
+    showToast(
+      isCopilotWebSearchEnabled
+        ? '🌐 Web Search Co-Pilot diaktifkan — jawaban akan diperkaya referensi internet terkini!'
+        : 'Web Search Co-Pilot dimatikan',
+      'info'
+    );
+  }
+};
+
+window.runCopilotWebEnrichStarter = function() {
+  window.toggleCopilotWebSearch(true);
+  const input = document.getElementById('note-chat-input');
+  if (input) {
+    input.value = 'Cari referensi web terbaru, fakta aktual, data relevan, dan wawasan tambahan untuk memperkaya catatan ini.';
+  }
+  sendNoteChatMessage();
+};
 
 let isCopilotGenerating = false;
 
@@ -308,9 +372,23 @@ function renderNoteChatMessages() {
           <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.6rem;height:1.6rem;"><circle cx="12" cy="12" r="3"></circle><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(30 12 12)"></ellipse><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(90 12 12)"></ellipse><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(150 12 12)"></ellipse></svg>
         </div>
         <h2 class="copilot-empty-title">Knowledge Co-Pilot Studio</h2>
-        <p class="copilot-empty-desc">Tanyakan wawasan tersembunyi, analisis benang merah, atau minta sintesis menyeluruh dari dokumen catatan Anda.</p>
+        <p class="copilot-empty-desc">Tanyakan wawasan tersembunyi, cari referensi web terbaru, atau sisipkan hasil AI langsung ke bagian catatan yang tepat.</p>
         
         <div class="copilot-starters-grid">
+          <div class="starter-card" onclick="document.getElementById('copilot-file-input')?.click()">
+            <span class="starter-card-icon">📄</span>
+            <div>
+              <div class="starter-card-title">Unggah Dokumen</div>
+              <div class="starter-card-desc">Baca & analisis PDF, Word, Excel, CSV, PPTX, atau Markdown</div>
+            </div>
+          </div>
+          <div class="starter-card" onclick="runCopilotWebEnrichStarter()">
+            <span class="starter-card-icon">🌐</span>
+            <div>
+              <div class="starter-card-title">Perkaya dari Web</div>
+              <div class="starter-card-desc">Cari fakta & referensi terbaru untuk meningkatkan catatan</div>
+            </div>
+          </div>
           <div class="starter-card" onclick="sendStarterPrompt('Buat ringkasan eksekutif komprehensif yang mensintesis seluruh catatan terpilih menjadi satu kesimpulan utuh.')">
             <span class="starter-card-icon">📑</span>
             <div>
@@ -346,6 +424,8 @@ function renderNoteChatMessages() {
   }
 
   const renderer = window.renderMarkdown || marked.parse;
+  const currentHeadings = extractNoteHeadings(document.getElementById('note-textarea')?.value || '');
+
   let html = noteChatHistory.map((m, idx) => {
     if (m.role === 'user') {
       return `
@@ -354,8 +434,34 @@ function renderNoteChatMessages() {
         </div>
       `;
     } else {
-      let rendered = renderer(m.content);
+      let rendered = renderer(m.content || '');
       rendered = formatCitations(rendered);
+
+      const safeWebSources = Array.isArray(m.webSources)
+        ? m.webSources.filter(s => s && /^https?:\/\//i.test(String(s.url || '')))
+        : [];
+      const webSourcesHtml = safeWebSources.length > 0
+        ? `<div class="chat-web-sources">${safeWebSources.slice(0, 6).map(src => `
+            <a class="web-source-chip" href="${escapeHtml(src.url)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(src.title)} (${escapeHtml(src.source || 'Web')})">
+              <span>🌐</span>
+              <span class="web-source-chip-title">${escapeHtml(src.title || src.source || 'Sumber Web')}</span>
+            </a>
+          `).join('')}</div>`
+        : '';
+
+      const headingItemsHtml = currentHeadings.length > 0
+        ? `
+          <div class="smart-insert-menu-divider"></div>
+          <div class="smart-insert-menu-label">Sisipkan ke Bagian Catatan</div>
+          ${currentHeadings.map(h => `
+            <button type="button" class="smart-insert-option" data-heading="${escapeHtml(h)}" onclick="smartInsertFromMenu(event, ${idx}, 'heading')" title="Sisipkan di bawah heading: ${escapeHtml(h)}">
+              <span>📑</span>
+              <span class="smart-insert-option-text">${escapeHtml(h)}</span>
+            </button>
+          `).join('')}
+        `
+        : '';
+
       return `
         <div class="chat-message-item chat-ai">
           <div class="chat-ai-header">
@@ -363,18 +469,41 @@ function renderNoteChatMessages() {
               <span class="chat-ai-avatar">✨</span>
               <span class="chat-ai-name">Cortex Knowledge AI</span>
               <span class="chat-ai-badge">Sintesis Dokumen</span>
+              ${m.webSearch ? '<span class="chat-ai-badge web-badge">🌐 Web Search</span>' : ''}
             </div>
           </div>
           <div class="chat-message-content">${rendered}</div>
+          ${webSourcesHtml}
           <div class="chat-ai-actions">
             <button class="chat-action-btn" onclick="copyCopilotResponse(${idx})" title="Salin jawaban ini">
               <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
               <span>Salin</span>
             </button>
-            <button class="chat-action-btn" onclick="insertCopilotResponseToNote(${idx})" title="Sisipkan jawaban ini ke dalam catatan aktif">
-              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><path d="M12 5v14M19 12l-7 7-7-7"></path></svg>
-              <span>Sisipkan ke Catatan</span>
-            </button>
+            <div class="smart-insert-group">
+              <button type="button" class="chat-action-btn btn-smart-insert" onclick="smartInsertCopilotToNote(${idx}, 'contextual')" title="Sisipkan otomatis ke bagian paling relevan di catatan">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><path d="M12 5v14M19 12l-7 7-7-7"></path></svg>
+                <span>✨ Sisipkan Pintar</span>
+              </button>
+              <button type="button" class="chat-action-btn btn-smart-insert-more" onclick="toggleSmartInsertMenu(event, ${idx})" title="Pilih bagian atau metode penyisipan ke catatan">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:0.7rem;height:0.7rem;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+              <div class="smart-insert-menu hidden" id="smart-insert-menu-${idx}">
+                <div class="smart-insert-menu-label">Metode Penyisipan</div>
+                <button type="button" class="smart-insert-option" onclick="smartInsertFromMenu(event, ${idx}, 'contextual')">
+                  <span>🧠</span>
+                  <span class="smart-insert-option-text">Sisipkan Sesuai Konteks (AI)</span>
+                </button>
+                <button type="button" class="smart-insert-option" onclick="smartInsertFromMenu(event, ${idx}, 'cursor')">
+                  <span>📍</span>
+                  <span class="smart-insert-option-text">Sisipkan di Posisi Kursor</span>
+                </button>
+                <button type="button" class="smart-insert-option" onclick="smartInsertFromMenu(event, ${idx}, 'append')">
+                  <span>➕</span>
+                  <span class="smart-insert-option-text">Tambah Bagian Baru di Akhir</span>
+                </button>
+                ${headingItemsHtml}
+              </div>
+            </div>
           </div>
         </div>
       `;
@@ -382,13 +511,16 @@ function renderNoteChatMessages() {
   }).join('');
 
   if (isCopilotGenerating) {
+    const thinkingLabel = isCopilotWebSearchEnabled
+      ? '🌐 Cortex AI sedang menjelajah web & menyintesis catatan...'
+      : 'Cortex AI sedang menganalisis dokumen...';
     html += `
       <div class="chat-message-item chat-ai" style="padding:14px 18px;width:fit-content;">
         <div class="chat-thinking-bubble">
           <span class="thinking-dot"></span>
           <span class="thinking-dot"></span>
           <span class="thinking-dot"></span>
-          <span class="thinking-text">Cortex AI sedang menganalisis dokumen...</span>
+          <span class="thinking-text">${thinkingLabel}</span>
         </div>
       </div>
     `;
@@ -414,45 +546,171 @@ window.copyCopilotResponse = function(idx) {
   }
 };
 
-window.insertCopilotResponseToNote = async function(idx) {
+function closeAllSmartInsertMenus() {
+  document.querySelectorAll('.smart-insert-menu').forEach(menu => menu.classList.add('hidden'));
+}
+
+window.toggleSmartInsertMenu = function(event, idx) {
+  if (event) event.stopPropagation();
+  const target = document.getElementById(`smart-insert-menu-${idx}`);
+  if (!target) return;
+  const wasHidden = target.classList.contains('hidden');
+  closeAllSmartInsertMenus();
+  if (wasHidden) target.classList.remove('hidden');
+};
+
+window.smartInsertFromMenu = function(event, idx, mode) {
+  if (event) event.stopPropagation();
+  const heading = event?.currentTarget?.dataset?.heading || '';
+  closeAllSmartInsertMenus();
+  window.smartInsertCopilotToNote(idx, mode, heading);
+};
+
+function cleanCopilotTextClient(text) {
+  if (!text) return '';
+  const lines = String(text).trim().split(/\r?\n/);
+  const leadRe = /^(tentu|baiklah|baik|siap|oke|berikut(?:\s+adalah)?|berdasarkan\s+(?:catatan|dokumen|pencarian)|hasil\s+(?:analisis|pencarian))\b/i;
+  const endRe  = /^(semoga\s+(?:membantu|bermanfaat)|apakah\s+(?:anda|kamu)\s+(?:ingin|mau)|jika\s+(?:anda|kamu)\s+(?:ingin|membutuhkan)|silakan\s+(?:beri\s+tahu|tanyakan))\b/i;
+
+  while (lines.length && !/^[#\-*>|`\[]/.test(lines[0].trim()) && lines[0].trim().length < 160 && leadRe.test(lines[0].trim())) {
+    lines.shift();
+  }
+  while (lines.length && !/^[#\-*>|`\[]/.test(lines[lines.length - 1].trim()) && lines[lines.length - 1].trim().length < 180 && endRe.test(lines[lines.length - 1].trim())) {
+    lines.pop();
+  }
+  return lines.join('\n').replace(/\s*\[Sumber:\s*[^\]]+\]/gi, '').trim() || String(text).trim();
+}
+
+window.undoLastCopilotInsert = function() {
+  if (!lastNoteInsertSnapshot || lastNoteInsertSnapshot.noteId !== normId(currentNoteId)) {
+    lastNoteInsertSnapshot = null;
+    document.getElementById('btn-undo-note-insert')?.classList.add('hidden');
+    showToast('Tidak ada riwayat sisipan pada catatan ini untuk diurungkan', 'info');
+    return;
+  }
+  const textarea = document.getElementById('note-textarea');
+  if (textarea) {
+    textarea.value = lastNoteInsertSnapshot.previousContent;
+    if (typeof renderMarkdownView === 'function') renderMarkdownView(textarea.value);
+    if (typeof rebuildScrollAnchors === 'function') rebuildScrollAnchors();
+    triggerAutoSave(true);
+  }
+  lastNoteInsertSnapshot = null;
+  document.getElementById('btn-undo-note-insert')?.classList.add('hidden');
+  showToast('Sisipan terakhir berhasil diurungkan ↩️', 'info');
+};
+
+window.smartInsertCopilotToNote = async function(idx, mode = 'contextual', targetHeading = '') {
+  closeAllSmartInsertMenus();
   const item = noteChatHistory[idx];
   if (!item || !item.content || !currentNoteId) {
     showToast('Tidak ada catatan aktif untuk disisipkan', 'warning');
     return;
   }
   const textarea = document.getElementById('note-textarea');
-  if (textarea) {
-    const currentVal = textarea.value || '';
-    const addition = `\n\n---\n### 💡 Ringkasan Co-Pilot\n${item.content}\n`;
-    textarea.value = currentVal.trim() + addition;
+  if (!textarea) return;
+
+  const currentVal = textarea.value || '';
+  const prevSnapshot = {
+    noteId: normId(currentNoteId),
+    previousContent: currentVal,
+  };
+
+  if (mode === 'cursor') {
+    const cleaned = cleanCopilotTextClient(item.content);
+    const start = typeof textarea.selectionStart === 'number' ? textarea.selectionStart : currentVal.length;
+    const end   = typeof textarea.selectionEnd === 'number' ? textarea.selectionEnd : currentVal.length;
+    const before = currentVal.slice(0, start);
+    const after  = currentVal.slice(end);
+    const prefix = before && !before.endsWith('\n\n') ? (before.endsWith('\n') ? '\n' : '\n\n') : '';
+    const suffix = after && !after.startsWith('\n\n') ? (after.startsWith('\n') ? '\n' : '\n\n') : '';
+
+    lastNoteInsertSnapshot = prevSnapshot;
+    document.getElementById('btn-undo-note-insert')?.classList.remove('hidden');
+
+    textarea.value = `${before}${prefix}${cleaned}${suffix}${after}`;
+    if (typeof renderMarkdownView === 'function') renderMarkdownView(textarea.value);
+    if (typeof rebuildScrollAnchors === 'function') rebuildScrollAnchors();
     triggerAutoSave(true);
-    showToast('Jawaban Co-Pilot berhasil disisipkan ke catatan! 📥', 'success');
+    showToast('Konten disisipkan tepat di posisi kursor! 📍 (Klik "↩️ Urungkan" jika ingin batal)', 'success');
+    return;
+  }
+
+  const overlayMsg = mode === 'contextual'
+    ? '🧠 Menganalisis struktur catatan & menyisipkan sesuai konteks...'
+    : (mode === 'heading' ? `📑 Menyisipkan ke bagian "${targetHeading}"...` : '➕ Menambahkan bagian baru ke catatan...');
+  showAIOverlay(overlayMsg);
+
+  try {
+    const res = await callNotesAI('smart_insert', {
+      content: currentVal,
+      insert_content: item.content,
+      insert_mode: mode,
+      target_heading: targetHeading || ''
+    });
+
+    if (res && typeof res === 'object' && res.merged_content) {
+      lastNoteInsertSnapshot = prevSnapshot;
+      document.getElementById('btn-undo-note-insert')?.classList.remove('hidden');
+
+      textarea.value = res.merged_content;
+      if (typeof renderMarkdownView === 'function') renderMarkdownView(textarea.value);
+      if (typeof rebuildScrollAnchors === 'function') rebuildScrollAnchors();
+      triggerAutoSave(true);
+
+      const summary = res.placement_summary || 'Berhasil disisipkan secara kontekstual';
+      showToast(`✨ ${summary}! (Klik "↩️ Urungkan" di atas jika ingin batal)`, 'success');
+    } else {
+      throw new Error('Respons smart_insert tidak valid');
+    }
+  } catch (e) {
+    console.error('[SMART INSERT ERROR]', e);
+    showToast(`Gagal menyisipkan pintar (${e.message}), gunakan mode kursor atau coba lagi`, 'error');
+  } finally {
+    hideAIOverlay();
   }
 };
 
+window.insertCopilotResponseToNote = function(idx) {
+  return window.smartInsertCopilotToNote(idx, 'contextual');
+};
+
 function renderChatSourcesUI() {
+  const undoBtn = document.getElementById('btn-undo-note-insert');
+  if (undoBtn) {
+    undoBtn.classList.toggle('hidden', !lastNoteInsertSnapshot || lastNoteInsertSnapshot.noteId !== normId(currentNoteId));
+  }
+
   if (selectedChatSourceIds.size === 0 && currentNoteId) {
-    selectedChatSourceIds.add(currentNoteId);
+    selectedChatSourceIds.add(normId(currentNoteId));
   }
 
   const summaryEl = document.getElementById('chat-sources-summary');
   const pillsContainer = document.getElementById('chat-sources-pills');
   if (!summaryEl) return;
 
-  const selectedNotes = allNotesCache.filter(n => selectedChatSourceIds.has(n.id));
+  const selectedNotes = allNotesCache.filter(n => selectedChatSourceIds.has(normId(n.id)));
   let totalWords = 0;
   selectedNotes.forEach(n => {
-    const text = (n.id === currentNoteId)
+    const isCurrent = normId(n.id) === normId(currentNoteId);
+    const text = isCurrent
       ? (document.getElementById('note-textarea')?.value || n.content || '')
       : (n.content || '');
     totalWords += countWords(text);
   });
 
   const count = selectedNotes.length;
-  if (count === 0) {
+  if (count === 0 && currentNoteId) {
+    const activeTitle = document.getElementById('note-title-input')?.value?.trim() || 'Catatan Aktif';
+    const activeWords = countWords(document.getElementById('note-textarea')?.value || '');
+    const shortTitle = activeTitle.length > 22 ? activeTitle.substring(0, 20) + '...' : activeTitle;
+    summaryEl.textContent = `${shortTitle} (~${activeWords} kata)`;
+  } else if (count === 0) {
     summaryEl.textContent = `0 Catatan (Pilih Konteks)`;
   } else if (count === 1) {
-    const noteTitle = selectedNotes[0]?.title || 'Catatan Aktif';
+    const onlyNote = selectedNotes[0];
+    const isCurrent = normId(onlyNote?.id) === normId(currentNoteId);
+    const noteTitle = (isCurrent ? document.getElementById('note-title-input')?.value?.trim() : '') || onlyNote?.title || 'Catatan Aktif';
     const shortTitle = noteTitle.length > 22 ? noteTitle.substring(0, 20) + '...' : noteTitle;
     summaryEl.textContent = `${shortTitle} (~${totalWords} kata)`;
   } else {
@@ -460,18 +718,34 @@ function renderChatSourcesUI() {
   }
 
   if (pillsContainer) {
+    if (selectedNotes.length === 0 && currentNoteId) {
+      const activeTitle = document.getElementById('note-title-input')?.value?.trim() || 'Catatan Aktif';
+      pillsContainer.innerHTML = `
+        <span class="source-pill" title="${escapeHtml(activeTitle)}">
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;color:var(--gold-primary);flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          <span>${escapeHtml(activeTitle)}</span>
+        </span>
+      `;
+      return;
+    }
+
     if (selectedNotes.length === 0) {
       pillsContainer.innerHTML = `<span style="font-size:0.72rem;color:#ef4444;">⚠️ Belum ada catatan yang dipilih sebagai sumber.</span>`;
       return;
     }
 
-    pillsContainer.innerHTML = selectedNotes.map(n => `
-      <span class="source-pill" title="${escapeHtml(n.title)}">
-        <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;color:var(--gold-primary);flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-        <span>${escapeHtml(n.title || 'Untitled')}</span>
-        ${selectedNotes.length > 1 ? `<span class="source-pill-remove" onclick="removeChatSource(${n.id})" title="Hapus dari konteks">✕</span>` : ''}
-      </span>
-    `).join('');
+    pillsContainer.innerHTML = selectedNotes.map(n => {
+      const nid = normId(n.id);
+      const isCurrent = nid === normId(currentNoteId);
+      const title = (isCurrent ? document.getElementById('note-title-input')?.value?.trim() : '') || n.title || 'Untitled';
+      return `
+        <span class="source-pill" title="${escapeHtml(title)}">
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;color:var(--gold-primary);flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          <span>${escapeHtml(title)}</span>
+          ${selectedNotes.length > 1 ? `<span class="source-pill-remove" onclick="removeChatSource('${escapeHtml(nid)}')" title="Hapus dari konteks">✕</span>` : ''}
+        </span>
+      `;
+    }).join('');
   }
 }
 
@@ -480,14 +754,15 @@ window.removeChatSource = function(id) {
     showToast('Minimal harus ada 1 catatan sebagai sumber konteks', 'warning');
     return;
   }
+  selectedChatSourceIds.delete(normId(id));
   selectedChatSourceIds.delete(id);
   renderChatSourcesUI();
 };
 
 function openSourcesModal() {
-  tempSourcesSelection = new Set(selectedChatSourceIds);
+  tempSourcesSelection = new Set(Array.from(selectedChatSourceIds, normId));
   if (tempSourcesSelection.size === 0 && currentNoteId) {
-    tempSourcesSelection.add(currentNoteId);
+    tempSourcesSelection.add(normId(currentNoteId));
   }
   renderSourcesModalList();
   const modal = document.getElementById('sources-modal');
@@ -515,8 +790,10 @@ function renderSourcesModalList(searchQuery = '') {
 
   let totalWords = 0;
   allNotesCache.forEach(n => {
-    if (tempSourcesSelection.has(n.id)) {
-      totalWords += countWords(n.content || '');
+    if (tempSourcesSelection.has(normId(n.id))) {
+      const isCurrent = normId(n.id) === normId(currentNoteId);
+      const txt = isCurrent ? (document.getElementById('note-textarea')?.value || n.content || '') : (n.content || '');
+      totalWords += countWords(txt);
     }
   });
 
@@ -529,14 +806,16 @@ function renderSourcesModalList(searchQuery = '') {
   }
 
   listEl.innerHTML = filtered.map(n => {
-    const isSelected = tempSourcesSelection.has(n.id);
+    const nid = normId(n.id);
+    const isSelected = tempSourcesSelection.has(nid);
+    const isCurrent = nid === normId(currentNoteId);
     const words = countWords(n.content || '');
     return `
-      <div class="source-item-row ${isSelected ? 'selected' : ''}" onclick="toggleSourceSelection(${n.id})">
+      <div class="source-item-row ${isSelected ? 'selected' : ''}" onclick="toggleSourceSelection('${escapeHtml(nid)}')">
         <div class="source-item-left">
-          <input type="checkbox" class="source-item-checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleSourceSelection(${n.id});">
+          <input type="checkbox" class="source-item-checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleSourceSelection('${escapeHtml(nid)}');">
           <div class="source-item-info">
-            <span class="source-item-title">${escapeHtml(n.title || 'Untitled')} ${n.id === currentNoteId ? '<span style="font-size:0.65rem;color:var(--gold-light);font-weight:700;">(AKTIF)</span>' : ''}</span>
+            <span class="source-item-title">${escapeHtml(n.title || 'Untitled')} ${isCurrent ? '<span style="font-size:0.65rem;color:var(--gold-light);font-weight:700;">(AKTIF)</span>' : ''}</span>
             <span class="source-item-preview">${escapeHtml((n.content || '').slice(0, 90).replace(/\n/g, ' ') || 'Catatan kosong...')}</span>
           </div>
         </div>
@@ -550,61 +829,233 @@ function renderSourcesModalList(searchQuery = '') {
 }
 
 window.toggleSourceSelection = function(id) {
-  if (tempSourcesSelection.has(id)) {
+  const key = normId(id);
+  if (tempSourcesSelection.has(key)) {
     if (tempSourcesSelection.size <= 1) {
       showToast('Pilih minimal 1 catatan sebagai konteks', 'warning');
       return;
     }
-    tempSourcesSelection.delete(id);
+    tempSourcesSelection.delete(key);
   } else {
-    tempSourcesSelection.add(id);
+    tempSourcesSelection.add(key);
   }
   const searchInput = document.getElementById('sources-search-input');
   renderSourcesModalList(searchInput?.value || '');
 };
 
-async function sendNoteChatMessage() {
-  const input = document.getElementById('note-chat-input');
-  const question = input?.value.trim();
-  if (!question || isCopilotGenerating) return;
+// ─── Co-Pilot Document Attachments ─────────────────────────
+let pendingCopilotAttachments = [];
+const sessionCopilotDocs = new Map();
 
-  if (selectedChatSourceIds.size === 0 && currentNoteId) {
-    selectedChatSourceIds.add(currentNoteId);
-  }
+function renderCopilotAttachedFiles() {
+  const container = document.getElementById('copilot-attached-files');
+  if (!container) return;
 
-  // Build combined context across all selected notes
-  let combinedContext = '';
-  const selectedNotes = allNotesCache.filter(n => selectedChatSourceIds.has(n.id));
-
-  for (const n of selectedNotes) {
-    const content = (n.id === currentNoteId)
-      ? (document.getElementById('note-textarea')?.value || n.content || '')
-      : (n.content || '');
-    combinedContext += `=== DOKUMEN: [${n.title || 'Untitled'}] ===\n${content}\n\n`;
-  }
-
-  if (!combinedContext.trim()) {
-    showToast('Catatan sumber kosong, tidak ada bahan untuk ditanyakan', 'warning');
+  if (pendingCopilotAttachments.length === 0) {
+    container.innerHTML = '';
+    container.classList.add('hidden');
     return;
   }
 
-  input.value = '';
-  input.style.height = 'auto'; // reset textarea height
-  noteChatHistory.push({ role: 'user', content: question });
+  container.classList.remove('hidden');
+  container.innerHTML = pendingCopilotAttachments.map((att, idx) => {
+    const metaLabel = att.wordCount
+      ? `${att.wordCount.toLocaleString('id-ID')} kata`
+      : escapeHtml((att.ext || 'file').toUpperCase());
+    return `
+      <div class="copilot-file-chip" title="${escapeHtml(att.name)}">
+        <span class="copilot-file-chip-name">📄 ${escapeHtml(att.name)}</span>
+        <span class="copilot-file-chip-meta">${metaLabel}</span>
+        <button type="button" class="copilot-file-analyze-btn" onclick="analyzeCopilotAttachment(${idx})" title="Analisis dokumen ini sekarang">Analisis</button>
+        <button type="button" class="copilot-file-remove-btn" onclick="removeCopilotAttachment(${idx})" title="Hapus lampiran">✕</button>
+      </div>
+    `;
+  }).join('');
+}
+
+window.removeCopilotAttachment = function(idx) {
+  if (idx >= 0 && idx < pendingCopilotAttachments.length) {
+    pendingCopilotAttachments.splice(idx, 1);
+    renderCopilotAttachedFiles();
+  }
+};
+
+window.analyzeCopilotAttachment = function(idx) {
+  if (isCopilotGenerating || !pendingCopilotAttachments[idx]) return;
+  const att = pendingCopilotAttachments[idx];
+  const input = document.getElementById('note-chat-input');
+  if (input && !input.value.trim()) {
+    input.value = `Analisis dokumen "${att.name}" secara komprehensif: berikan ringkasan eksekutif, poin-poin utama, data penting, dan kesimpulan.`;
+  }
+  sendNoteChatMessage();
+};
+
+async function handleCopilotFileUpload(fileList) {
+  const files = Array.from(fileList || []).filter(Boolean);
+  if (files.length === 0) return;
+
+  if (!window.ATOM_AttachmentManager || typeof window.ATOM_AttachmentManager.parseFile !== 'function') {
+    showToast('Modul pembaca dokumen belum siap', 'error');
+    return;
+  }
+
+  showAIOverlay(`📄 Menguraikan ${files.length} dokumen untuk Co-Pilot...`);
+  let added = 0;
+  let lastParsed = null;
+
+  try {
+    for (const file of files) {
+      try {
+        const parsed = await window.ATOM_AttachmentManager.parseFile(file, { silent: true });
+        if (!parsed) continue;
+        const existingIdx = pendingCopilotAttachments.findIndex(a => a.name === parsed.name);
+        if (existingIdx >= 0) {
+          pendingCopilotAttachments[existingIdx] = parsed;
+        } else {
+          pendingCopilotAttachments.push(parsed);
+        }
+        sessionCopilotDocs.set(parsed.name, parsed);
+        lastParsed = parsed;
+        added++;
+      } catch (err) {
+        console.error(`[COPILOT UPLOAD ERROR] ${file.name}:`, err);
+        showToast(`Gagal membaca ${file.name}: ${err.message}`, 'error');
+      }
+    }
+  } finally {
+    hideAIOverlay();
+  }
+
+  if (added > 0) {
+    renderCopilotAttachedFiles();
+    const msg = added === 1 && lastParsed
+      ? `Dokumen "${lastParsed.name}" dilampirkan! Klik "Analisis" atau ketik pertanyaan.`
+      : `${added} dokumen dilampirkan ke Co-Pilot! Klik "Analisis" atau kirim pertanyaan.`;
+    showToast(msg, 'success');
+    document.getElementById('note-chat-input')?.focus();
+  }
+}
+
+async function sendNoteChatMessage() {
+  const input = document.getElementById('note-chat-input');
+  let question = input?.value.trim() || '';
+  if (!question && pendingCopilotAttachments.length > 0) {
+    const names = pendingCopilotAttachments.map(a => a.name).join(', ');
+    question = `Analisis dokumen yang baru diunggah (${names}) secara komprehensif: berikan ringkasan eksekutif, poin-poin utama, data penting, dan kesimpulan.`;
+  } else if (!question && isCopilotWebSearchEnabled) {
+    question = 'Cari referensi web terbaru, fakta aktual, data statistik, dan wawasan tambahan untuk memperkaya serta melengkapi catatan ini.';
+  }
+  if (!question || isCopilotGenerating) return;
+
+  if (selectedChatSourceIds.size === 0 && currentNoteId) {
+    selectedChatSourceIds.add(normId(currentNoteId));
+  }
+
+  // Register newly attached files in session context & capture names
+  const newlyAttachedNames = [];
+  for (const att of pendingCopilotAttachments) {
+    if (att && att.name) {
+      sessionCopilotDocs.set(att.name, att);
+      newlyAttachedNames.push(att.name);
+    }
+  }
+
+  // Build combined context across all selected notes (including live active edits)
+  let combinedContext = '';
+  const selectedNotes = allNotesCache.filter(n => selectedChatSourceIds.has(normId(n.id)));
+
+  for (const n of selectedNotes) {
+    const isCurrent = normId(n.id) === normId(currentNoteId);
+    const title = isCurrent
+      ? (document.getElementById('note-title-input')?.value?.trim() || n.title || 'Untitled')
+      : (n.title || 'Untitled');
+    const rawContent = isCurrent
+      ? (document.getElementById('note-textarea')?.value ?? n.content ?? '')
+      : (n.content || '');
+    const contentText = rawContent.trim()
+      ? rawContent
+      : '(Catatan ini masih kosong / belum memiliki isi teks)';
+    combinedContext += `=== DOKUMEN: [${title}] ===\n${contentText}\n\n`;
+  }
+
+  for (const doc of sessionCopilotDocs.values()) {
+    const docBody = doc.content || doc.markdown || '';
+    if (docBody.trim()) {
+      combinedContext += `=== DOKUMEN UNGGAHAN: [${doc.name}] ===\n${docBody}\n\n`;
+    }
+  }
+
+  if (!combinedContext.trim()) {
+    const fallbackTitle = document.getElementById('note-title-input')?.value?.trim() || 'Catatan Aktif';
+    const fallbackBody = document.getElementById('note-textarea')?.value || '';
+    const fallbackText = fallbackBody.trim()
+      ? fallbackBody
+      : '(Catatan ini masih kosong / belum memiliki isi teks)';
+    combinedContext = `=== DOKUMEN: [${fallbackTitle}] ===\n${fallbackText}\n\n`;
+  }
+
+  // Capture prior conversation turns before appending the current prompt
+  const priorHistory = noteChatHistory
+    .filter(m => m && m.content && !String(m.content).startsWith('[ERROR]'))
+    .slice(-8)
+    .map(m => ({ role: m.role, content: m.content }));
+
+  const useWebSearch = Boolean(isCopilotWebSearchEnabled);
+  if (input) {
+    input.value = '';
+    input.style.height = 'auto'; // reset textarea height
+  }
+  pendingCopilotAttachments = [];
+  renderCopilotAttachedFiles();
+
+  const prefixes = [];
+  if (newlyAttachedNames.length > 0) prefixes.push(`📎 ${newlyAttachedNames.join(', ')}`);
+  if (useWebSearch) prefixes.push('🌐 Web Search');
+  const userDisplayText = prefixes.length > 0
+    ? `[${prefixes.join(' · ')}] ${question}`
+    : question;
+  noteChatHistory.push({ role: 'user', content: userDisplayText });
   
   isCopilotGenerating = true;
   renderNoteChatMessages();
 
   try {
-    const result = await callNotesAI('chat', { content: combinedContext, question });
-    noteChatHistory.push({ role: 'assistant', content: result || 'Tidak ada respons dari AI.' });
+    const result = await callNotesAI('chat', {
+      content: combinedContext,
+      question,
+      history: priorHistory,
+      web_search: useWebSearch
+    });
+    if (typeof result === 'string' && result.startsWith('[ERROR]')) {
+      const errDetail = result.replace(/^\[ERROR\]\s*/i, '');
+      showToast(`Co-Pilot AI gagal membalas: ${errDetail}`, 'error');
+      noteChatHistory.push({ role: 'assistant', content: `⚠️ **Kendala AI:** ${errDetail}` });
+    } else if (result && typeof result === 'object') {
+      const answerText = result.answer || '';
+      if (answerText.startsWith('[ERROR]')) {
+        const errDetail = answerText.replace(/^\[ERROR\]\s*/i, '');
+        showToast(`Co-Pilot AI gagal membalas: ${errDetail}`, 'error');
+        noteChatHistory.push({ role: 'assistant', content: `⚠️ **Kendala AI:** ${errDetail}` });
+      } else {
+        noteChatHistory.push({
+          role: 'assistant',
+          content: answerText || 'Tidak ada respons dari AI.',
+          webSources: Array.isArray(result.web_sources) ? result.web_sources : [],
+          webSearch: useWebSearch,
+          searchQuery: result.search_query || ''
+        });
+      }
+    } else {
+      noteChatHistory.push({ role: 'assistant', content: result || 'Tidak ada respons dari AI.' });
+    }
   } catch (e) {
-    noteChatHistory.push({ role: 'assistant', content: `[ERROR] Gagal mendapatkan jawaban dari Cortex AI: ${e.message}` });
+    showToast(`Gagal menghubungi Co-Pilot AI: ${e.message}`, 'error');
+    noteChatHistory.push({ role: 'assistant', content: `⚠️ **Gagal mendapatkan jawaban dari Cortex AI:** ${e.message}` });
   } finally {
     isCopilotGenerating = false;
     renderNoteChatMessages();
     setTimeout(() => {
-      input.focus();
+      input?.focus();
     }, 50);
   }
 }
@@ -629,13 +1080,13 @@ document.getElementById('btn-close-sources-modal')?.addEventListener('click', cl
 document.getElementById('btn-cancel-sources')?.addEventListener('click', closeSourcesModal);
 
 document.getElementById('btn-sources-select-all')?.addEventListener('click', () => {
-  allNotesCache.forEach(n => tempSourcesSelection.add(n.id));
+  allNotesCache.forEach(n => tempSourcesSelection.add(normId(n.id)));
   renderSourcesModalList(document.getElementById('sources-search-input')?.value || '');
 });
 
 document.getElementById('btn-sources-active-only')?.addEventListener('click', () => {
   tempSourcesSelection.clear();
-  if (currentNoteId) tempSourcesSelection.add(currentNoteId);
+  if (currentNoteId) tempSourcesSelection.add(normId(currentNoteId));
   renderSourcesModalList(document.getElementById('sources-search-input')?.value || '');
 });
 
@@ -656,11 +1107,77 @@ document.getElementById('btn-apply-sources')?.addEventListener('click', () => {
 
 document.getElementById('btn-note-chat-send')?.addEventListener('click', sendNoteChatMessage);
 
+document.getElementById('btn-copilot-web-search')?.addEventListener('click', () => {
+  window.toggleCopilotWebSearch();
+});
+
+document.getElementById('btn-undo-note-insert')?.addEventListener('click', () => {
+  window.undoLastCopilotInsert();
+});
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.smart-insert-group')) {
+    closeAllSmartInsertMenus();
+  }
+});
+
 document.getElementById('btn-clear-note-chat')?.addEventListener('click', () => {
   noteChatHistory = [];
+  sessionCopilotDocs.clear();
+  pendingCopilotAttachments = [];
+  renderCopilotAttachedFiles();
   renderNoteChatMessages();
   showToast('Riwayat Co-Pilot dibersihkan', 'info');
 });
+
+// Co-Pilot Upload Button & Drag-and-Drop
+const copilotAttachBtn = document.getElementById('btn-copilot-attach');
+const copilotFileInput = document.getElementById('copilot-file-input');
+const noteChatContent  = document.getElementById('note-chat-content');
+
+copilotAttachBtn?.addEventListener('click', () => {
+  if (copilotFileInput) {
+    copilotFileInput.value = '';
+    copilotFileInput.click();
+  }
+});
+
+copilotFileInput?.addEventListener('change', async (e) => {
+  const files = e.target.files;
+  if (files && files.length > 0) {
+    await handleCopilotFileUpload(files);
+  }
+  e.target.value = '';
+});
+
+if (noteChatContent) {
+  const hasFileDrag = (e) => {
+    const types = e.dataTransfer?.types;
+    return types && Array.from(types).includes('Files');
+  };
+  noteChatContent.addEventListener('dragover', (e) => {
+    if (!hasFileDrag(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    noteChatContent.classList.add('notes-drop-active');
+  });
+  noteChatContent.addEventListener('dragleave', (e) => {
+    if (e.relatedTarget && noteChatContent.contains(e.relatedTarget)) return;
+    noteChatContent.classList.remove('notes-drop-active');
+  });
+  noteChatContent.addEventListener('drop', async (e) => {
+    noteChatContent.classList.remove('notes-drop-active');
+    if (!hasFileDrag(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      await handleCopilotFileUpload(files);
+    }
+  });
+}
+
+renderCopilotAttachedFiles();
 
 // ─── API Call Helper ──────────────────────────────────────
 async function callNotesAI(action, params) {
@@ -676,6 +1193,7 @@ async function callNotesAI(action, params) {
   const data = await resp.json();
   return data.result;
 }
+window.callNotesAI = callNotesAI;
 
 // ─── AI Overlay ───────────────────────────────────────────
 function showAIOverlay(msg = 'AI sedang bekerja...') {
@@ -684,11 +1202,13 @@ function showAIOverlay(msg = 'AI sedang bekerja...') {
   if (el) el.style.display = 'flex';
   if (msgEl) msgEl.textContent = msg;
 }
+window.showAIOverlay = showAIOverlay;
 
 function hideAIOverlay() {
   const el = document.getElementById('ai-overlay');
   if (el) el.style.display = 'none';
 }
+window.hideAIOverlay = hideAIOverlay;
 
 
 
@@ -705,6 +1225,7 @@ document.addEventListener('mouseup', (e) => {
 });
 
 function clampToolbarToViewport() {
+  if (window.innerWidth <= 768) return;
   const toolbar = document.getElementById('micro-ai-toolbar');
   if (!toolbar || toolbar.classList.contains('hidden')) return;
 
@@ -881,6 +1402,12 @@ if (noteTextarea) {
   noteTextarea.addEventListener('mouseup', () => {
     setTimeout(checkTextareaSelection, 20);
   });
+  noteTextarea.addEventListener('touchend', (e) => {
+    if (e.changedTouches && e.changedTouches[0]) {
+      lastMouseUpPos = { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+    }
+    setTimeout(checkTextareaSelection, 60);
+  }, { passive: true });
   noteTextarea.addEventListener('keyup', (e) => {
     if (['Shift', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
       setTimeout(checkTextareaSelection, 20);
@@ -897,6 +1424,9 @@ if (noteViewContent) {
   noteViewContent.addEventListener('mouseup', () => {
     setTimeout(checkViewSelection, 20);
   });
+  noteViewContent.addEventListener('touchend', () => {
+    setTimeout(checkViewSelection, 60);
+  }, { passive: true });
 }
 
 // Click outside dismissal: any click outside toolbar and trigger dismisses them immediately

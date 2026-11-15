@@ -162,8 +162,11 @@ async function openNote(id, targetMode = null, existingNoteObj = null) {
     return;
   }
 
-  currentNoteId = id;
+  currentNoteId = note.id;
   noteChatHistory = [];
+  if (typeof selectedChatSourceIds !== 'undefined') {
+    selectedChatSourceIds = new Set([String(note.id)]);
+  }
 
   // Populate editor fields
   const titleInput = document.getElementById('note-title-input');
@@ -190,10 +193,13 @@ async function openNote(id, targetMode = null, existingNoteObj = null) {
     docView.classList.remove('hidden');
   }
 
-  // Determine mode: if note is empty, open in edit mode for immediate typing!
+  // Determine mode: if note is empty, open in edit mode for immediate typing or importing!
   const hasContent = Boolean(note.content && note.content.trim().length > 0);
   const mode = targetMode || (hasContent ? 'view' : 'edit');
   setNoteMode(mode);
+  if (typeof updateEmptyNoteImportBanner === 'function') {
+    updateEmptyNoteImportBanner();
+  }
 
   setSaveStatus('Tersimpan ✓', 'var(--text-muted)');
 
@@ -232,10 +238,14 @@ function renderMarkdownView(content) {
   if (!viewEl) return;
   if (!content || !content.trim()) {
     viewEl.innerHTML = `
-      <div style="padding:var(--space-8);text-align:center;color:var(--text-muted);border:1px dashed rgba(255,255,255,0.08);border-radius:var(--radius-lg);cursor:pointer;background:rgba(255,255,255,0.015);transition:all 0.2s;" onmouseenter="this.style.borderColor='rgba(255,255,255,0.2)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.08)'" onclick="setNoteMode('edit')" title="Klik untuk mulai menulis">
-        <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:2rem;height:2rem;margin-bottom:8px;color:var(--text-muted);opacity:0.6;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path></svg>
+      <div class="empty-view-placeholder" style="padding:var(--space-8);text-align:center;color:var(--text-muted);border:1px dashed rgba(255,255,255,0.1);border-radius:var(--radius-lg);background:rgba(255,255,255,0.015);">
+        <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:2rem;height:2rem;margin-bottom:8px;color:var(--text-muted);opacity:0.65;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path></svg>
         <p style="font-size:0.95rem;font-weight:600;margin-bottom:4px;color:var(--text-primary);letter-spacing:-0.01em;">Catatan ini masih kosong</p>
-        <p style="font-size:0.78rem;color:var(--text-muted);">Klik di sini atau beralih ke mode <strong>Edit</strong> untuk mulai menulis dalam Markdown.</p>
+        <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:14px;">Mulai menulis manual atau import dokumen / tulisan agar AI langsung menyusun catatan belajar panjang.</p>
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-primary btn-sm" onclick="openStudyImportModal(true)">⚡ Import Materi / Tulisan</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setNoteMode('edit')">✏️ Tulis Manual</button>
+        </div>
       </div>`;
     if (typeof rebuildScrollAnchors === 'function') rebuildScrollAnchors();
     return;
@@ -313,7 +323,7 @@ window.setNoteMode = function(mode) {
     if (editContent) editContent.style.display = 'flex';
     if (viewContent) viewContent.style.display = 'block';
     if (noteBody) {
-      noteBody.classList.remove('mode-view', 'mode-edit');
+      noteBody.classList.remove('mode-view', 'mode-edit', 'mode-chat');
       noteBody.classList.add('mode-split');
     }
     // Rebuild anchors and align initial scroll position accurately
@@ -326,9 +336,9 @@ window.setNoteMode = function(mode) {
   } else if (mode === 'edit') {
     if (chatContent) chatContent.style.display = 'none';
     if (viewContent) viewContent.style.display = 'none';
-    if (editContent) editContent.style.display = 'block';
+    if (editContent) editContent.style.display = 'flex';
     if (noteBody) {
-      noteBody.classList.remove('mode-view', 'mode-split');
+      noteBody.classList.remove('mode-view', 'mode-split', 'mode-chat');
       noteBody.classList.add('mode-edit');
     }
     // Auto-focus textarea when entering edit mode
@@ -340,9 +350,13 @@ window.setNoteMode = function(mode) {
     if (editContent) editContent.style.display = 'none';
     if (viewContent) viewContent.style.display = 'block';
     if (noteBody) {
-      noteBody.classList.remove('mode-edit', 'mode-split');
+      noteBody.classList.remove('mode-edit', 'mode-split', 'mode-chat');
       noteBody.classList.add('mode-view');
     }
+  }
+
+  if (typeof updateEmptyNoteImportBanner === 'function') {
+    updateEmptyNoteImportBanner();
   }
 };
 
@@ -410,6 +424,9 @@ let splitRenderDebounce = null;
 document.getElementById('note-title-input')?.addEventListener('input', () => triggerAutoSave());
 document.getElementById('note-textarea')?.addEventListener('input', () => {
   triggerAutoSave();
+  if (typeof updateEmptyNoteImportBanner === 'function') {
+    updateEmptyNoteImportBanner();
+  }
   if (currentNoteMode === 'split') {
     clearTimeout(splitRenderDebounce);
     splitRenderDebounce = setTimeout(() => {
@@ -443,7 +460,7 @@ window.confirmDeleteNote = async function(e, id) {
 
   const success = await deleteNote(id);
   if (success) {
-    if (currentNoteId === id) {
+    if (String(currentNoteId) === String(id)) {
       await closeDocumentView();
     } else {
       await renderNotesGallery(document.getElementById('notes-search')?.value || '', currentActiveTag);
@@ -643,6 +660,11 @@ window.addEventListener('keydown', (e) => {
 
   // Escape: Close modals or return to Gallery if inside Document View
   if (e.key === 'Escape') {
+    const studyModal = document.getElementById('study-import-modal');
+    if (studyModal && !studyModal.classList.contains('hidden')) {
+      closeStudyImportModal();
+      return;
+    }
     const qsModal = document.getElementById('quick-switcher-modal');
     if (qsModal && !qsModal.classList.contains('hidden')) {
       closeQuickSwitcher();
@@ -887,23 +909,684 @@ function setupSplitSyncScroll() {
   }, { passive: true });
 
   window.addEventListener('resize', () => {
+    const isMobile = window.innerWidth <= 768;
     if (currentNoteMode === 'split') {
-      rebuildScrollAnchors();
+      if (isMobile) {
+        setNoteMode('edit');
+      } else {
+        rebuildScrollAnchors();
+      }
     } else if (currentNoteMode === 'chat') {
       const viewContent = document.getElementById('note-view-content');
+      const tagsBar = document.getElementById('tags-bar');
       if (viewContent) {
-        viewContent.style.display = (window.innerWidth <= 768) ? 'none' : 'block';
+        viewContent.style.display = isMobile ? 'none' : 'block';
+      }
+      if (tagsBar) {
+        tagsBar.style.display = isMobile ? 'none' : 'flex';
       }
     }
   });
 }
 
-// Initialize synchronized scrolling
+// ─── Mobile Markdown Quick-Format Bar ──────────────────────
+const LINE_PREFIX_MAP = {
+  h1: '# ',
+  h2: '## ',
+  ul: '- ',
+  task: '- [ ] ',
+  quote: '> '
+};
+
+const INLINE_WRAP_MAP = {
+  bold: ['**', '**'],
+  italic: ['*', '*']
+};
+
+function applyMarkdownFormat(type) {
+  const ta = document.getElementById('note-textarea');
+  if (!ta) return;
+
+  const start = ta.selectionStart;
+  const end = ta.selectionEnd;
+  const val = ta.value;
+  const selected = val.substring(start, end);
+
+  if (LINE_PREFIX_MAP[type]) {
+    const prefix = LINE_PREFIX_MAP[type];
+    const lineStart = val.lastIndexOf('\n', start - 1) + 1;
+    if (selected.includes('\n') && (type === 'ul' || type === 'task' || type === 'quote')) {
+      const lineEnd = val.indexOf('\n', end);
+      const blockEnd = lineEnd === -1 ? val.length : lineEnd;
+      const block = val.substring(lineStart, blockEnd);
+      const prefixed = block
+        .split('\n')
+        .map(line => (line.startsWith(prefix) ? line : prefix + line))
+        .join('\n');
+      ta.value = val.substring(0, lineStart) + prefixed + val.substring(blockEnd);
+      ta.selectionStart = lineStart;
+      ta.selectionEnd = lineStart + prefixed.length;
+    } else {
+      ta.value = val.substring(0, lineStart) + prefix + val.substring(lineStart);
+      ta.selectionStart = start + prefix.length;
+      ta.selectionEnd = end + prefix.length;
+    }
+  } else if (INLINE_WRAP_MAP[type]) {
+    const [open, close] = INLINE_WRAP_MAP[type];
+    const wrapped = open + selected + close;
+    ta.value = val.substring(0, start) + wrapped + val.substring(end);
+    if (selected) {
+      ta.selectionStart = start + open.length;
+      ta.selectionEnd = end + open.length;
+    } else {
+      ta.selectionStart = ta.selectionEnd = start + open.length;
+    }
+  } else if (type === 'code') {
+    if (selected.includes('\n')) {
+      const wrapped = '```\n' + selected + '\n```';
+      ta.value = val.substring(0, start) + wrapped + val.substring(end);
+      ta.selectionStart = start + 4;
+      ta.selectionEnd = start + 4 + selected.length;
+    } else {
+      const wrapped = '`' + selected + '`';
+      ta.value = val.substring(0, start) + wrapped + val.substring(end);
+      if (selected) {
+        ta.selectionStart = start + 1;
+        ta.selectionEnd = end + 1;
+      } else {
+        ta.selectionStart = ta.selectionEnd = start + 1;
+      }
+    }
+  } else if (type === 'wikilink') {
+    if (selected) {
+      const wrapped = `[[${selected}]]`;
+      ta.value = val.substring(0, start) + wrapped + val.substring(end);
+      ta.selectionStart = ta.selectionEnd = start + wrapped.length;
+    } else {
+      ta.value = val.substring(0, start) + '[[]]' + val.substring(end);
+      ta.selectionStart = ta.selectionEnd = start + 2;
+      if (typeof checkWikilinkAutocomplete === 'function') {
+        checkWikilinkAutocomplete();
+      }
+    }
+  }
+
+  ta.focus();
+  triggerAutoSave();
+}
+
+function setupMobileMarkdownToolbar() {
+  const toolbar = document.getElementById('mobile-md-toolbar');
+  if (!toolbar) return;
+
+  toolbar.querySelectorAll('.md-tool-btn').forEach(btn => {
+    btn.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+    });
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (!btn.dataset.md) return;
+      applyMarkdownFormat(btn.dataset.md);
+    });
+  });
+}
+
+// ─── Document Import & In-Note Study Architect Support ─────
+let studyModalFiles = [];
+let currentStudyStyle = 'comprehensive';
+
+function mergeTagsIntoNoteEditor(newTags = []) {
+  const tagsInput = document.getElementById('tags-input');
+  const existing = (tagsInput?.value || '')
+    .split(',')
+    .map(t => t.trim().toLowerCase())
+    .filter(Boolean);
+  const merged = [...existing];
+  for (const tag of (newTags || [])) {
+    const clean = String(tag || '').trim().toLowerCase();
+    if (clean && !merged.includes(clean)) {
+      merged.push(clean);
+    }
+  }
+  if (tagsInput) tagsInput.value = merged.join(', ');
+  if (typeof renderTagsDisplay === 'function') renderTagsDisplay(merged);
+  return merged;
+}
+
+window.updateEmptyNoteImportBanner = function() {
+  const card = document.getElementById('empty-note-import-card');
+  const ta = document.getElementById('note-textarea');
+  if (!card || !ta) return;
+  const isEmpty = !ta.value || !ta.value.trim();
+  card.classList.toggle('hidden', !isEmpty);
+};
+
+async function applyImportedStudyContentToEditor({
+  rawText,
+  markdownBlocks = [],
+  sourceName = '',
+  style = 'comprehensive',
+  useStudyAI = true,
+  append = false,
+  fallbackTitle = '',
+  fallbackTags = ['imported'],
+}) {
+  const ta = document.getElementById('note-textarea');
+  const titleInput = document.getElementById('note-title-input');
+  if (!ta) return false;
+
+  const trimmedRaw = (rawText || '').trim();
+  if (!trimmedRaw && markdownBlocks.length === 0) {
+    if (typeof showToast === 'function') showToast('Materi yang diimpor masih kosong', 'warning');
+    return false;
+  }
+
+  let finalMarkdown = '';
+  let suggestedTitle = (fallbackTitle || '').trim();
+  let suggestedTags = Array.isArray(fallbackTags) ? [...fallbackTags] : ['imported'];
+
+  if (useStudyAI && style !== 'raw' && typeof window.callNotesAI === 'function') {
+    if (typeof window.showAIOverlay === 'function') {
+      window.showAIOverlay('🧠 Menyusun catatan panjang & terstruktur untuk belajar cepat...');
+    }
+    try {
+      const res = await window.callNotesAI('study_note', {
+        content: trimmedRaw,
+        source_name: sourceName,
+        style: style || 'comprehensive',
+      });
+      if (res && typeof res === 'object' && res.study_markdown) {
+        finalMarkdown = String(res.study_markdown).trim();
+        if (res.title) suggestedTitle = String(res.title).trim();
+        if (Array.isArray(res.tags) && res.tags.length > 0) {
+          suggestedTags = [...new Set([...res.tags, ...suggestedTags])];
+        }
+      } else if (typeof res === 'string' && res.trim()) {
+        finalMarkdown = res.trim();
+      }
+    } catch (err) {
+      console.error('[STUDY NOTE AI ERROR]', err);
+      if (typeof showToast === 'function') {
+        showToast(`Mode AI terlewati (${err.message}); menyisipkan teks asli`, 'warning');
+      }
+      finalMarkdown = markdownBlocks.length ? markdownBlocks.join('\n\n---\n\n') : trimmedRaw;
+    } finally {
+      if (typeof window.hideAIOverlay === 'function') window.hideAIOverlay();
+    }
+  } else {
+    finalMarkdown = markdownBlocks.length ? markdownBlocks.join('\n\n---\n\n') : trimmedRaw;
+  }
+
+  if (!finalMarkdown.trim()) {
+    finalMarkdown = trimmedRaw;
+  }
+
+  const existing = ta.value || '';
+  if (append && existing.trim()) {
+    ta.value = `${existing.trimEnd()}\n\n---\n\n${finalMarkdown.trim()}\n`;
+  } else {
+    ta.value = `${finalMarkdown.trim()}\n`;
+  }
+
+  const currentTitle = (titleInput?.value || '').trim();
+  if (
+    titleInput &&
+    suggestedTitle &&
+    (!currentTitle || currentTitle === 'Catatan Baru' || currentTitle === 'Untitled Note')
+  ) {
+    titleInput.value = suggestedTitle.slice(0, 80);
+  }
+
+  mergeTagsIntoNoteEditor(suggestedTags);
+  renderMarkdownView(ta.value);
+  if (typeof updateEmptyNoteImportBanner === 'function') updateEmptyNoteImportBanner();
+  if (typeof rebuildScrollAnchors === 'function') rebuildScrollAnchors();
+
+  if (typeof setNoteMode === 'function') {
+    setNoteMode('view');
+  }
+
+  triggerAutoSave(true);
+  if (typeof renderChatSourcesUI === 'function') {
+    renderChatSourcesUI();
+  }
+
+  return true;
+}
+
+window.insertFilesIntoCurrentNote = async function(
+  fileList,
+  options = { useStudyAI: true, style: 'comprehensive', append: false }
+) {
+  const files = Array.from(fileList || []).filter(Boolean);
+  if (files.length === 0) return false;
+
+  if (!currentNoteId) {
+    try {
+      const note = await createNote('Catatan Baru', '', []);
+      if (!Array.isArray(allNotesCache)) allNotesCache = [];
+      allNotesCache.unshift(note);
+      await openNote(note.id, 'edit', note);
+    } catch (err) {
+      if (typeof showToast === 'function') showToast('Gagal membuat catatan baru: ' + err.message, 'error');
+      return false;
+    }
+  }
+
+  if (!window.ATOM_AttachmentManager || typeof window.ATOM_AttachmentManager.parseFile !== 'function') {
+    if (typeof showToast === 'function') showToast('Modul pembaca dokumen belum siap', 'error');
+    return false;
+  }
+
+  const ta = document.getElementById('note-textarea');
+  if (!ta) return false;
+
+  if (typeof window.showAIOverlay === 'function') {
+    window.showAIOverlay(`📥 Menguraikan ${files.length} dokumen...`);
+  }
+
+  const rawParts = [];
+  const markdownBlocks = [];
+  const parsedNames = [];
+  let firstTitle = '';
+  let collectedTags = ['imported'];
+
+  try {
+    for (const file of files) {
+      try {
+        const parsed = await window.ATOM_AttachmentManager.parseFile(file, { silent: true });
+        if (!parsed) continue;
+
+        const block = parsed.markdown || parsed.content || '';
+        const textBody = parsed.content || parsed.markdown || '';
+        if (textBody.trim()) {
+          rawParts.push(files.length > 1 ? `[SUMBER FILE: ${parsed.name || file.name}]\n${textBody}` : textBody);
+        }
+        if (block.trim()) {
+          markdownBlocks.push(block);
+        }
+        parsedNames.push(parsed.name || file.name);
+        if (!firstTitle && parsed.title) firstTitle = parsed.title;
+        if (Array.isArray(parsed.tags)) {
+          collectedTags.push(...parsed.tags);
+        }
+      } catch (err) {
+        console.error(`[INSERT FILE ERROR] ${file.name}:`, err);
+        if (typeof showToast === 'function') showToast(`Gagal menguraikan ${file.name}: ${err.message}`, 'error');
+      }
+    }
+  } finally {
+    if (typeof window.hideAIOverlay === 'function') window.hideAIOverlay();
+  }
+
+  if (rawParts.length === 0 && markdownBlocks.length === 0) {
+    return false;
+  }
+
+  const useStudyAI = options?.useStudyAI !== false;
+  const shouldAppend = Boolean(options?.append) && Boolean(ta.value && ta.value.trim());
+  const ok = await applyImportedStudyContentToEditor({
+    rawText: rawParts.join('\n\n---\n\n'),
+    markdownBlocks,
+    sourceName: parsedNames.join(', '),
+    style: options?.style || 'comprehensive',
+    useStudyAI,
+    append: shouldAppend,
+    fallbackTitle: firstTitle,
+    fallbackTags: collectedTags,
+  });
+
+  if (ok && typeof showToast === 'function') {
+    const label = parsedNames.length === 1 ? `"${parsedNames[0]}"` : `${parsedNames.length} dokumen`;
+    showToast(
+      useStudyAI
+        ? `Catatan belajar panjang dari ${label} siap dipelajari! ⚡📚`
+        : `Teks asli ${label} berhasil disisipkan ke catatan! 📄`,
+      'success'
+    );
+  }
+  return ok;
+};
+
+function updateStudyImportWordCount() {
+  const ta = document.getElementById('study-import-textarea');
+  const countEl = document.getElementById('study-import-word-count');
+  if (!ta || !countEl) return;
+  const words = (ta.value || '').trim().split(/\s+/).filter(Boolean).length;
+  countEl.textContent = `${words.toLocaleString('id-ID')} kata`;
+}
+
+function renderStudyModalFiles() {
+  const listEl = document.getElementById('study-file-list');
+  if (!listEl) return;
+  if (!studyModalFiles || studyModalFiles.length === 0) {
+    listEl.innerHTML = '';
+    listEl.classList.add('hidden');
+    return;
+  }
+  listEl.classList.remove('hidden');
+  listEl.innerHTML = studyModalFiles.map((file, idx) => {
+    const sizeKb = Math.max(1, Math.round((file.size || 0) / 1024));
+    return `
+      <span class="copilot-file-chip">
+        <span>📄</span>
+        <span class="copilot-file-chip-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
+        <span class="copilot-file-chip-meta">${sizeKb} KB</span>
+        <button type="button" class="copilot-file-remove-btn" onclick="removeStudyModalFile(${idx})" title="Hapus file">✕</button>
+      </span>
+    `;
+  }).join('');
+}
+
+window.removeStudyModalFile = function(idx) {
+  studyModalFiles.splice(idx, 1);
+  renderStudyModalFiles();
+};
+
+function addStudyModalFiles(fileList) {
+  const incoming = Array.from(fileList || []).filter(Boolean);
+  for (const file of incoming) {
+    const exists = studyModalFiles.some(f => f.name === file.name && f.size === file.size);
+    if (!exists) studyModalFiles.push(file);
+  }
+  renderStudyModalFiles();
+}
+
+window.openStudyImportModal = function(focusPaste = false) {
+  const modal = document.getElementById('study-import-modal');
+  const textarea = document.getElementById('study-import-textarea');
+  const placementRow = document.getElementById('study-placement-row');
+  const noteTextarea = document.getElementById('note-textarea');
+  if (!modal) return;
+
+  studyModalFiles = [];
+  renderStudyModalFiles();
+  if (textarea) textarea.value = '';
+  updateStudyImportWordCount();
+
+  const hasExistingContent = Boolean(noteTextarea && noteTextarea.value.trim());
+  if (placementRow) {
+    placementRow.classList.toggle('hidden', !hasExistingContent);
+    const defaultVal = hasExistingContent ? 'append' : 'replace';
+    const radio = placementRow.querySelector(`input[name="study-placement"][value="${defaultVal}"]`);
+    if (radio) radio.checked = true;
+  }
+
+  modal.classList.remove('hidden');
+  if (focusPaste && textarea) {
+    setTimeout(() => textarea.focus(), 40);
+  }
+};
+
+window.closeStudyImportModal = function() {
+  const modal = document.getElementById('study-import-modal');
+  if (modal) modal.classList.add('hidden');
+  studyModalFiles = [];
+  renderStudyModalFiles();
+};
+
+window.runStudyImportFromModal = async function() {
+  const modalTextarea = document.getElementById('study-import-textarea');
+  const runBtn = document.getElementById('btn-run-study-import');
+  const pastedText = (modalTextarea?.value || '').trim();
+  const hasFiles = studyModalFiles.length > 0;
+
+  if (!pastedText && !hasFiles) {
+    if (typeof showToast === 'function') {
+      showToast('Unggah dokumen atau tempel tulisan terlebih dahulu', 'warning');
+    }
+    return;
+  }
+
+  if (!currentNoteId) {
+    try {
+      const note = await createNote('Catatan Baru', '', []);
+      if (!Array.isArray(allNotesCache)) allNotesCache = [];
+      allNotesCache.unshift(note);
+      await openNote(note.id, 'edit', note);
+    } catch (err) {
+      if (typeof showToast === 'function') showToast('Gagal membuat catatan baru: ' + err.message, 'error');
+      return;
+    }
+  }
+
+  const noteTextarea = document.getElementById('note-textarea');
+  const noteHasContent = Boolean(noteTextarea && noteTextarea.value.trim());
+  const selectedPlacement = document.querySelector('input[name="study-placement"]:checked')?.value || 'replace';
+  const append = noteHasContent && selectedPlacement === 'append';
+  const style = currentStudyStyle || 'comprehensive';
+  const useStudyAI = style !== 'raw';
+
+  if (runBtn) runBtn.disabled = true;
+  const rawParts = [];
+  const markdownBlocks = [];
+  const sourceNames = [];
+  let firstTitle = '';
+  const collectedTags = ['imported'];
+
+  try {
+    if (hasFiles && window.ATOM_AttachmentManager?.parseFile) {
+      if (typeof window.showAIOverlay === 'function') {
+        window.showAIOverlay(`📥 Menguraikan ${studyModalFiles.length} dokumen...`);
+      }
+      for (const file of studyModalFiles) {
+        try {
+          const parsed = await window.ATOM_AttachmentManager.parseFile(file, { silent: true });
+          if (!parsed) continue;
+          const bodyText = parsed.content || parsed.markdown || '';
+          const mdBlock = parsed.markdown || parsed.content || '';
+          if (bodyText.trim()) rawParts.push(bodyText);
+          if (mdBlock.trim()) markdownBlocks.push(mdBlock);
+          sourceNames.push(parsed.name || file.name);
+          if (!firstTitle && parsed.title) firstTitle = parsed.title;
+          if (Array.isArray(parsed.tags)) collectedTags.push(...parsed.tags);
+        } catch (err) {
+          console.error(`[STUDY MODAL PARSE ERROR] ${file.name}:`, err);
+          if (typeof showToast === 'function') showToast(`Gagal menguraikan ${file.name}: ${err.message}`, 'error');
+        }
+      }
+    }
+
+    if (pastedText) {
+      rawParts.push(pastedText);
+      markdownBlocks.push(pastedText);
+      if (!firstTitle) {
+        const firstLine = pastedText.split('\n').find(l => l.trim()) || '';
+        firstTitle = firstLine.replace(/^#+\s*/, '').trim().slice(0, 70);
+      }
+    }
+
+    if (rawParts.length === 0 && markdownBlocks.length === 0) {
+      if (typeof window.hideAIOverlay === 'function') window.hideAIOverlay();
+      return;
+    }
+
+    closeStudyImportModal();
+    const ok = await applyImportedStudyContentToEditor({
+      rawText: rawParts.join('\n\n---\n\n'),
+      markdownBlocks,
+      sourceName: sourceNames.join(', ') || 'Tulisan Impor',
+      style,
+      useStudyAI,
+      append,
+      fallbackTitle: firstTitle,
+      fallbackTags: collectedTags,
+    });
+
+    if (ok && typeof showToast === 'function') {
+      showToast(
+        useStudyAI
+          ? 'Catatan belajar panjang berhasil dibuat dari materi impor! ⚡📚'
+          : 'Tulisan/materi berhasil dimasukkan ke catatan! 📄',
+        'success'
+      );
+    }
+  } finally {
+    if (runBtn) runBtn.disabled = false;
+    if (typeof window.hideAIOverlay === 'function') window.hideAIOverlay();
+  }
+};
+
+function bindFileDropZone(element, onFilesDropped) {
+  if (!element || element.dataset.dropBound === '1') return;
+  element.dataset.dropBound = '1';
+
+  const hasFiles = (e) => {
+    const types = e.dataTransfer?.types;
+    return types && Array.from(types).includes('Files');
+  };
+
+  element.addEventListener('dragover', (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    element.classList.add('notes-drop-active');
+  });
+
+  element.addEventListener('dragleave', (e) => {
+    if (e.relatedTarget && element.contains(e.relatedTarget)) return;
+    element.classList.remove('notes-drop-active');
+  });
+
+  element.addEventListener('drop', async (e) => {
+    element.classList.remove('notes-drop-active');
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      await onFilesDropped(files);
+    }
+  });
+}
+
+function setupDocumentImportBindings() {
+  const btnOpenStudyModal  = document.getElementById('btn-open-study-import');
+  const btnInsertNote      = document.getElementById('btn-import-into-note');
+  const btnMobileInsert    = document.getElementById('btn-mobile-import-file');
+  const btnEmptyUploadAI   = document.getElementById('btn-empty-upload-study');
+  const btnEmptyPasteAI    = document.getElementById('btn-empty-paste-study');
+  const btnEmptyUploadRaw  = document.getElementById('btn-empty-upload-raw');
+
+  const insertInput        = document.getElementById('note-insert-file-input');
+  const rawInput           = document.getElementById('note-raw-file-input');
+  const modalFileInput     = document.getElementById('study-modal-file-input');
+
+  const btnCloseStudy      = document.getElementById('btn-close-study-import');
+  const btnCancelStudy     = document.getElementById('btn-cancel-study-import');
+  const btnRunStudy        = document.getElementById('btn-run-study-import');
+  const btnPickStudyFile   = document.getElementById('btn-study-pick-file');
+  const studyTextarea      = document.getElementById('study-import-textarea');
+  const studyModal         = document.getElementById('study-import-modal');
+
+  btnOpenStudyModal?.addEventListener('click', () => openStudyImportModal(true));
+  btnInsertNote?.addEventListener('click', () => openStudyImportModal(true));
+  btnMobileInsert?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    openStudyImportModal(true);
+  });
+
+  btnEmptyUploadAI?.addEventListener('click', () => {
+    if (insertInput) {
+      insertInput.value = '';
+      insertInput.click();
+    }
+  });
+
+  btnEmptyPasteAI?.addEventListener('click', () => {
+    openStudyImportModal(true);
+  });
+
+  btnEmptyUploadRaw?.addEventListener('click', () => {
+    if (rawInput) {
+      rawInput.value = '';
+      rawInput.click();
+    }
+  });
+
+  insertInput?.addEventListener('change', async (e) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      await window.insertFilesIntoCurrentNote(files, {
+        useStudyAI: true,
+        style: 'comprehensive',
+        append: false,
+      });
+    }
+    e.target.value = '';
+  });
+
+  rawInput?.addEventListener('change', async (e) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const ta = document.getElementById('note-textarea');
+      await window.insertFilesIntoCurrentNote(files, {
+        useStudyAI: false,
+        append: Boolean(ta && ta.value.trim()),
+      });
+    }
+    e.target.value = '';
+  });
+
+  btnCloseStudy?.addEventListener('click', closeStudyImportModal);
+  btnCancelStudy?.addEventListener('click', closeStudyImportModal);
+  studyModal?.addEventListener('click', (e) => {
+    if (e.target === studyModal) closeStudyImportModal();
+  });
+
+  btnPickStudyFile?.addEventListener('click', () => {
+    if (modalFileInput) {
+      modalFileInput.value = '';
+      modalFileInput.click();
+    }
+  });
+
+  modalFileInput?.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      addStudyModalFiles(e.target.files);
+    }
+    e.target.value = '';
+  });
+
+  studyTextarea?.addEventListener('input', updateStudyImportWordCount);
+
+  document.querySelectorAll('#study-style-presets .preset-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#study-style-presets .preset-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentStudyStyle = btn.dataset.studyStyle || 'comprehensive';
+    });
+  });
+
+  btnRunStudy?.addEventListener('click', runStudyImportFromModal);
+
+  bindFileDropZone(document.getElementById('study-dropzone'), (files) => {
+    addStudyModalFiles(files);
+  });
+
+  const handleInNoteDrop = (files) => {
+    const ta = document.getElementById('note-textarea');
+    return window.insertFilesIntoCurrentNote(files, {
+      useStudyAI: true,
+      style: 'comprehensive',
+      append: Boolean(ta && ta.value.trim()),
+    });
+  };
+  bindFileDropZone(document.getElementById('note-edit-content'), handleInNoteDrop);
+  bindFileDropZone(document.getElementById('note-view-content'), handleInNoteDrop);
+}
+
+// Initialize synchronized scrolling, mobile formatting bar & document import
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     setupSplitSyncScroll();
+    setupMobileMarkdownToolbar();
+    setupDocumentImportBindings();
   });
 } else {
   setupSplitSyncScroll();
+  setupMobileMarkdownToolbar();
+  setupDocumentImportBindings();
 }
 

@@ -430,8 +430,15 @@ function renderMessage(role, content, thinking = [], model = '', personaBadge = 
   }
 
   // Model & Persona badges
-  const modelBadge = (!isUser && model)
+  const isWebGrounded = !isUser && Array.isArray(thinking) && thinking.some(s => s && String(s.step || '').includes('WEB SEARCH'));
+  const webBadge = isWebGrounded
+    ? `<span class="model-badge web-grounded-badge" style="color:#7dd3fc;border-color:rgba(56,189,248,0.32);background:rgba(56,189,248,0.1);" title="Jawaban diperkaya dengan hasil pencarian web real-time">🌐 Web Search</span>`
+    : '';
+  const modelBadgeRaw = (!isUser && model)
     ? `<span class="model-badge ${model.toLowerCase().includes('groq') ? 'groq' : 'openrouter'}">${escapeHtml(model)}</span>`
+    : '';
+  const modelBadge = (modelBadgeRaw || webBadge)
+    ? `<div style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;">${modelBadgeRaw}${webBadge}</div>`
     : '';
 
   const personaTag = (!isUser && personaBadge && personaBadge !== 'ATOM Standard')

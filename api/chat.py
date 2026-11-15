@@ -462,7 +462,25 @@ class handler(BaseHTTPRequestHandler):
         model_preference = data.get("model_preference", "auto")
         thinking.append({"step": "[AI]", "detail": f"Cloud mode aktif (Preference: {model_preference.upper()})"})
 
-        messages = build_messages(SYSTEM_PROMPT, history, prompt)
+        # Automatic Live Web Search Grounding for general questions
+        web_grounding_block = ""
+        try:
+            from modules.notes.web_search import build_chat_web_grounding
+            web_res = build_chat_web_grounding(
+                prompt,
+                context_text="",
+                has_images=bool(image_files),
+                max_results=6,
+            )
+            if web_res.get("block"):
+                web_grounding_block = web_res["block"]
+                if web_res.get("step"):
+                    thinking.append(web_res["step"])
+        except Exception as we:
+            print(f"[WARN] Serverless chat web search skipped: {we}")
+
+        effective_system_prompt = f"{SYSTEM_PROMPT}{web_grounding_block}"
+        messages = build_messages(effective_system_prompt, history, prompt)
         response_text, model_name = call_ai(messages, model_preference, image_files)
 
         # Extract Deep Reasoning / Chain of Thought tokens

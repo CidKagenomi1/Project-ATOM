@@ -53,11 +53,31 @@ HUGGINGFACE_AVAILABLE = bool(os.getenv("HUGGINGFACE_API_KEY") or os.getenv("HF_T
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 # pyrefly: ignore [missing-import]
-from langchain_groq import ChatGroq
+try:
+    from langchain_groq import ChatGroq
+except ImportError:
+    ChatGroq = None
 # pyrefly: ignore [missing-import]
-from langchain_google_genai import ChatGoogleGenerativeAI
+try:
+    from langchain_google_genai import ChatGoogleGenerativeAI
+except ImportError:
+    ChatGoogleGenerativeAI = None
 # pyrefly: ignore [missing-import]
-from langchain_core.messages import HumanMessage, SystemMessage
+try:
+    from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+except ImportError:
+    class _BaseMsg:
+        def __init__(self, content=""):
+            self.content = content
+
+    class SystemMessage(_BaseMsg):
+        pass
+
+    class HumanMessage(_BaseMsg):
+        pass
+
+    class AIMessage(_BaseMsg):
+        pass
 
 # Import CrewAI (optional)
 CREW_AVAILABLE = False
@@ -207,15 +227,18 @@ class ATOMCortex:
         self.groq_brain = None
         self.groq_model_name = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
         if GROQ_AVAILABLE:
-            try:
-                self.groq_brain = ChatGroq(
-                    model=self.groq_model_name,
-                    api_key=os.getenv("GROQ_API_KEY"),
-                    temperature=0.7
-                )
-                print(f"[OK] CLOUD: Groq {self.groq_model_name}")
-            except Exception as e:
-                print(f"[WARN] Groq init failed: {e}")
+            if ChatGroq is not None:
+                try:
+                    self.groq_brain = ChatGroq(
+                        model=self.groq_model_name,
+                        api_key=os.getenv("GROQ_API_KEY"),
+                        temperature=0.7
+                    )
+                    print(f"[OK] CLOUD: Groq {self.groq_model_name}")
+                except Exception as e:
+                    print(f"[WARN] Groq init failed: {e}")
+            else:
+                print(f"[OK] CLOUD: Groq REST ({self.groq_model_name})")
 
         
         # OTAK CLOUD: FIREWORKS
@@ -237,16 +260,19 @@ class ATOMCortex:
         # OTAK CADANGAN: GEMINI (Last Resort)
         self.gemini_brain = None
         if GEMINI_AVAILABLE:
-            try:
-                gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-                self.gemini_brain = ChatGoogleGenerativeAI(
-                    model=gemini_model,
-                    google_api_key=os.getenv("GOOGLE_API_KEY"),
-                    temperature=0.7
-                )
-                print(f"[OK] FALLBACK: Gemini model loaded ({gemini_model})")
-            except Exception as e:
-                print(f"[WARN] Gemini failed: {e}")
+            gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+            if ChatGoogleGenerativeAI is not None:
+                try:
+                    self.gemini_brain = ChatGoogleGenerativeAI(
+                        model=gemini_model,
+                        google_api_key=os.getenv("GOOGLE_API_KEY"),
+                        temperature=0.7
+                    )
+                    print(f"[OK] FALLBACK: Gemini model loaded ({gemini_model})")
+                except Exception as e:
+                    print(f"[WARN] Gemini failed: {e}")
+            else:
+                print(f"[OK] FALLBACK: Gemini REST ({gemini_model})")
         
         print(f"[ATOM] All systems ready. Timeout: {LOCAL_TIMEOUT_SECONDS}s")
     
@@ -295,12 +321,13 @@ class ATOMCortex:
             data=data,
             headers={
                 "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "User-Agent": "ATOM-Cortex/4.0"
             },
             method="POST"
         )
         
-        with urllib.request.urlopen(req, timeout=15) as response:
+        with urllib.request.urlopen(req, timeout=30) as response:
             res = json.loads(response.read().decode("utf-8"))
             msg = res.get("choices", [{}])[0].get("message", {})
             content = msg.get("content") or ""
@@ -308,6 +335,49 @@ class ATOMCortex:
             if reasoning and "<think>" not in content:
                 content = f"<think>\n{reasoning}\n</think>\n{content}"
             return content
+
+    def _call_gemini_rest(self, messages):
+        import urllib.request
+        import json
+        import ssl
+
+        api_key = os.getenv("GOOGLE_API_KEY")
+        gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        system_parts = []
+        contents = []
+        for msg in messages:
+            cls_name = msg.__class__.__name__
+            raw_c = msg.content
+            text = next((item.get("text", "") for item in raw_c if isinstance(item, dict) and item.get("type") == "text"), "") if isinstance(raw_c, list) else str(raw_c)
+            if not text:
+                continue
+            if cls_name == "SystemMessage":
+                system_parts.append(text)
+            else:
+                role = "model" if cls_name == "AIMessage" else "user"
+                contents.append({"role": role, "parts": [{"text": text}]})
+
+        if not contents:
+            contents = [{"role": "user", "parts": [{"text": "\n\n".join(system_parts)}]}]
+            system_parts = []
+
+        payload = {"contents": contents, "generationConfig": {"temperature": 0.7}}
+        if system_parts:
+            payload["systemInstruction"] = {"parts": [{"text": "\n\n".join(system_parts)}]}
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent?key={api_key}"
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json", "User-Agent": "ATOM-Cortex/4.0"},
+            method="POST"
+        )
+        ctx = ssl._create_unverified_context()
+        with urllib.request.urlopen(req, context=ctx, timeout=30) as response:
+            res = json.loads(response.read().decode("utf-8"))
+            candidates = res.get("candidates", [])
+            parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
+            return "".join(p.get("text", "") for p in parts if isinstance(p, dict))
     
     def _invoke_local(self, messages):
         """Call local Ollama model (blocking)."""
@@ -334,8 +404,6 @@ class ATOMCortex:
             pref_model = parts[1]
 
         def get_text_messages(msgs):
-            # pyrefly: ignore [missing-import]
-            from langchain_core.messages import HumanMessage
             text_msgs = []
             for m in msgs:
                 if m.__class__.__name__ == "HumanMessage" and isinstance(m.content, list):
@@ -351,7 +419,7 @@ class ATOMCortex:
                 candidate_models = []
                 if model_override:
                     candidate_models.append(model_override)
-                candidate_models.extend([self.groq_model_name, "openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"])
+                candidate_models.extend([self.groq_model_name, "llama-3.3-70b-versatile", "openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"])
                 seen = set()
                 last_err = None
                 for m in candidate_models:
@@ -359,15 +427,23 @@ class ATOMCortex:
                         continue
                     seen.add(m)
                     try:
-                        llm = ChatGroq(model=m, api_key=os.getenv("GROQ_API_KEY"), temperature=0.7)
-                        response = llm.invoke(get_text_messages(messages))
-                        raw_c = response.content
-                        extra_r = (
-                            getattr(response, "additional_kwargs", {}).get("reasoning_content") or
-                            getattr(response, "response_metadata", {}).get("reasoning_content")
-                        )
-                        if extra_r and "<think>" not in str(raw_c):
-                            raw_c = f"<think>\n{extra_r}\n</think>\n{raw_c}"
+                        if ChatGroq is not None:
+                            llm = ChatGroq(model=m, api_key=os.getenv("GROQ_API_KEY"), temperature=0.7)
+                            response = llm.invoke(get_text_messages(messages))
+                            raw_c = response.content
+                            extra_r = (
+                                getattr(response, "additional_kwargs", {}).get("reasoning_content") or
+                                getattr(response, "response_metadata", {}).get("reasoning_content")
+                            )
+                            if extra_r and "<think>" not in str(raw_c):
+                                raw_c = f"<think>\n{extra_r}\n</think>\n{raw_c}"
+                        else:
+                            raw_c = self._call_openai_compatible(
+                                "https://api.groq.com/openai/v1/chat/completions",
+                                os.getenv("GROQ_API_KEY"),
+                                m,
+                                get_text_messages(messages)
+                            )
                         return str(raw_c), f"Groq-{m.split('/')[-1]}", False
                     except Exception as ge:
                         last_err = ge
@@ -469,6 +545,10 @@ class ATOMCortex:
                 content = response.content
                 if isinstance(content, list):
                     content = content[0].get('text', str(content[0])) if content else ""
+                return str(content), "Gemini-Flash", False
+            if GEMINI_AVAILABLE:
+                self._update_status("🔄 Cloud Fallback (Gemini REST)...")
+                content = self._call_gemini_rest(messages)
                 return str(content), "Gemini-Flash", False
             raise ValueError("Gemini not configured")
 
@@ -585,13 +665,16 @@ class ATOMCortex:
                 self._update_status("⚠️ Hugging Face error. Trying Gemini...")
 
         # === PHASE 3: LAST RESORT (GEMINI) ===
-        if self.gemini_brain:
+        if self.gemini_brain or GEMINI_AVAILABLE:
             self._update_status("🔄 Fallback to Gemini...")
             try:
-                response = self.gemini_brain.invoke(messages)
-                content = response.content
-                if isinstance(content, list):
-                    content = content[0].get('text', str(content[0])) if content else ""
+                if self.gemini_brain:
+                    response = self.gemini_brain.invoke(messages)
+                    content = response.content
+                    if isinstance(content, list):
+                        content = content[0].get('text', str(content[0])) if content else ""
+                    return str(content), "Gemini-Flash", True
+                content = self._call_gemini_rest(messages)
                 return str(content), "Gemini-Flash", True
             except Exception as e:
                 return f"Semua server sibuk. Error: {e}", "ALL_FAIL", True
@@ -655,7 +738,27 @@ class ATOMCortex:
             except Exception:
                 pass
 
-            system_prompt = SystemMessage(content=f"""{ATOM_SYSTEM_PROMPT}{ancestor_block}
+            # Automatic Live Web Search Grounding for general questions
+            web_grounding_block = ""
+            try:
+                from modules.notes.web_search import should_search_web_for_chat, build_chat_web_grounding
+                will_search, _ = should_search_web_for_chat(user_input, has_images=bool(image_files))
+                if will_search:
+                    self._update_status("🌐 Searching live web sources...")
+                    web_res = build_chat_web_grounding(
+                        user_input,
+                        context_text="",
+                        has_images=bool(image_files),
+                        max_results=6,
+                    )
+                    if web_res.get("block"):
+                        web_grounding_block = web_res["block"]
+                        if web_res.get("step"):
+                            thinking.append(web_res["step"])
+            except Exception as we:
+                print(f"[WARN] Chat web search skipped: {we}")
+
+            system_prompt = SystemMessage(content=f"""{ATOM_SYSTEM_PROMPT}{ancestor_block}{web_grounding_block}
 
 KONTEKS PERCAKAPAN:
 {context}""")

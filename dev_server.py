@@ -1,10 +1,19 @@
 import os
 import sys
+import site
+
+# Ensure project virtualenv packages (.venv / .venv_atom) are available even when launched with system Python
+_base_dir = os.path.dirname(os.path.abspath(__file__))
+for _venv_name in (".venv", ".venv_atom"):
+    _site_pkg = os.path.join(_base_dir, _venv_name, "Lib", "site-packages")
+    if os.path.isdir(_site_pkg) and _site_pkg not in sys.path:
+        site.addsitedir(_site_pkg)
+
 import uvicorn
 from fastapi.staticfiles import StaticFiles
 
 # Add current folder to path to load api modules
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(_base_dir)
 
 try:
     from api.index import app

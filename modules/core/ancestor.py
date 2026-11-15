@@ -237,10 +237,13 @@ class AncestorEngine:
             if "vol7_tactical_qa_registry.md" in self._cache:
                 selected_docs.append(self._cache["vol7_tactical_qa_registry.md"])
 
-        # Default fallback to master_knowledge if none specifically matched
-        if not selected_docs:
+        # Default fallback to master_knowledge only when query pertains to A.T.O.M.
+        if not selected_docs and any(k in p for k in ["atom", "a.t.o.m", "jarvis", "orchestrator", "neural", "crewai", "ancestor"]):
             if "master_knowledge.md" in self._cache:
                 selected_docs.append(self._cache["master_knowledge.md"][:8000])
+
+        if not selected_docs:
+            return ""
 
         combined = "\n\n---\n\n".join(selected_docs)
         # Limit to safe token window (~12000 chars)

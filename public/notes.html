@@ -6,9 +6,13 @@
   <title>A.T.O.M. — Crew Notes</title>
   <meta name="description" content="ATOM Crew Notes — Obsidian-style knowledge management with AI features">
   <link rel="stylesheet" href="assets/css/main.css?v=4.8">
-  <link rel="stylesheet" href="assets/css/components.css?v=8.0">
-  <link rel="stylesheet" href="assets/css/components/notes.css?v=8.5">
+  <link rel="stylesheet" href="assets/css/components.css?v=8.3">
+  <link rel="stylesheet" href="assets/css/components/notes.css?v=8.9">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- PDF.js for in-browser PDF parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- Mammoth.js for in-browser DOCX extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -267,6 +271,10 @@
                 </button>
               </div>
               <div class="note-meta-right">
+                <button class="btn btn-secondary btn-sm note-pill-btn note-import-trigger" id="btn-open-study-import" type="button" title="Import dokumen atau tempel tulisan untuk langsung dibuatkan catatan panjang">
+                  <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                  <span>Import &amp; Buat Catatan</span>
+                </button>
                 <!-- Clean AI Studio Dropdown -->
                 <div class="ai-studio-dropdown-wrap" id="ai-studio-dropdown-wrap">
                   <button class="btn btn-secondary btn-sm note-pill-btn ai-studio-trigger" id="btn-ai-studio-toggle" type="button" title="Menu Alat AI Studio">
@@ -303,6 +311,13 @@
                         <small>Pasang tag otomatis</small>
                       </div>
                     </button>
+                    <button class="ai-menu-item" id="btn-import-into-note" type="button">
+                      <span class="ai-menu-icon">📂</span>
+                      <div class="ai-menu-text">
+                        <strong>Import &amp; Buat Catatan Belajar</strong>
+                        <small>Ubah dokumen/tulisan jadi catatan panjang</small>
+                      </div>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -318,6 +333,39 @@
 
               <!-- Edit Mode -->
               <div id="note-edit-content" class="note-edit-wrap" style="display:none;">
+                <!-- Mobile / Quick Markdown Formatting Bar -->
+                <div class="mobile-md-toolbar" id="mobile-md-toolbar" aria-label="Format Markdown">
+                  <button type="button" class="md-tool-btn" data-md="h1" title="Heading 1">H1</button>
+                  <button type="button" class="md-tool-btn" data-md="h2" title="Heading 2">H2</button>
+                  <button type="button" class="md-tool-btn" data-md="bold" title="Tebal (Bold)"><strong>B</strong></button>
+                  <button type="button" class="md-tool-btn" data-md="italic" title="Miring (Italic)"><em>I</em></button>
+                  <button type="button" class="md-tool-btn" data-md="ul" title="Bullet List">• List</button>
+                  <button type="button" class="md-tool-btn" data-md="task" title="Checklist To-Do">☑ Task</button>
+                  <button type="button" class="md-tool-btn" data-md="wikilink" title="Tautkan Catatan [[Wikilink]]">🔗 [[Link]]</button>
+                  <button type="button" class="md-tool-btn" data-md="code" title="Kode">`Code`</button>
+                  <button type="button" class="md-tool-btn" data-md="quote" title="Kutipan">&ldquo; Quote</button>
+                  <button type="button" class="md-tool-btn" id="btn-mobile-import-file" title="Import File / Tulisan ke Catatan Panjang">📂 Import</button>
+                </div>
+
+                <!-- Quick Study Import Card when Note is Empty -->
+                <div id="empty-note-import-card" class="empty-note-import-card">
+                  <div class="empty-note-import-info">
+                    <div class="empty-note-import-title">⚡ Import Materi &amp; Buat Catatan Panjang Otomatis</div>
+                    <div class="empty-note-import-sub">Unggah dokumen (PDF, DOCX, PPTX, Excel, TXT) atau tempel tulisan/materi untuk langsung diolah AI menjadi catatan belajar lengkap yang terstruktur.</div>
+                  </div>
+                  <div class="empty-note-import-actions">
+                    <button type="button" class="btn btn-primary btn-sm empty-import-btn-primary" id="btn-empty-upload-study">
+                      <span>📂 Upload Dokumen &rarr; Catatan Panjang AI</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm empty-import-btn-secondary" id="btn-empty-paste-study">
+                      <span>📋 Tempel Tulisan / Materi &rarr; Catatan Panjang AI</span>
+                    </button>
+                    <button type="button" class="btn btn-ghost btn-sm empty-import-btn-raw" id="btn-empty-upload-raw">
+                      <span>📄 Sisipkan Teks Asli (Tanpa AI)</span>
+                    </button>
+                  </div>
+                </div>
+
                 <textarea
                   id="note-textarea"
                   class="form-textarea note-editor-textarea"
@@ -345,9 +393,14 @@
                     </span>
                     <svg class="svg-icon chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><polyline points="6 9 12 15 18 9"></polyline></svg>
                   </button>
-                  <button class="btn btn-ghost btn-xs copilot-clear-btn" id="btn-clear-note-chat" title="Bersihkan riwayat percakapan">
-                    <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
-                  </button>
+                  <div class="copilot-context-bar-actions">
+                    <button type="button" class="btn btn-ghost btn-xs copilot-undo-insert-btn hidden" id="btn-undo-note-insert" title="Urungkan sisipan terakhir ke catatan">
+                      <span>↩️ Urungkan</span>
+                    </button>
+                    <button class="btn btn-ghost btn-xs copilot-clear-btn" id="btn-clear-note-chat" title="Bersihkan riwayat percakapan">
+                      <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                    </button>
+                  </div>
                 </div>
 
                 <!-- Chat Messages Scroll Area -->
@@ -357,7 +410,14 @@
 
                 <!-- Co-Pilot Docked Input Area -->
                 <div class="copilot-input-container">
+                  <div id="copilot-attached-files" class="copilot-attached-files hidden"></div>
                   <div class="copilot-input-dock">
+                    <button type="button" class="copilot-attach-btn" id="btn-copilot-attach" title="Unggah dokumen (PDF, DOCX, Excel, CSV, TXT) untuk dianalisis AI" aria-label="Unggah dokumen untuk dianalisis AI">
+                      <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1rem;height:1rem;"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                    </button>
+                    <button type="button" class="copilot-web-btn" id="btn-copilot-web-search" title="Mode Web Search: Cari fakta & referensi terbaru di internet untuk memperkaya catatan" aria-label="Toggle Web Search" aria-pressed="false">
+                      <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1rem;height:1rem;"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                    </button>
                     <textarea
                       id="note-chat-input"
                       class="copilot-textarea"
@@ -369,7 +429,7 @@
                     </button>
                   </div>
                   <div class="copilot-input-footer">
-                    <span>💡 <strong>Tip:</strong> Jawaban disintesis langsung dari catatan yang Anda buka</span>
+                    <span>💡 <strong>Tip:</strong> Aktifkan 🌐 Web Search untuk cari referensi online, atau sisipkan jawaban Co-Pilot secara kontekstual</span>
                     <span class="copilot-enter-hint">Enter ↵</span>
                   </div>
                 </div>
@@ -377,19 +437,24 @@
 
             </div>
           </div>
+          <!-- Hidden File Inputs for Document Import -->
+          <input type="file" id="note-insert-file-input" multiple accept=".pdf,.docx,.xlsx,.xlsm,.pptx,.csv,.tsv,.txt,.md,.markdown,.json,.html,.htm,.py,.js,.ts,.sql,.yaml,.yml,.xml,.log" style="display:none;">
+          <input type="file" id="note-raw-file-input" multiple accept=".pdf,.docx,.xlsx,.xlsm,.pptx,.csv,.tsv,.txt,.md,.markdown,.json,.html,.htm,.py,.js,.ts,.sql,.yaml,.yml,.xml,.log" style="display:none;">
+          <input type="file" id="study-modal-file-input" multiple accept=".pdf,.docx,.xlsx,.xlsm,.pptx,.csv,.tsv,.txt,.md,.markdown,.json,.html,.htm,.py,.js,.ts,.sql,.yaml,.yml,.xml,.log" style="display:none;">
+          <input type="file" id="copilot-file-input" multiple accept=".pdf,.docx,.xlsx,.xlsm,.pptx,.csv,.tsv,.txt,.md,.markdown,.json,.html,.htm,.py,.js,.ts,.sql,.yaml,.yml,.xml,.log" style="display:none;">
         </div>
 
       <!-- ============ BUBBLES TAB ============ -->
-      <div id="tab-bubbles" style="display:none;flex:1;height:calc(100vh - var(--topbar-height));overflow-y:auto;position:relative;">
-        <canvas id="bubbles-fog-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;"></canvas>
-        <div style="position:relative;z-index:1;padding:var(--space-5);max-width:900px;margin:0 auto;">
-          <h2 style="margin-bottom:var(--space-2);">🫧 Floating Magic Bubbles</h2>
-          <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:var(--space-4);">
+      <div id="tab-bubbles" class="bubbles-tab-view" style="display:none;">
+        <canvas id="bubbles-fog-canvas" class="bubbles-fog-canvas"></canvas>
+        <div class="bubbles-container">
+          <h2 class="bubbles-title">🫧 Floating Magic Bubbles</h2>
+          <p class="bubbles-subtitle">
             Catatan kilat untuk ide-ide singkat. Bisa dikembangkan seketika menjadi artikel penuh dengan bantuan AI.
           </p>
 
           <!-- Add bubble -->
-          <div class="flex gap-2" style="margin-bottom:var(--space-5);">
+          <div class="flex gap-2 bubbles-input-row">
             <input type="text" class="form-input" id="bubble-input" placeholder="Ketik ide singkat (1-2 kalimat)..." style="flex:1;">
             <button class="btn btn-primary" id="btn-add-bubble">🫧 + Add Bubble</button>
           </div>
@@ -522,6 +587,91 @@
           <button class="btn btn-primary btn-sm" id="btn-apply-sources">
             <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:0.85rem;height:0.85rem;margin-right:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
             <span>Terapkan Sumber Konteks</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ IN-NOTE STUDY IMPORT MODAL ============ -->
+  <div id="study-import-modal" class="safe-refine-overlay hidden">
+    <div class="study-import-card">
+      <div class="safe-refine-header">
+        <div class="safe-refine-title-wrap">
+          <span class="safe-refine-badge">FAST STUDY ARCHITECT</span>
+          <h3 class="safe-refine-title">Import Materi &amp; Buat Catatan Panjang AI</h3>
+        </div>
+        <button class="safe-refine-close-btn" id="btn-close-study-import" title="Tutup (Esc)">✕</button>
+      </div>
+
+      <div class="study-import-body">
+        <!-- Upload File Section -->
+        <div class="study-import-section">
+          <div class="study-section-label">1. Unggah File Dokumen (Opsional)</div>
+          <div class="study-dropzone" id="study-dropzone">
+            <div class="study-dropzone-text">
+              <strong>Tarik &amp; lepaskan file ke sini</strong> atau pilih dokumen (PDF, DOCX, PPTX, Excel, CSV, TXT, MD)
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-study-pick-file">📂 Pilih File</button>
+          </div>
+          <div id="study-file-list" class="study-file-chips hidden"></div>
+        </div>
+
+        <!-- Paste Text Section -->
+        <div class="study-import-section">
+          <div class="study-section-header-row">
+            <label for="study-import-textarea" class="study-section-label">2. Atau Tempel Tulisan / Artikel / Materi Kuliah</label>
+            <span class="text-stat" id="study-import-word-count">0 kata</span>
+          </div>
+          <textarea
+            id="study-import-textarea"
+            class="form-textarea study-import-textarea"
+            rows="7"
+            placeholder="Tempel tulisan mentah, transkrip kuliah, artikel, atau materi yang ingin Anda pelajari dengan cepat..."
+          ></textarea>
+        </div>
+
+        <!-- Style Selection -->
+        <div class="study-import-section">
+          <div class="study-section-label">3. Format Catatan Panjang yang Diinginkan</div>
+          <div class="study-style-presets" id="study-style-presets">
+            <button type="button" class="preset-chip active" data-study-style="comprehensive">
+              <span>📚</span> <span>Catatan Belajar Lengkap</span>
+            </button>
+            <button type="button" class="preset-chip" data-study-style="exam_prep">
+              <span>🎯</span> <span>Rangkuman Ujian &amp; Poin Inti</span>
+            </button>
+            <button type="button" class="preset-chip" data-study-style="deep_dive">
+              <span>🔬</span> <span>Analisis Mendalam</span>
+            </button>
+            <button type="button" class="preset-chip" data-study-style="raw">
+              <span>📄</span> <span>Teks Asli Tanpa AI</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Placement when Note Already Has Content -->
+        <div class="study-import-section hidden" id="study-placement-row">
+          <div class="study-section-label">4. Penempatan ke Catatan Ini</div>
+          <div class="study-placement-options">
+            <label class="study-radio-label">
+              <input type="radio" name="study-placement" value="replace" checked>
+              <span>Ganti / Isi Catatan Ini</span>
+            </label>
+            <label class="study-radio-label">
+              <input type="radio" name="study-placement" value="append">
+              <span>Tambahkan di Bawah Catatan</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="safe-refine-footer">
+        <span class="safe-refine-tip">Judul &amp; tag otomatis diisi AI jika catatan ini masih baru/kosong.</span>
+        <div class="safe-refine-footer-right">
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-cancel-study-import">Batal</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-run-study-import">
+            <span>⚡ Buat Catatan Panjang Sekarang</span>
           </button>
         </div>
       </div>
@@ -677,8 +827,9 @@
   <script src="assets/js/notes/notes-api.js?v=8.7"></script>
   <script src="assets/js/notes/notes-bubbles.js?v=5.6"></script>
   <script src="assets/js/notes/notes-wikilinks.js?v=8.6"></script>
-  <script src="assets/js/notes/notes-ai.js?v=8.5"></script>
-  <script src="assets/js/notes/notes-editor.js?v=8.7"></script>
+  <script src="assets/js/modules/attachment-manager.js?v=8.8"></script>
+  <script src="assets/js/notes/notes-ai.js?v=9.0"></script>
+  <script src="assets/js/notes/notes-editor.js?v=9.1"></script>
   <script src="assets/js/notes.js?v=8.2"></script>
   <script src="assets/js/mobile-ui.js"></script>
 </body>

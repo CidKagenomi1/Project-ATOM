@@ -69,6 +69,18 @@ def run_research_crew(topic: str) -> str:
         from crewai import Agent, Task, Crew, Process
         
         llm = _get_llm()
+
+        live_web_block = ""
+        try:
+            from modules.notes.web_search import search_web_for_notes
+            web_data = search_web_for_notes(topic, max_results=6)
+            if web_data.get("sources"):
+                live_web_block = (
+                    "\n\nDATA & REFERENSI WEB TERBARU (Gunakan & cantumkan tautan [Judul](URL) bila relevan):\n"
+                    f"{web_data['formatted_context']}\n"
+                )
+        except Exception as we:
+            print(f"[CREW WEB SEARCH WARN] {we}")
         
         # 1. Agen Peneliti
         researcher = Agent(
@@ -100,7 +112,7 @@ def run_research_crew(topic: str) -> str:
             2. Kumpulkan fakta, statistik, dan data relevan
             3. Analisis peluang dan tantangan
             4. Identifikasi best practices atau tips praktis
-            
+            {live_web_block}
             Fokus pada informasi yang actionable dan berguna.
             Jawab dalam Bahasa Indonesia.
             """,
@@ -162,18 +174,30 @@ def run_research_crew(topic: str) -> str:
 
 def _fallback_research(topic: str) -> str:
     """
-    Fallback: Use direct Groq call if CrewAI fails.
+    Fallback: Use direct Groq call with live web search if CrewAI fails.
     """
     print("[FALLBACK] Using direct Groq research...")
     
     try:
         llm = _get_llm()
+
+        live_web_block = ""
+        try:
+            from modules.notes.web_search import search_web_for_notes
+            web_data = search_web_for_notes(topic, max_results=6)
+            if web_data.get("sources"):
+                live_web_block = (
+                    "\n\nDATA & REFERENSI WEB TERBARU (Cantumkan tautan [Judul](URL) bila relevan):\n"
+                    f"{web_data['formatted_context']}\n"
+                )
+        except Exception:
+            pass
         
         prompt = f"""
         Kamu adalah peneliti dan penulis profesional.
         
         Tugas: Tulis artikel lengkap tentang "{topic}"
-        
+        {live_web_block}
         Format:
         ## [Judul Menarik]
         
