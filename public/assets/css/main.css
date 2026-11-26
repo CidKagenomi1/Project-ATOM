@@ -1956,3 +1956,73 @@ input:checked + .atom-toggle-slider:before {
   animation: none !important;
   filter: none !important;
 }
+
+/* ─── Background Chat Processing & Unread Badges ─── */
+.nav-chat-bg-badge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.nav-chat-bg-badge.is-processing {
+  background: rgba(201, 162, 39, 0.16);
+  color: var(--gold-light, #f0c954);
+  border: 1px solid rgba(201, 162, 39, 0.35);
+}
+
+.nav-chat-bg-badge.is-unread {
+  background: rgba(52, 211, 153, 0.14);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.32);
+}
+
+.nav-chat-bg-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+}
+
+.nav-chat-bg-badge.is-processing .nav-chat-bg-dot {
+  animation: atomBgPulse 1.2s ease-in-out infinite;
+}
+
+.session-status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.session-status-dot.running {
+  background: var(--gold-primary, #c9a227);
+  animation: atomBgPulse 1.1s ease-in-out infinite;
+}
+
+.session-status-dot.unread {
+  background: #34d399;
+}
+
+.session-item.is-processing .session-time {
+  color: var(--gold-light, #f0c954);
+}
+
+.session-item.is-unread .session-time {
+  color: #34d399;
+}
+
+@keyframes atomBgPulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
+}

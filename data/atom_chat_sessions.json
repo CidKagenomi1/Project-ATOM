@@ -1,12 +1,12 @@
 {
   "sessions": [
     {
-      "id": "sess_1794423998202",
+      "id": "sess_1794692505443",
       "title": "Percakapan Baru",
-      "updatedAt": 1794423998202,
+      "updatedAt": 1794692505443,
       "messages": []
     }
   ],
-  "active_id": "sess_1794423998202",
+  "active_id": "sess_1794692505443",
   "type": "chat"
 }

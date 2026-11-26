@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>A.T.O.M. — Settings</title>
   <meta name="description" content="ATOM System Settings — Konfigurasi preferensi sistem, tema, dan kustomisasi tampilan">
-  <link rel="stylesheet" href="assets/css/main.css?v=4.6">
+  <link rel="stylesheet" href="assets/css/main.css?v=4.9">
   <link rel="stylesheet" href="assets/css/components.css?v=4.6">
   <style>
     .settings-layout {
@@ -416,6 +416,30 @@
 
       <div class="main-content" style="overflow-y: auto;">
         <div class="settings-layout">
+          <!-- CARD 0: Per-Account Storage & Cloud Sync -->
+          <div class="settings-card" id="settings-account-card">
+            <div class="settings-card-header">
+              <span class="settings-card-icon" style="color: var(--gold-primary);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </span>
+              <div>
+                <div class="settings-card-title">Akun &amp; Sinkronisasi Cloud (Per-Account Storage)</div>
+                <div class="settings-card-desc">Pisahkan riwayat chat per akun di server/MongoDB; Mode Guest hanya tersimpan lokal di browser</div>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-info">
+                <span class="settings-name" id="account-sync-status-title">Status Akun Saat Ini</span>
+                <span class="settings-detail" id="account-sync-status-detail">Memeriksa status akun...</span>
+              </div>
+              <div class="settings-control" id="account-sync-controls" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+            </div>
+          </div>
+
           <!-- CARD 1: UI Themes -->
           <div class="settings-card">
             <div class="settings-card-header">
@@ -825,7 +849,7 @@
 
   <div class="toast-container" id="toast-container"></div>
 
-  <script src="assets/js/app.js?v=4.4"></script>
+  <script src="assets/js/app.js?v=5.2"></script>
   <script>
     // Initialize Settings Toggles & Themes
     document.addEventListener('DOMContentLoaded', () => {
@@ -894,8 +918,14 @@
         });
       }
 
+      renderAccountSettingsCard();
       updateStorageStats();
       updatePrivacyDisclaimerStatusText();
+
+      window.addEventListener('atom:auth-changed', () => {
+        renderAccountSettingsCard();
+        updateStorageStats();
+      });
     });
 
     function selectUiTheme(uiTheme) {
@@ -959,10 +989,137 @@
       });
     }
 
+    function getActiveChatKey() {
+      return window.ATOM_Account ? window.ATOM_Account.getChatStorageKey() : 'atom_chat_sessions_guest';
+    }
+
+    function getActiveSessionIdKey() {
+      return window.ATOM_Account ? window.ATOM_Account.getActiveSessionStorageKey() : 'atom_active_session_id_guest';
+    }
+
+    function renderAccountSettingsCard() {
+      const titleEl = document.getElementById('account-sync-status-title');
+      const detailEl = document.getElementById('account-sync-status-detail');
+      const controlsEl = document.getElementById('account-sync-controls');
+      if (!detailEl || !controlsEl) return;
+
+      const acct = window.ATOM_Account;
+      const loggedIn = acct && acct.isLoggedIn();
+      const user = acct ? acct.getUser() : null;
+
+      if (loggedIn && user) {
+        if (titleEl) {
+          titleEl.innerHTML = `Masuk sebagai <span style="color:var(--gold-light);">@${window.escapeHtml(user.username)}</span> <span class="badge-status badge-online" style="margin-left:6px;">Cloud Sync MongoDB Aktif</span>`;
+        }
+        detailEl.textContent = `Nama tampilan: ${user.display_name || user.username}. Riwayat obrolan Anda diisolasi per akun dan disinkronkan dengan server/MongoDB.`;
+        controlsEl.innerHTML = `
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-settings-sync-now" onclick="syncCurrentAccountSessions()">Sinkronkan Sekarang</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="window.ATOM_Account.openAuthModal('login')">Ganti Akun</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="window.ATOM_Account.logout()" style="color:#f87171;border-color:rgba(248,81,73,0.35);">Keluar (Logout)</button>
+        `;
+      } else {
+        if (titleEl) {
+          titleEl.innerHTML = `Mode Guest <span class="badge-status" style="margin-left:6px;background:rgba(255,255,255,0.06);color:var(--text-secondary);border:1px solid var(--border-color);">Penyimpanan Lokal Browser</span>`;
+        }
+        detailEl.textContent = 'Riwayat obrolan hanya disimpan di localStorage browser ini dan tidak dikirim ke server. Masuk atau buat akun untuk menyimpan riwayat lintas perangkat.';
+        controlsEl.innerHTML = `
+          <button type="button" class="btn btn-primary btn-sm" onclick="window.ATOM_Account.openAuthModal('login')">Masuk / Buat Akun</button>
+        `;
+      }
+    }
+
+    async function syncCurrentAccountSessions() {
+      const acct = window.ATOM_Account;
+      if (!acct || !acct.isLoggedIn()) {
+        showToast('Silakan masuk ke akun terlebih dahulu untuk sinkronisasi cloud.', 'warning');
+        return;
+      }
+
+      const btn = document.getElementById('btn-settings-sync-now');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Menyinkronkan...';
+      }
+
+      try {
+        const token = acct.getToken();
+        const chatKey = getActiveChatKey();
+        const activeKey = getActiveSessionIdKey();
+        const localSessions = JSON.parse(localStorage.getItem(chatKey) || '[]');
+        const localActiveId = localStorage.getItem(activeKey) || null;
+
+        const res = await fetch('/api/sessions/chat', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const serverSessions = Array.isArray(data.sessions) ? data.sessions : [];
+
+        const map = new Map();
+        serverSessions.forEach(s => { if (s && s.id) map.set(s.id, s); });
+        let clientHadNewer = false;
+
+        localSessions.forEach(cs => {
+          if (!cs || !cs.id) return;
+          const ss = map.get(cs.id);
+          const cMsgs = cs.messages || [];
+          if (!ss) {
+            if (cMsgs.length > 0 || serverSessions.length === 0) {
+              map.set(cs.id, cs);
+              if (cMsgs.length > 0) clientHadNewer = true;
+            }
+          } else {
+            const sMsgs = ss.messages || [];
+            if (cMsgs.length > sMsgs.length || (cMsgs.length === sMsgs.length && (cs.updatedAt || 0) >= (ss.updatedAt || 0))) {
+              map.set(cs.id, cs);
+              if (cMsgs.length > sMsgs.length || (cs.updatedAt || 0) > (ss.updatedAt || 0)) clientHadNewer = true;
+            }
+          }
+        });
+
+        const merged = Array.from(map.values()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+        const activeId = localActiveId || data.active_id || (merged[0]?.id || null);
+
+        if (merged.length > 0) {
+          localStorage.setItem(chatKey, JSON.stringify(merged));
+          if (activeId) localStorage.setItem(activeKey, activeId);
+        }
+
+        if (clientHadNewer && merged.some(s => (s.messages || []).length > 0)) {
+          await fetch('/api/sessions/chat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              sessions: merged,
+              active_id: activeId,
+              token
+            })
+          });
+        }
+
+        updateStorageStats();
+        showToast(`Sinkronisasi selesai (${merged.length} sesi chat).`, 'success');
+      } catch (err) {
+        showToast(`Gagal sinkronisasi: ${err.message}`, 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Sinkronkan Sekarang';
+        }
+      }
+    }
+
     function updateStorageStats() {
       try {
-        const chatSessions = JSON.parse(localStorage.getItem('atom_chat_sessions') || '[]');
-        const text = `${chatSessions.length} sesi Chat Utama tersimpan di localStorage.`;
+        window.ATOM_Account?.migrateLegacyGuestStorage();
+        const chatKey = getActiveChatKey();
+        const chatSessions = JSON.parse(localStorage.getItem(chatKey) || '[]');
+        const user = window.ATOM_Account?.isLoggedIn() ? window.ATOM_Account.getUser() : null;
+        const scopeLabel = user ? `@${user.username}` : 'Mode Guest';
+        const text = `${chatSessions.length} sesi Chat Utama (${scopeLabel}) tersimpan di localStorage.`;
         const el = document.getElementById('storage-stats-text');
         if (el) el.textContent = text;
       } catch (e) {
@@ -972,11 +1129,15 @@
 
     function exportBackupData() {
       try {
+        const chatKey = getActiveChatKey();
+        const user = window.ATOM_Account?.isLoggedIn() ? window.ATOM_Account.getUser() : null;
+        const scope = user ? user.username : 'guest';
         const data = {
           appName: 'A.T.O.M.',
           version: '4.0',
+          account: scope,
           backupDate: new Date().toISOString(),
-          chatSessions: JSON.parse(localStorage.getItem('atom_chat_sessions') || '[]'),
+          chatSessions: JSON.parse(localStorage.getItem(chatKey) || '[]'),
           settings: {
             uiTheme: localStorage.getItem('atom_ui_theme') || 'default',
             accent: localStorage.getItem('atom_accent') || 'gold',
@@ -991,7 +1152,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `ATOM_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+        a.download = `ATOM_Backup_${scope}_${new Date().toISOString().slice(0, 10)}.json`;
         a.click();
         URL.revokeObjectURL(url);
         showToast('Backup berhasil diunduh!', 'success');
@@ -1001,10 +1162,18 @@
     }
 
     function clearStorageData() {
-      if (confirm('Yakin ingin mereset seluruh data sesi chat dan preferensi di browser ini? Tindakan ini tidak dapat dibatalkan.')) {
-        localStorage.clear();
-        showToast('Semua data lokal telah dibersihkan', 'info');
-        setTimeout(() => location.reload(), 800);
+      const user = window.ATOM_Account?.isLoggedIn() ? window.ATOM_Account.getUser() : null;
+      const scopeLabel = user ? `akun @${user.username}` : 'Mode Guest';
+      if (confirm(`Yakin ingin membersihkan cache riwayat obrolan lokal untuk ${scopeLabel} di browser ini?`)) {
+        localStorage.removeItem(getActiveChatKey());
+        localStorage.removeItem(getActiveSessionIdKey());
+        if (!user) {
+          localStorage.removeItem('atom_chat_sessions');
+          localStorage.removeItem('atom_active_session_id');
+          localStorage.removeItem('atom_chat_history');
+        }
+        updateStorageStats();
+        showToast(`Cache lokal ${scopeLabel} telah dibersihkan`, 'info');
       }
     }
 

@@ -235,7 +235,8 @@ function backfillTelemetryFromSessions() {
   const syntheticLogs = [];
   try {
     // 1. Ambil dari chat sessions
-    const rawChat = localStorage.getItem('atom_chat_sessions');
+    const chatKey = window.ATOM_Account ? window.ATOM_Account.getChatStorageKey() : 'atom_chat_sessions';
+    const rawChat = localStorage.getItem(chatKey) || localStorage.getItem('atom_chat_sessions');
     if (rawChat) {
       const sessions = JSON.parse(rawChat);
       sessions.forEach(sess => {
@@ -657,14 +658,960 @@ window.openCritiqueModal = function({ modelUsed = '', promptText = '', responseE
   });
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+// ─── Per-Account Authentication & Sidebar Account Widget ──────────────
+(function initAccountModule() {
+  const AUTH_USER_KEY = 'atom_auth_user';
+  const AUTH_TOKEN_KEY = 'atom_auth_token';
+  const GUEST_SESSIONS_KEY = 'atom_chat_sessions_guest';
+  const GUEST_ACTIVE_KEY = 'atom_active_session_id_guest';
+  const LEGACY_SESSIONS_KEY = 'atom_chat_sessions';
+  const LEGACY_ACTIVE_KEY = 'atom_active_session_id';
+
+  let _sessionVerifiedOnce = false;
+
+  function safeParseJson(raw, fallback) {
+    try {
+      return raw ? JSON.parse(raw) : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function hasAnyMessages(sessions) {
+    return Array.isArray(sessions) && sessions.some(s => Array.isArray(s?.messages) && s.messages.length > 0);
+  }
+
+  function mergeSessionsLists(primaryList, secondaryList) {
+    const map = new Map();
+    const applyList = (list) => {
+      if (!Array.isArray(list)) return;
+      list.forEach(sess => {
+        if (!sess || !sess.id) return;
+        const existing = map.get(sess.id);
+        if (!existing) {
+          map.set(sess.id, sess);
+          return;
+        }
+        const exMsgs = Array.isArray(existing.messages) ? existing.messages : [];
+        const newMsgs = Array.isArray(sess.messages) ? sess.messages : [];
+        if (newMsgs.length > exMsgs.length || (newMsgs.length === exMsgs.length && (sess.updatedAt || 0) > (existing.updatedAt || 0))) {
+          map.set(sess.id, sess);
+        }
+      });
+    };
+    applyList(primaryList);
+    applyList(secondaryList);
+    return Array.from(map.values()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  }
+
+  const AccountManager = {
+    getUser() {
+      const parsed = safeParseJson(localStorage.getItem(AUTH_USER_KEY), null);
+      if (parsed && typeof parsed === 'object' && parsed.username) {
+        return parsed;
+      }
+      return null;
+    },
+
+    getToken() {
+      return localStorage.getItem(AUTH_TOKEN_KEY) || null;
+    },
+
+    isLoggedIn() {
+      return Boolean(this.getUser()?.username && this.getToken());
+    },
+
+    getChatStorageKey() {
+      const user = this.getUser();
+      if (user && this.getToken()) {
+        return `atom_chat_sessions__${user.username}`;
+      }
+      return GUEST_SESSIONS_KEY;
+    },
+
+    getActiveSessionStorageKey() {
+      const user = this.getUser();
+      if (user && this.getToken()) {
+        return `atom_active_session_id__${user.username}`;
+      }
+      return GUEST_ACTIVE_KEY;
+    },
+
+    migrateLegacyGuestStorage() {
+      try {
+        if (localStorage.getItem(GUEST_SESSIONS_KEY) === null) {
+          const legacyRaw = localStorage.getItem(LEGACY_SESSIONS_KEY);
+          if (legacyRaw) {
+            const parsed = safeParseJson(legacyRaw, []);
+            if (hasAnyMessages(parsed)) {
+              localStorage.setItem(GUEST_SESSIONS_KEY, JSON.stringify(parsed));
+              const legacyActive = localStorage.getItem(LEGACY_ACTIVE_KEY);
+              if (legacyActive && localStorage.getItem(GUEST_ACTIVE_KEY) === null) {
+                localStorage.setItem(GUEST_ACTIVE_KEY, legacyActive);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[ATOM] Legacy guest migration warning:', err);
+      }
+    },
+
+    renderSidebarAccountWidget() {
+      const sidebar = document.getElementById('app-sidebar');
+      if (!sidebar) return;
+
+      let box = document.getElementById('sidebar-account-box');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'sidebar-account-box';
+        box.className = 'sidebar-account-box';
+        const creditEl = sidebar.querySelector('.sidebar-credit');
+        if (creditEl) {
+          sidebar.insertBefore(box, creditEl);
+        } else {
+          sidebar.appendChild(box);
+        }
+      }
+
+      const user = this.getUser();
+      const loggedIn = this.isLoggedIn();
+      box.classList.toggle('is-authenticated', loggedIn);
+
+      if (loggedIn && user) {
+        const displayName = user.display_name || user.username;
+        const avatarChar = (displayName || user.username || 'A').charAt(0).toUpperCase();
+        box.innerHTML = `
+          <div class="sidebar-account-info" title="Masuk sebagai @${escapeHtml(user.username)} (Sinkronisasi Cloud Aktif)">
+            <div class="sidebar-account-avatar">${escapeHtml(avatarChar)}</div>
+            <div class="sidebar-account-meta">
+              <div class="sidebar-account-name">@${escapeHtml(user.username)}</div>
+              <div class="sidebar-account-sub">
+                <span class="account-sync-led"></span>
+                <span>Cloud Sync</span>
+              </div>
+            </div>
+          </div>
+          <div class="sidebar-account-actions">
+            <button type="button" class="sidebar-account-btn btn-logout-icon" id="btn-sidebar-logout" title="Keluar (Logout)">Keluar</button>
+          </div>
+        `;
+        box.querySelector('#btn-sidebar-logout')?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.logout();
+        });
+      } else {
+        box.innerHTML = `
+          <div class="sidebar-account-info" style="cursor:pointer;" id="sidebar-guest-info" title="Mode Guest: Riwayat hanya tersimpan lokal di browser ini">
+            <div class="sidebar-account-avatar">G</div>
+            <div class="sidebar-account-meta">
+              <div class="sidebar-account-name">Mode Guest</div>
+              <div class="sidebar-account-sub">
+                <span class="account-sync-led"></span>
+                <span>Lokal Saja</span>
+              </div>
+            </div>
+          </div>
+          <div class="sidebar-account-actions">
+            <button type="button" class="sidebar-account-btn" id="btn-sidebar-login">Masuk</button>
+          </div>
+        `;
+        box.querySelector('#btn-sidebar-login')?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.openAuthModal('login');
+        });
+        box.querySelector('#sidebar-guest-info')?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.openAuthModal('login');
+        });
+      }
+    },
+
+    openAuthModal(initialTab = 'login') {
+      document.getElementById('atom-auth-modal-overlay')?.remove();
+
+      let activeTab = initialTab === 'register' ? 'register' : 'login';
+
+      const overlayEl = document.createElement('div');
+      overlayEl.className = 'privacy-disclaimer-overlay';
+      overlayEl.id = 'atom-auth-modal-overlay';
+
+      overlayEl.innerHTML = `
+        <div class="privacy-disclaimer-card atom-auth-modal-card" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+          <div class="disclaimer-card-header">
+            <div class="disclaimer-title-wrap">
+              <div class="disclaimer-icon-shield">👤</div>
+              <div>
+                <div class="disclaimer-title" id="auth-modal-title">AKUN & SINKRONISASI</div>
+                <div style="font-size:0.65rem;color:var(--text-muted);font-family:var(--font-mono);letter-spacing:0.06em;">A.T.O.M. ACCOUNT VAULT</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="disclaimer-lang-tabs">
+                <button type="button" class="disclaimer-tab-btn ${activeTab === 'login' ? 'active' : ''}" data-auth-tab="login">Masuk</button>
+                <button type="button" class="disclaimer-tab-btn ${activeTab === 'register' ? 'active' : ''}" data-auth-tab="register">Buat Akun</button>
+              </div>
+              <button type="button" id="btn-close-auth-modal" style="background:none;border:none;color:var(--text-muted);font-size:1.15rem;cursor:pointer;padding:2px 6px;" aria-label="Tutup">✕</button>
+            </div>
+          </div>
+
+          <div class="disclaimer-card-body">
+            <div class="auth-error-banner" id="auth-error-banner"></div>
+            <form class="auth-form" id="atom-auth-form">
+              <div class="auth-form-group">
+                <label class="auth-label" for="auth-username">Username</label>
+                <input type="text" class="auth-input" id="auth-username" placeholder="contoh: alif" autocomplete="username" required minlength="3" maxlength="32">
+                <div class="auth-hint">3–32 karakter: huruf kecil, angka, titik, garis bawah, atau tanda hubung.</div>
+              </div>
+
+              <div class="auth-form-group" id="auth-displayname-group" style="display:${activeTab === 'register' ? 'flex' : 'none'};">
+                <label class="auth-label" for="auth-displayname">Nama Tampilan (Opsional)</label>
+                <input type="text" class="auth-input" id="auth-displayname" placeholder="Contoh: Alif Rahmadi" maxlength="48">
+              </div>
+
+              <div class="auth-form-group">
+                <label class="auth-label" for="auth-password">Password / PIN</label>
+                <input type="password" class="auth-input" id="auth-password" placeholder="Minimal 4 karakter atau PIN" autocomplete="${activeTab === 'register' ? 'new-password' : 'current-password'}" required minlength="4">
+              </div>
+
+              <label class="auth-merge-box">
+                <input type="checkbox" id="auth-merge-guest" checked>
+                <span>Simpan / gabungkan riwayat chat Guest saat ini ke akun saya</span>
+              </label>
+
+              <button type="submit" class="btn btn-primary auth-submit-btn" id="btn-auth-submit">
+                ${activeTab === 'register' ? 'Buat Akun & Sinkronkan' : 'Masuk ke Akun'}
+              </button>
+            </form>
+          </div>
+
+          <div class="disclaimer-card-footer" style="justify-content:space-between;">
+            <span style="font-size:0.72rem;color:var(--text-muted);line-height:1.4;">
+              Mode Guest hanya menyimpan di browser ini. Login mengaktifkan penyimpanan cloud per akun.
+            </span>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlayEl);
+
+      const closeModal = () => {
+        overlayEl.style.opacity = '0';
+        overlayEl.style.transition = 'opacity 0.2s ease';
+        setTimeout(() => overlayEl.remove(), 210);
+      };
+
+      overlayEl.querySelector('#btn-close-auth-modal')?.addEventListener('click', closeModal);
+      overlayEl.addEventListener('click', (e) => {
+        if (e.target === overlayEl) closeModal();
+      });
+
+      const tabBtns = overlayEl.querySelectorAll('[data-auth-tab]');
+      const displayGroup = overlayEl.querySelector('#auth-displayname-group');
+      const submitBtn = overlayEl.querySelector('#btn-auth-submit');
+      const passInput = overlayEl.querySelector('#auth-password');
+      const errBanner = overlayEl.querySelector('#auth-error-banner');
+
+      const setTab = (tab) => {
+        activeTab = tab === 'register' ? 'register' : 'login';
+        tabBtns.forEach(b => b.classList.toggle('active', b.dataset.authTab === activeTab));
+        if (displayGroup) displayGroup.style.display = activeTab === 'register' ? 'flex' : 'none';
+        if (submitBtn) submitBtn.textContent = activeTab === 'register' ? 'Buat Akun & Sinkronkan' : 'Masuk ke Akun';
+        if (passInput) passInput.autocomplete = activeTab === 'register' ? 'new-password' : 'current-password';
+        if (errBanner) {
+          errBanner.textContent = '';
+          errBanner.classList.remove('visible');
+        }
+      };
+
+      tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => setTab(btn.dataset.authTab));
+      });
+
+      const form = overlayEl.querySelector('#atom-auth-form');
+      form?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = overlayEl.querySelector('#auth-username')?.value.trim() || '';
+        const password = passInput?.value || '';
+        const displayName = overlayEl.querySelector('#auth-displayname')?.value.trim() || '';
+        const shouldMergeGuest = Boolean(overlayEl.querySelector('#auth-merge-guest')?.checked);
+
+        if (errBanner) {
+          errBanner.textContent = '';
+          errBanner.classList.remove('visible');
+        }
+
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Memproses...';
+        }
+
+        try {
+          const endpoint = activeTab === 'register' ? '/api/accounts/register' : '/api/accounts/login';
+          const bodyPayload = activeTab === 'register'
+            ? { username, password, display_name: displayName || null }
+            : { username, password };
+
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(bodyPayload)
+          });
+          const data = await res.json().catch(() => ({}));
+
+          if (!res.ok || !data.user || !data.token) {
+            throw new Error(data.detail || 'Gagal memproses autentikasi akun.');
+          }
+
+          const user = data.user;
+          let mergedGuest = false;
+
+          if (shouldMergeGuest) {
+            this.migrateLegacyGuestStorage();
+            const guestRaw = localStorage.getItem(GUEST_SESSIONS_KEY) || localStorage.getItem(LEGACY_SESSIONS_KEY);
+            const guestSessions = safeParseJson(guestRaw, []).filter(
+              s => s && s.id && Array.isArray(s.messages) && s.messages.length > 0
+            );
+            if (guestSessions.length > 0) {
+              const acctKey = `atom_chat_sessions__${user.username}`;
+              const acctActiveKey = `atom_active_session_id__${user.username}`;
+              const existingAcct = safeParseJson(localStorage.getItem(acctKey), []);
+              const merged = mergeSessionsLists(existingAcct, guestSessions);
+              localStorage.setItem(acctKey, JSON.stringify(merged));
+              if (!localStorage.getItem(acctActiveKey) && merged[0]?.id) {
+                localStorage.setItem(acctActiveKey, merged[0].id);
+              }
+              mergedGuest = true;
+            }
+          }
+
+          localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+          localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+
+          this.renderSidebarAccountWidget();
+          closeModal();
+
+          window.dispatchEvent(new CustomEvent('atom:auth-changed', {
+            detail: { user, mergedGuest }
+          }));
+
+          showToast(`Selamat datang, ${user.display_name || user.username}! Sinkronisasi akun aktif.`, 'success');
+        } catch (err) {
+          if (errBanner) {
+            errBanner.textContent = err.message || 'Terjadi kesalahan saat masuk.';
+            errBanner.classList.add('visible');
+          }
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = activeTab === 'register' ? 'Buat Akun & Sinkronkan' : 'Masuk ke Akun';
+          }
+        }
+      });
+
+      setTimeout(() => overlayEl.querySelector('#auth-username')?.focus(), 50);
+    },
+
+    logout() {
+      localStorage.removeItem(AUTH_USER_KEY);
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      this.renderSidebarAccountWidget();
+      window.dispatchEvent(new CustomEvent('atom:auth-changed', {
+        detail: { user: null }
+      }));
+      showToast('Anda telah keluar. Beralih ke Mode Guest (penyimpanan lokal).', 'info');
+    },
+
+    async verifySession() {
+      if (_sessionVerifiedOnce) return;
+      _sessionVerifiedOnce = true;
+      const token = this.getToken();
+      if (!token) return;
+      try {
+        const res = await fetch('/api/accounts/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.authenticated === false) {
+          localStorage.removeItem(AUTH_USER_KEY);
+          localStorage.removeItem(AUTH_TOKEN_KEY);
+          this.renderSidebarAccountWidget();
+          window.dispatchEvent(new CustomEvent('atom:auth-changed', { detail: { user: null } }));
+        } else if (data && data.authenticated === true && data.user) {
+          localStorage.setItem(AUTH_USER_KEY, JSON.stringify(data.user));
+          this.renderSidebarAccountWidget();
+        }
+      } catch {
+        // Offline-safe: do not clear token on network error
+      }
+    }
+  };
+
+  AccountManager.migrateLegacyGuestStorage();
+  window.ATOM_Account = AccountManager;
+})();
+
+// ─── Background Chat Bridge (Cross-Tab & Cross-Page Continuity) ──────────────
+(function initChatBackgroundModule() {
+  const DB_NAME = 'atom_bg_db';
+  const DB_VERSION = 1;
+  const STORE_NAME = 'chat_jobs';
+  const CHANNEL_NAME = 'atom_chat_bg';
+  const COMMITTED_KEY = 'atom_committed_chat_jobs';
+  const UNREAD_SESSIONS_KEY = 'atom_chat_unread_sessions';
+
+  let _initialized = false;
+  let _readyResolve = null;
+  const _readyPromise = new Promise(resolve => {
+    _readyResolve = resolve;
+  });
+
+  let _swReg = null;
+  let _bc = null;
+  const _inPageControllers = new Map();
+  const _inPageRunningJobs = new Map();
+  const _ackResolvers = new Map();
+
+  function isChatPage() {
+    return Boolean(document.getElementById('messages-area'));
+  }
+
+  function safeJsonParse(raw, fallback) {
+    try {
+      return raw ? JSON.parse(raw) : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function openBgDb() {
+    if (typeof indexedDB === 'undefined') return Promise.resolve(null);
+    return new Promise((resolve) => {
+      try {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: 'jobId' });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+      } catch {
+        resolve(null);
+      }
+    });
+  }
+
+  async function idbGetAllJobs() {
+    const db = await openBgDb();
+    if (!db) return [];
+    return new Promise((resolve) => {
+      try {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const req = tx.objectStore(STORE_NAME).getAll();
+        req.onsuccess = () => {
+          db.close();
+          resolve(Array.isArray(req.result) ? req.result : []);
+        };
+        req.onerror = () => {
+          db.close();
+          resolve([]);
+        };
+      } catch {
+        db.close();
+        resolve([]);
+      }
+    });
+  }
+
+  async function idbDeleteJob(jobId) {
+    const db = await openBgDb();
+    if (!db) return;
+    return new Promise((resolve) => {
+      try {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).delete(jobId);
+        tx.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+        tx.onerror = () => {
+          db.close();
+          resolve();
+        };
+      } catch {
+        db.close();
+        resolve();
+      }
+    });
+  }
+
+  function isJobCommitted(jobId) {
+    const list = safeJsonParse(localStorage.getItem(COMMITTED_KEY), []);
+    return Array.isArray(list) && list.includes(jobId);
+  }
+
+  function markJobCommittedLocally(jobId) {
+    const list = safeJsonParse(localStorage.getItem(COMMITTED_KEY), []);
+    const next = Array.isArray(list) ? list.filter(id => id !== jobId) : [];
+    next.unshift(jobId);
+    try {
+      localStorage.setItem(COMMITTED_KEY, JSON.stringify(next.slice(0, 60)));
+    } catch {}
+  }
+
+  function getUnreadSessionIds() {
+    const list = safeJsonParse(localStorage.getItem(UNREAD_SESSIONS_KEY), []);
+    return Array.isArray(list) ? list : [];
+  }
+
+  function addUnreadSession(sessionId) {
+    if (!sessionId) return;
+    const list = getUnreadSessionIds();
+    if (!list.includes(sessionId)) {
+      list.push(sessionId);
+      try {
+        localStorage.setItem(UNREAD_SESSIONS_KEY, JSON.stringify(list));
+      } catch {}
+    }
+  }
+
+  function markSessionRead(sessionId) {
+    if (!sessionId) return;
+    const list = getUnreadSessionIds().filter(id => id !== sessionId);
+    try {
+      localStorage.setItem(UNREAD_SESSIONS_KEY, JSON.stringify(list));
+    } catch {}
+    refreshNavChatIndicator();
+  }
+
+  function buildAssistantMessage(job) {
+    if (job.status === 'completed') {
+      const res = job.result || {};
+      return {
+        role: 'assistant',
+        content: res.response || '',
+        thinking: Array.isArray(res.thinking) ? res.thinking : [],
+        model: res.model || '',
+        jobId: job.jobId
+      };
+    }
+    if (job.status === 'aborted') {
+      return {
+        role: 'assistant',
+        content: '_⚠️ Respon AI dihentikan oleh pengguna (Request aborted)._',
+        thinking: [],
+        model: 'Aborted',
+        jobId: job.jobId
+      };
+    }
+    return {
+      role: 'assistant',
+      content: `[ERROR] ${job.error || 'Gagal menghubungi API. Periksa koneksi.'}`,
+      thinking: [],
+      model: '',
+      jobId: job.jobId
+    };
+  }
+
+  async function commitFinishedJob(job) {
+    if (!job || !job.jobId || job.status === 'running') return false;
+    if (isJobCommitted(job.jobId)) {
+      await idbDeleteJob(job.jobId);
+      return false;
+    }
+
+    // Reserve jobId immediately to prevent duplicate commits across tabs/navigations
+    markJobCommittedLocally(job.jobId);
+
+    const assistantMsg = buildAssistantMessage(job);
+    const storageKey = job.storageKey || window.ATOM_Account?.getChatStorageKey() || 'atom_chat_sessions_guest';
+    let sessions = safeJsonParse(localStorage.getItem(storageKey), []);
+    if (!Array.isArray(sessions)) sessions = [];
+
+    let targetSession = sessions.find(s => s && s.id === job.sessionId);
+    if (!targetSession) {
+      const rawTitle = (job.displayPrompt || 'Percakapan Baru').trim();
+      const title = rawTitle.length > 30 ? rawTitle.slice(0, 30) + '...' : (rawTitle || 'Percakapan Baru');
+      targetSession = {
+        id: job.sessionId,
+        title,
+        updatedAt: Date.now(),
+        messages: []
+      };
+      sessions.unshift(targetSession);
+    }
+
+    if (!Array.isArray(targetSession.messages)) {
+      targetSession.messages = [];
+    }
+
+    const alreadyInMessages = targetSession.messages.some(m => m && m.jobId === job.jobId);
+    if (!alreadyInMessages) {
+      targetSession.messages.push(assistantMsg);
+      targetSession.updatedAt = Date.now();
+      sessions = [targetSession, ...sessions.filter(s => s && s.id !== job.sessionId)];
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(sessions));
+        if (storageKey === 'atom_chat_sessions_guest') {
+          localStorage.setItem('atom_chat_history', JSON.stringify(targetSession.messages.slice(-50)));
+        }
+      } catch (e) {
+        console.warn('[ATOM] Background commit localStorage error:', e);
+      }
+    }
+
+    // Sync to backend if authenticated
+    const token = job.authToken || window.ATOM_Account?.getToken();
+    if (token) {
+      try {
+        fetch('/api/sessions/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            sessions,
+            active_id: job.sessionId,
+            token,
+            force_overwrite: false
+          }),
+          keepalive: true
+        }).catch(() => {});
+      } catch {}
+    }
+
+    // Telemetry logging
+    const logPrompt = job.logPrompt || job.displayPrompt || '';
+    if (typeof window.logTelemetry === 'function') {
+      if (job.status === 'completed') {
+        window.logTelemetry({
+          user_input: logPrompt,
+          model_used: job.result?.model || 'unknown',
+          response_time: job.result?.duration || 0,
+          status: 'SUCCESS',
+          ai_response: assistantMsg.content
+        });
+      } else if (job.status === 'aborted') {
+        window.logTelemetry({
+          user_input: logPrompt,
+          model_used: 'Aborted',
+          response_time: 0,
+          status: 'ABORTED',
+          ai_response: assistantMsg.content
+        });
+      } else {
+        window.logTelemetry({
+          user_input: logPrompt,
+          model_used: 'ERROR',
+          response_time: 0,
+          status: 'ERROR',
+          ai_response: assistantMsg.content
+        });
+      }
+    }
+
+    await idbDeleteJob(job.jobId);
+    postToServiceWorker({ type: 'CHAT_MARK_COMMITTED', jobId: job.jobId }).catch(() => {});
+
+    if (!isChatPage()) {
+      addUnreadSession(job.sessionId);
+      if (typeof window.showToast === 'function') {
+        if (job.status === 'completed') {
+          window.showToast('✅ A.T.O.M. selesai menjawab di tab Chat!', 'success', 4500);
+        } else if (job.status === 'error') {
+          window.showToast('⚠️ Proses chat mengalami kendala. Cek tab Chat.', 'warning', 4500);
+        }
+      }
+    }
+
+    window.dispatchEvent(new CustomEvent('atom:chat-job-committed', {
+      detail: { job, assistantMsg }
+    }));
+
+    await refreshNavChatIndicator();
+    return true;
+  }
+
+  async function pingServiceWorker() {
+    const sw = await getActiveServiceWorker(400);
+    if (!sw) return null;
+    return new Promise((resolve) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          resolve(null);
+        }
+      }, 600);
+      try {
+        const mc = new MessageChannel();
+        mc.port1.onmessage = (ev) => {
+          if (!settled) {
+            settled = true;
+            clearTimeout(timer);
+            resolve(ev.data || null);
+          }
+        };
+        sw.postMessage({ type: 'CHAT_PING' }, [mc.port2]);
+      } catch {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          resolve(null);
+        }
+      }
+    });
+  }
+
+  async function getRunningJobs(verifyWithSw = false) {
+    if (verifyWithSw) {
+      await pingServiceWorker();
+    }
+    const idbJobs = await idbGetAllJobs();
+    const runningMap = new Map();
+    idbJobs.forEach(j => {
+      if (j && j.status === 'running') {
+        runningMap.set(j.jobId, j);
+      }
+    });
+    _inPageRunningJobs.forEach((j, id) => {
+      if (j && j.status === 'running') {
+        runningMap.set(id, j);
+      }
+    });
+    return Array.from(runningMap.values());
+  }
+
+  async function reconcileFinishedJobs() {
+    await pingServiceWorker();
+    const allJobs = await idbGetAllJobs();
+    for (const job of allJobs) {
+      if (job && job.status && job.status !== 'running') {
+        await commitFinishedJob(job);
+      }
+    }
+    await refreshNavChatIndicator();
+  }
+
+  async function refreshNavChatIndicator() {
+    const chatNavLink = document.getElementById('nav-chat') || document.querySelector('.sidebar-nav a[href="index.html"]');
+    if (!chatNavLink) return;
+
+    const running = await getRunningJobs(false);
+    const unread = getUnreadSessionIds();
+
+    let badge = chatNavLink.querySelector('.nav-chat-bg-badge');
+    if (running.length > 0) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'nav-chat-bg-badge';
+        chatNavLink.appendChild(badge);
+      }
+      badge.className = 'nav-chat-bg-badge is-processing';
+      badge.innerHTML = `<span class="nav-chat-bg-dot"></span><span>Proses</span>`;
+      chatNavLink.classList.add('has-bg-activity');
+    } else if (!isChatPage() && unread.length > 0) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'nav-chat-bg-badge';
+        chatNavLink.appendChild(badge);
+      }
+      badge.className = 'nav-chat-bg-badge is-unread';
+      badge.innerHTML = `<span class="nav-chat-bg-dot"></span><span>Selesai</span>`;
+      chatNavLink.classList.add('has-bg-activity');
+    } else {
+      badge?.remove();
+      chatNavLink.classList.remove('has-bg-activity');
+    }
+  }
+
+  async function getActiveServiceWorker(timeoutMs = 1500) {
+    if (!('serviceWorker' in navigator)) return null;
+    try {
+      if (!_swReg) {
+        _swReg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      }
+      if (_swReg.active) return _swReg.active;
+
+      const readyPromise = navigator.serviceWorker.ready.then(reg => {
+        _swReg = reg;
+        return reg.active || navigator.serviceWorker.controller || null;
+      });
+      const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), timeoutMs));
+      return await Promise.race([readyPromise, timeoutPromise]);
+    } catch {
+      return null;
+    }
+  }
+
+  async function postToServiceWorker(message) {
+    const sw = await getActiveServiceWorker(800);
+    if (!sw) return false;
+    try {
+      sw.postMessage(message);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function handleBgMessage(data) {
+    if (!data || !data.type) return;
+    if (data.type === 'CHAT_JOB_ACK' && data.jobId) {
+      const resolver = _ackResolvers.get(data.jobId);
+      if (resolver) {
+        _ackResolvers.delete(data.jobId);
+        resolver(true);
+      }
+    } else if (data.type === 'CHAT_JOB_STARTED' && data.job) {
+      refreshNavChatIndicator();
+      window.dispatchEvent(new CustomEvent('atom:chat-job-started', { detail: { job: data.job } }));
+    } else if (data.type === 'CHAT_JOB_DONE' && data.job) {
+      commitFinishedJob(data.job);
+    }
+  }
+
+  async function runInPageFallback(job) {
+    const controller = new AbortController();
+    _inPageControllers.set(job.jobId, controller);
+    const runningRecord = { ...job, status: 'running', startedAt: Date.now() };
+    _inPageRunningJobs.set(job.jobId, runningRecord);
+    refreshNavChatIndicator();
+    window.dispatchEvent(new CustomEvent('atom:chat-job-started', { detail: { job: runningRecord } }));
+
+    let finishedRecord;
+    try {
+      const resp = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(job.body),
+        signal: controller.signal
+      });
+      if (!resp.ok) {
+        const errJson = await resp.json().catch(() => ({}));
+        throw new Error(errJson.detail || errJson.error || errJson.message || `HTTP ${resp.status}`);
+      }
+      const result = await resp.json();
+      finishedRecord = { ...runningRecord, status: 'completed', result, finishedAt: Date.now() };
+    } catch (err) {
+      if (err && err.name === 'AbortError') {
+        finishedRecord = { ...runningRecord, status: 'aborted', finishedAt: Date.now() };
+      } else {
+        finishedRecord = {
+          ...runningRecord,
+          status: 'error',
+          error: (err && err.message) ? err.message : 'Gagal menghubungi API. Periksa koneksi.',
+          finishedAt: Date.now()
+        };
+      }
+    } finally {
+      _inPageControllers.delete(job.jobId);
+      _inPageRunningJobs.delete(job.jobId);
+    }
+
+    await commitFinishedJob(finishedRecord);
+  }
+
+  async function startJob(job) {
+    const sw = await getActiveServiceWorker(1500);
+    if (sw) {
+      const acked = await new Promise((resolve) => {
+        const timer = setTimeout(() => {
+          _ackResolvers.delete(job.jobId);
+          resolve(false);
+        }, 900);
+        _ackResolvers.set(job.jobId, (ok) => {
+          clearTimeout(timer);
+          resolve(ok);
+        });
+        try {
+          sw.postMessage({ type: 'CHAT_START', job });
+        } catch {
+          clearTimeout(timer);
+          _ackResolvers.delete(job.jobId);
+          resolve(false);
+        }
+      });
+
+      if (acked) {
+        refreshNavChatIndicator();
+        return { mode: 'sw', jobId: job.jobId };
+      }
+    }
+
+    // Fallback: in-page fetch if Service Worker is unavailable (e.g. non-HTTPS LAN IP)
+    runInPageFallback(job);
+    return { mode: 'page', jobId: job.jobId };
+  }
+
+  async function abortJob(jobId) {
+    if (!jobId) return;
+    const ctrl = _inPageControllers.get(jobId);
+    if (ctrl) {
+      ctrl.abort();
+    }
+    await postToServiceWorker({ type: 'CHAT_ABORT', jobId });
+  }
+
+  async function init() {
+    if (_initialized) return _readyPromise;
+    _initialized = true;
+
+    if (typeof BroadcastChannel !== 'undefined') {
+      _bc = new BroadcastChannel(CHANNEL_NAME);
+      _bc.onmessage = (event) => handleBgMessage(event.data);
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (event) => handleBgMessage(event.data));
+      await getActiveServiceWorker(1200);
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        reconcileFinishedJobs();
+      }
+    });
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === UNREAD_SESSIONS_KEY || e.key === COMMITTED_KEY) {
+        refreshNavChatIndicator();
+      }
+    });
+
+    await reconcileFinishedJobs();
+    _readyResolve?.();
+    return _readyPromise;
+  }
+
+  window.ATOM_ChatBackground = {
+    init,
+    readyPromise: _readyPromise,
+    startJob,
+    abortJob,
+    getRunningJobs,
+    reconcileFinishedJobs,
+    refreshNavChatIndicator,
+    getUnreadSessionIds,
+    markSessionRead
+  };
+})();
+
+function initGlobalShellWidgets() {
   applySavedPreferences();
+  window.ATOM_Account?.renderSidebarAccountWidget();
+  window.ATOM_Account?.verifySession();
+  window.ATOM_ChatBackground?.init();
   // Tampilkan Disclaimer Privasi jika belum pernah ditutup dengan opsi "Do not show again"
   showPrivacyDisclaimerModal(false);
-});
+}
+
+document.addEventListener('DOMContentLoaded', initGlobalShellWidgets);
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
-  applySavedPreferences();
-  showPrivacyDisclaimerModal(false);
+  initGlobalShellWidgets();
 }
 
 console.log('%c⚛️ A.T.O.M. v4.0 CORTEX INITIALIZED', 'color:#C9A227;font-size:14px;font-weight:bold;');

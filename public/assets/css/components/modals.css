@@ -1007,4 +1007,237 @@
   }
 }
 
+/* ─── Per-Account Sidebar Widget & Auth Modal (DESIGN.md Midnight Matte Precision) ─── */
+.sidebar-account-box {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.sidebar-account-info {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  flex: 1;
+}
+
+.sidebar-account-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-ui);
+  font-size: 0.74rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.sidebar-account-box.is-authenticated .sidebar-account-avatar {
+  background: rgba(235, 179, 56, 0.14);
+  border-color: rgba(235, 179, 56, 0.35);
+  color: var(--gold-light);
+}
+
+.sidebar-account-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sidebar-account-name {
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-account-sub {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-sync-led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.sidebar-account-box.is-authenticated .account-sync-led {
+  background: #3fb950;
+  box-shadow: 0 0 4px rgba(63, 185, 80, 0.55);
+}
+
+.sidebar-account-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.sidebar-account-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 4px 9px;
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.sidebar-account-btn:hover {
+  background: var(--bg-hover);
+  border-color: rgba(235, 179, 56, 0.4);
+  color: var(--gold-light);
+}
+
+.sidebar-account-btn.btn-logout-icon {
+  padding: 4px 6px;
+  color: var(--text-muted);
+}
+
+.sidebar-account-btn.btn-logout-icon:hover {
+  color: #f87171;
+  border-color: rgba(248, 81, 73, 0.35);
+  background: rgba(248, 81, 73, 0.08);
+}
+
+@media (max-height: 780px) {
+  .sidebar-account-box {
+    padding: 7px 10px;
+  }
+}
+
+/* ─── Auth Modal Card ─── */
+.atom-auth-modal-card {
+  max-width: 440px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.auth-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.auth-label {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: -0.01em;
+}
+
+.auth-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.48);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.86rem;
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.auth-input:focus {
+  border-color: var(--gold-primary);
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.auth-input::placeholder {
+  color: var(--text-muted);
+}
+
+.auth-hint {
+  font-size: 0.71rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.auth-error-banner {
+  background: rgba(248, 81, 73, 0.08);
+  border: 1px solid rgba(248, 81, 73, 0.28);
+  border-radius: var(--radius-md);
+  padding: 8px 11px;
+  font-size: 0.78rem;
+  color: #fca5a5;
+  display: none;
+}
+
+.auth-error-banner.visible {
+  display: block;
+}
+
+.auth-merge-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-md);
+  font-size: 0.77rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+.auth-merge-box input[type="checkbox"] {
+  accent-color: var(--gold-primary);
+  margin-top: 2px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.auth-submit-btn {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .auth-input {
+    font-size: 16px !important;
+  }
+}
+
 

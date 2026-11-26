@@ -77,6 +77,17 @@ class SummarizeNewsRequest(BaseModel):
     content: str
     source: Optional[str] = "News Source"
 
+class AccountRegisterRequest(BaseModel):
+    username: str
+    password: str
+    display_name: Optional[str] = None
+
+class AccountLoginRequest(BaseModel):
+    username: str
+    password: str
+
 class SessionsPayload(BaseModel):
     sessions: List[Dict[str, Any]] = []
     active_id: Optional[str] = None
+    token: Optional[str] = None
+    force_overwrite: Optional[bool] = False

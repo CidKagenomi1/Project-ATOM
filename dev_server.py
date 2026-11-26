@@ -1,6 +1,10 @@
 import os
 import sys
 import site
+import mimetypes
+
+# Ensure .js files (including /sw.js Service Worker) always serve with valid JS MIME type on Windows
+mimetypes.add_type("application/javascript", ".js")
 
 # Ensure project virtualenv packages (.venv / .venv_atom) are available even when launched with system Python
 _base_dir = os.path.dirname(os.path.abspath(__file__))

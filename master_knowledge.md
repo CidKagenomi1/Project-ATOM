@@ -17,6 +17,7 @@
 3. [BAB III — MODUL OPERASIONAL & EKOSISTEM FITUR](#bab-iii--modul-operasional--ekosistem-fitur)
    - 3.1 Neural Chat (Multi-Session & Multimodal Vision)
    - 3.2 Crew Notes (Obsidian & NotebookLM Hybrid Engine)
+   - 3.3 Ekosistem Tools & Kapabilitas Lengkap (7 Pilar Utama)
    - 3.4 Floating Concept Bubbles (Micro-Ideation to Full Article)
    - 3.5 Telemetry Monitor & Observability Dashboard
    - 3.6 Settings & Provider Configuration
@@ -136,6 +137,16 @@ Modul pengorganisasian catatan pintar yang memadukan fleksibilitas Markdown ala 
   * **🤖 Auto-Tagging:** Mengidentifikasi kata kunci utama dari catatan dan menyematkan tag kategori secara otomatis.
 * **Mode 💬 Note Chat (Gaya NotebookLM):**
   * Memungkinkan pengguna melakukan tanya jawab interaktif yang **dibatasi secara ketat hanya pada isi catatan yang sedang dibuka**, mencegah halusinasi dari informasi luar.
+
+### 3.3 Ekosistem Tools & Kapabilitas Lengkap (7 Pilar Utama)
+Detail teknis selengkapnya tercatat dalam `data/ancestor/vol3_tools_capabilities_registry.md` dan mencakup 7 pilar operasional utama:
+1. **Core Orchestration & Routing Tools:** `NeuralRouter` (`decide_route` untuk rute `ACTION`, `CREW`, `AI`), `ATOMCortex` Multi-Provider Dispatcher, Deep Reasoning / CoT Parser (`extract_reasoning`), `Librarian` (sliding context window & sessions), serta `Sentinel` (telemetry CSV & API logger).
+2. **Live Web Search & Scraping Tools:** Mesin pencarian paralel 5 sumber di `modules/notes/web_search.py` (Bing Search RSS, Google News RSS Indonesia, Wikipedia ID/EN API, Explicit URL Scraper) dan `scrape_url` (`BeautifulSoup`) di `modules/core/utils.py`.
+3. **Multi-Agent & System Action Tools:** CrewAI Autonomous Research Squad (`run_research_crew`) dengan grounding pencarian web real-time dan **ATOM Hands** (`execute_system_action` via Groq JSON intent + `pyautogui` & `psutil` untuk kendali `BROWSER`, `APP`, serta `SYSTEM`).
+4. **Zero-Token Local Knowledge & Banter Tools:** `AncestorEngine` (`match_echo` & `get_relevant_context` dari 8 volume Codex + `master_knowledge.md`) dan `BanterEngine` (12 kluster obrolan santai lokal bebas token).
+5. **Smart Notes & Co-Pilot AI Tools:** `chat_with_context` (NotebookLM + web search), `smart_insert_into_note`, `generate_study_note` (`comprehensive`, `exam_prep`, `deep_dive`), `refine_text` (`structured`, `minutes`, `summary`, `grammar`), `process_micro_ai` (`refine`, `summarize`, `explain`, `translate`, `todo`), `auto_tag`, `generate_title`, `generate_metadata_pydantic` (Pydantic AI), dan `expand_bubble`.
+6. **Multi-Format Document Importer & Multimodal Tools:** `parse_uploaded_document` (`.pdf`, `.docx`, `.pptx`, `.xlsx`/`.xlsm`, `.csv`/`.tsv`, `.json`, `.html`, `.md`, `.txt`, dan 18+ ekstensi kode sumber) serta handler multimodal gambar & *clipboard paste* (`Ctrl+V`).
+7. **News Bulletin & Executive Summarizer Tools:** `fetch_bulletin` (NewsAPI & GNews fallback untuk cakupan Nasional anti-kriminal & Internasional), manajemen bookmark artikel, serta `summarize_news_endpoint`.
 
 ### 3.4 Floating Concept Bubbles (Micro-Ideation Engine)
 * **Kanvas Visual Nodus:** Ide-ide kilat yang belum sempat dirangkai menjadi catatan panjang dicatat sebagai gelembung pemikiran (*Concept Bubbles*) yang mengapung di atas kanvas animasi kabut (*Fog Canvas*).
@@ -351,6 +362,41 @@ A.T.O.M. dibangun dengan arsitektur modular berlapis yang efisien dan tangguh:
 1. **Zero UI Overhead:** Frontend dibangun murni tanpa framework berat untuk memastikan rendering kilat di semua peramban.
 2. **Dual-Environment Ready:** Berjalan mulus di `dev_server.py` lokal (port 8000) maupun di serverless cloud Vercel.
 3. **Resilience Layer:** Dilengkapi proteksi penyimpanan aman ke `/tmp` jika disk bersifat *read-only*, serta sistem failover mandiri di setiap titik integrasi.
+```
+
+---
+
+### Template 6: Kartu "Tools & Kapabilitas A.T.O.M."
+*(Kueri: "Tools apa saja yang dimiliki ATOM sekarang?")*
+
+```markdown
+### 🛠️ Daftar Lengkap Tools & Kapabilitas A.T.O.M. v4.0
+
+Saat ini **A.T.O.M. v4.0** memiliki **7 pilar tools dan modul fungsional**:
+
+1. **Core Orchestration & Routing (`router.py`, `cortex.py`, `reasoning_parser.py`, `librarian.py`, `sentinel.py`):**
+   * **Neural Router (`decide_route`):** Memilah instruksi ke jalur `ACTION`, `CREW`, atau `AI`.
+   * **Cortex Multi-Provider Dispatcher:** Auto-routing & failover lintas Groq, OpenRouter, Hugging Face, dan Google Gemini.
+   * **Deep Reasoning / CoT Parser (`extract_reasoning`):** Memisahkan tag `<think>` / `reasoning_content` ke panel reasoning.
+   * **Librarian & Sentinel:** Pengelola konteks percakapan *sliding window* dan pencatat telemetri latensi (`data/atom_telemetry.csv`).
+2. **Live Web Search & Scraping (`modules/notes/web_search.py`, `modules/core/utils.py`):**
+   * Pencarian web paralel 5 sumber: **Bing Search RSS**, **Google News RSS Indonesia**, **Wikipedia ID/EN API**, serta **Explicit URL Scraper** (`scrape_url` via `BeautifulSoup`).
+3. **Multi-Agent & System Action (`modules/core/crew.py`, `modules/core/interpreter.py`):**
+   * **CrewAI Research Squad (`run_research_crew`):** Skuad 2 agen (*Senior Researcher* + *Content Writer*) yang diperkaya data web real-time.
+   * **ATOM Hands (`execute_system_action`):** Eksekutor Windows via Groq JSON Intent + **PyAutoGUI** & **psutil** (`BROWSER`, `APP`, `SYSTEM`: cek baterai, kunci layar, safety guard `shutdown`).
+4. **Zero-Token Local Knowledge & Banter (`ancestor.py`, `banter_matrix.py`):**
+   * **Ancestor Engine:** *Ancestor Echo* (0-token template) dan *Ancestor Synthesis* (RAG 8 volume Codex + `master_knowledge.md`).
+   * **Banter Matrix:** 12 kluster obrolan santai lokal bebas kuota API.
+5. **Smart Notes & Co-Pilot AI (`api/notes_ai.py`, `api/routes/notes.py`, `api/routes/bubbles.py`):**
+   * **Knowledge Co-Pilot (`chat_with_context`):** Tanya-jawab berbasis catatan dengan sitasi & opsi web search.
+   * **Smart Contextual Insertion (`smart_insert_into_note`):** Sisip konten ke heading paling relevan tanpa menghapus isi asli.
+   * **AI Study Note Generator (`generate_study_note`):** Preset `comprehensive`, `exam_prep`, dan `deep_dive`.
+   * **Magic Formatter (`refine_text`) & Micro-AI (`process_micro_ai`):** Format `structured`/`minutes`/`summary`/`grammar` dan aksi cepat `refine`/`summarize`/`explain`/`translate`/`todo`.
+   * **Auto-Tag, Title, Pydantic Metadata & Concept Bubbles Expander (`expand_bubble`).**
+6. **Multi-Format Document Importer & Multimodal (`modules/notes/file_importer.py`, `api/routes/chat.py`):**
+   * Parser dokumen universal (`parse_uploaded_document`) untuk `.pdf`, `.docx`, `.pptx`, `.xlsx`/`.xlsm`, `.csv`/`.tsv`, `.json`, `.html`, `.md`, `.txt`, dan 18+ ekstensi kode, plus lampiran gambar clipboard (`Ctrl+V`).
+7. **News Bulletin & Summarizer (`api/routes/bulletin.py`):**
+   * Agregasi berita **NewsAPI** & **GNews** (Nasional dengan filter anti-kriminal & Internasional), bookmark artikel, serta ringkasan eksekutif AI (`summarize_news_endpoint`).
 ```
 
 ---

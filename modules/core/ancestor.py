@@ -4,7 +4,7 @@ Initiated by: Alif Rahmadi
 
 Provides Dual-Mode Knowledge Retrieval:
 1. Ancestor Echo (Deterministic Zero-LLM): Instant 0-token response for exact / quick prompts.
-2. Ancestor Synthesis (LangChain Grounded): Sectional retrieval from 7 encyclopedic volumes.
+2. Ancestor Synthesis (LangChain Grounded): Sectional retrieval from 8 encyclopedic volumes.
 """
 
 from __future__ import annotations
@@ -110,7 +110,35 @@ A.T.O.M. dibangun dengan arsitektur modular berlapis yang efisien dan tangguh:
 #### Keunggulan Utama Arsitektur Ini:
 1. **Zero UI Overhead:** Frontend dibangun murni tanpa framework berat untuk memastikan rendering kilat di semua peramban.
 2. **Dual-Environment Ready:** Berjalan mulus di `dev_server.py` lokal (port 8000) maupun di serverless cloud Vercel.
-3. **Resilience Layer:** Dilengkapi proteksi penyimpanan aman ke `/tmp` jika disk bersifat *read-only*, serta sistem failover mandiri di setiap titik integrasi."""
+3. **Resilience Layer:** Dilengkapi proteksi penyimpanan aman ke `/tmp` jika disk bersifat *read-only*, serta sistem failover mandiri di setiap titik integrasi.""",
+
+    "tools": """### 🛠️ Daftar Lengkap Tools & Kapabilitas A.T.O.M. v4.0
+
+Saat ini **A.T.O.M. v4.0** memiliki **7 pilar tools dan modul fungsional**:
+
+1. **Core Orchestration & Routing (`router.py`, `cortex.py`, `reasoning_parser.py`, `librarian.py`, `sentinel.py`):**
+   * **Neural Router (`decide_route`):** Memilah instruksi ke jalur `ACTION`, `CREW`, atau `AI`.
+   * **Cortex Multi-Provider Dispatcher:** Auto-routing & failover lintas Groq, OpenRouter, Hugging Face, dan Google Gemini.
+   * **Deep Reasoning / CoT Parser (`extract_reasoning`):** Memisahkan tag `<think>` / `reasoning_content` ke panel reasoning.
+   * **Librarian & Sentinel:** Pengelola konteks percakapan *sliding window* dan pencatat telemetri latensi (`data/atom_telemetry.csv`).
+2. **Live Web Search & Scraping (`modules/notes/web_search.py`, `modules/core/utils.py`):**
+   * Pencarian web paralel 5 sumber: **Bing Search RSS**, **Google News RSS Indonesia**, **Wikipedia ID/EN API**, serta **Explicit URL Scraper** (`scrape_url` via `BeautifulSoup`).
+3. **Multi-Agent & System Action (`modules/core/crew.py`, `modules/core/interpreter.py`):**
+   * **CrewAI Research Squad (`run_research_crew`):** Skuad 2 agen (*Senior Researcher* + *Content Writer*) yang diperkaya data web real-time.
+   * **ATOM Hands (`execute_system_action`):** Eksekutor Windows via Groq JSON Intent + **PyAutoGUI** & **psutil** (`BROWSER`, `APP`, `SYSTEM`: cek baterai, kunci layar, safety guard `shutdown`).
+4. **Zero-Token Local Knowledge & Banter (`ancestor.py`, `banter_matrix.py`):**
+   * **Ancestor Engine:** *Ancestor Echo* (0-token template) dan *Ancestor Synthesis* (RAG 8 volume Codex + `master_knowledge.md`).
+   * **Banter Matrix:** 12 kluster obrolan santai lokal bebas kuota API.
+5. **Smart Notes & Co-Pilot AI (`api/notes_ai.py`, `api/routes/notes.py`, `api/routes/bubbles.py`):**
+   * **Knowledge Co-Pilot (`chat_with_context`):** Tanya-jawab berbasis catatan dengan sitasi & opsi web search.
+   * **Smart Contextual Insertion (`smart_insert_into_note`):** Sisip konten ke heading paling relevan tanpa menghapus isi asli.
+   * **AI Study Note Generator (`generate_study_note`):** Preset `comprehensive`, `exam_prep`, dan `deep_dive`.
+   * **Magic Formatter (`refine_text`) & Micro-AI (`process_micro_ai`):** Format `structured`/`minutes`/`summary`/`grammar` dan aksi cepat `refine`/`summarize`/`explain`/`translate`/`todo`.
+   * **Auto-Tag, Title, Pydantic Metadata & Concept Bubbles Expander (`expand_bubble`).**
+6. **Multi-Format Document Importer & Multimodal (`modules/notes/file_importer.py`, `api/routes/chat.py`):**
+   * Parser dokumen universal (`parse_uploaded_document`) untuk `.pdf`, `.docx`, `.pptx`, `.xlsx`/`.xlsm`, `.csv`/`.tsv`, `.json`, `.html`, `.md`, `.txt`, dan 18+ ekstensi kode, plus lampiran gambar clipboard (`Ctrl+V`).
+7. **News Bulletin & Summarizer (`api/routes/bulletin.py`):**
+   * Agregasi berita **NewsAPI** & **GNews** (Nasional dengan filter anti-kriminal & Internasional), bookmark artikel, dan ringkasan eksekutif AI (`summarize_news_endpoint`)."""
 }
 
 
@@ -182,7 +210,14 @@ class AncestorEngine:
         ]):
             return self._build_echo_response("architecture", "Blueprint Architecture Echo", "Full-Stack Topology Verified")
 
-        # --- 6. CASUAL BANTER MATRIX (12 INTENT CLUSTERS & RANDOMIZED WITTY POOL) ---
+        # 6. Tools & Capabilities match
+        if any(kw in p for kw in [
+            "tools apa saja", "apa saja tools", "daftar tools", "tools yang dimiliki",
+            "tool apa saja", "alat apa saja yang dimiliki", "tools atom", "kapabilitas dan tools"
+        ]):
+            return self._build_echo_response("tools", "Tools & Capabilities Registry Echo", "7 Core Tool Pillars Verified")
+
+        # --- 7. CASUAL BANTER MATRIX (12 INTENT CLUSTERS & RANDOMIZED WITTY POOL) ---
         try:
             from modules.core.banter_matrix import get_banter_engine
             banter_resp = get_banter_engine().match(prompt)
@@ -220,6 +255,14 @@ class AncestorEngine:
         if any(k in p for k in ["cortex", "failover", "librarian", "sentinel", "telemetri", "token", "circuit breaker"]):
             if "vol2_neural_core_deepdive.md" in self._cache:
                 selected_docs.append(self._cache["vol2_neural_core_deepdive.md"])
+
+        if any(k in p for k in [
+            "tools", "tool", "fitur", "kapabilitas", "kemampuan", "modul",
+            "web search", "scraper", "importer", "bulletin", "pyautogui",
+            "interpreter", "co-pilot", "study note", "micro ai"
+        ]):
+            if "vol3_tools_capabilities_registry.md" in self._cache:
+                selected_docs.append(self._cache["vol3_tools_capabilities_registry.md"])
 
         if any(k in p for k in ["notes", "zettelkasten", "bubble", "notebooklm", "catatan", "pydantic"]):
             if "vol4_ideation_lab_notes.md" in self._cache:

@@ -8,8 +8,11 @@ let chatSessions  = [];   // [{id: str, title: str, updatedAt: num, messages: [.
 let currentSessionId = null;
 let chatHistory   = [];   // Active session messages [{role:'user'|'assistant', content:str, thinking:[], model:str}]
 let contextFiles  = [];   // [{name:str, content:str}]
-let isProcessing  = false;
-let activeAbortController = null;
+const runningJobsBySession = new Map(); // sessionId -> { jobId, typingEl }
+
+function isSessionProcessing(sessionId = currentSessionId) {
+  return Boolean(sessionId && runningJobsBySession.has(sessionId));
+}
 
 // ─── DOM Elements ─────────────────────────────────────────
 const messagesArea     = document.getElementById('messages-area');
@@ -25,12 +28,20 @@ const btnTopbarNewChat = document.getElementById('btn-topbar-new-chat');
 const chatSessionsList = document.getElementById('chat-sessions-list');
 
 // ─── Init ─────────────────────────────────────────────────
-function init() {
+async function init() {
+  if (window.ATOM_ChatBackground?.init) {
+    await window.ATOM_ChatBackground.init();
+  }
+
   loadSessionsFromStorage();
+  if (currentSessionId) {
+    window.ATOM_ChatBackground?.markSessionRead(currentSessionId);
+  }
   updateEmptyState();
   updateSendButton();
   initModelModeSwitch();
   renderSessionsSidebar();
+  await restoreRunningBackgroundJobs();
 
   btnNewChat?.addEventListener('click', () => {
     createNewSession();
@@ -55,6 +66,163 @@ function init() {
     updateSendButton();
     chatInputEl.focus();
   }
+
+  window.addEventListener('atom:auth-changed', async () => {
+    contextFiles = [];
+    runningJobsBySession.forEach(entry => entry.typingEl?.remove());
+    runningJobsBySession.clear();
+    loadSessionsFromStorage();
+    await restoreRunningBackgroundJobs();
+    renderSessionsSidebar();
+    updateEmptyState();
+    updateSendButton();
+  });
+
+  window.addEventListener('atom:chat-job-started', (e) => {
+    const job = e.detail?.job;
+    if (!job || job.storageKey !== getSessionsKey()) return;
+    if (!runningJobsBySession.has(job.sessionId)) {
+      let typingEl = null;
+      if (job.sessionId === currentSessionId) {
+        typingEl = showTypingIndicator();
+      }
+      runningJobsBySession.set(job.sessionId, { jobId: job.jobId, typingEl });
+      renderSessionsSidebar();
+      updateSendButton();
+    }
+  });
+
+  window.addEventListener('atom:chat-job-committed', (e) => {
+    const { job, assistantMsg } = e.detail || {};
+    if (!job || !assistantMsg) return;
+    handleCommittedBackgroundJob(job, assistantMsg);
+  });
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === getSessionsKey()) {
+      syncMemoryFromStorage();
+    }
+  });
+}
+
+async function restoreRunningBackgroundJobs() {
+  if (!window.ATOM_ChatBackground?.getRunningJobs) return;
+  const runningJobs = await window.ATOM_ChatBackground.getRunningJobs(true);
+  const currentKey = getSessionsKey();
+
+  runningJobs.forEach(job => {
+    if (!job || job.storageKey !== currentKey) return;
+    const existing = runningJobsBySession.get(job.sessionId);
+    if (!existing) {
+      let typingEl = null;
+      if (job.sessionId === currentSessionId) {
+        typingEl = showTypingIndicator();
+      }
+      runningJobsBySession.set(job.sessionId, { jobId: job.jobId, typingEl });
+    } else if (job.sessionId === currentSessionId && (!existing.typingEl || !existing.typingEl.isConnected)) {
+      existing.typingEl = showTypingIndicator();
+    }
+  });
+
+  renderSessionsSidebar();
+  updateSendButton();
+}
+
+function syncMemoryFromStorage() {
+  try {
+    const raw = localStorage.getItem(getSessionsKey());
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return;
+    chatSessions = parsed;
+    const active = chatSessions.find(s => s.id === currentSessionId);
+    if (active) {
+      chatHistory = active.messages || [];
+      renderCurrentSessionMessages();
+      updateEmptyState();
+    }
+    renderSessionsSidebar();
+  } catch {}
+}
+
+function handleCommittedBackgroundJob(job, assistantMsg) {
+  const existingEntry = runningJobsBySession.get(job.sessionId);
+  if (existingEntry) {
+    existingEntry.typingEl?.remove();
+    runningJobsBySession.delete(job.sessionId);
+  }
+
+  if (job.storageKey !== getSessionsKey()) {
+    renderSessionsSidebar();
+    updateSendButton();
+    return;
+  }
+
+  let targetSession = chatSessions.find(s => s.id === job.sessionId);
+  if (!targetSession) {
+    const rawTitle = (job.displayPrompt || 'Percakapan Baru').trim();
+    const title = rawTitle.length > 30 ? rawTitle.slice(0, 30) + '...' : (rawTitle || 'Percakapan Baru');
+    targetSession = {
+      id: job.sessionId,
+      title,
+      updatedAt: Date.now(),
+      messages: []
+    };
+    chatSessions.unshift(targetSession);
+  }
+
+  if (!Array.isArray(targetSession.messages)) {
+    targetSession.messages = [];
+  }
+
+  const alreadyExists = targetSession.messages.some(m => m && m.jobId === job.jobId);
+  if (!alreadyExists) {
+    targetSession.messages.push(assistantMsg);
+    targetSession.updatedAt = Date.now();
+    chatSessions = [targetSession, ...chatSessions.filter(s => s.id !== job.sessionId)];
+  }
+
+  if (currentSessionId === job.sessionId) {
+    chatHistory = targetSession.messages;
+    window.ATOM_ChatBackground?.markSessionRead(currentSessionId);
+
+    const alreadyRendered = Array.from(messagesArea?.querySelectorAll('.chat-message.assistant') || [])
+      .some(el => el.dataset.jobId === job.jobId);
+    if (!alreadyRendered) {
+      renderMessage(
+        assistantMsg.role,
+        assistantMsg.content,
+        assistantMsg.thinking || [],
+        assistantMsg.model || '',
+        '',
+        [],
+        job.jobId
+      );
+    }
+
+    updateEmptyState();
+    scrollToBottom(messagesArea);
+
+    if (job.status === 'aborted') {
+      showToast('Proses dibatalkan oleh pengguna.', 'warning');
+    }
+  } else {
+    // User is viewing a different session tab; mark target session unread in localStorage
+    try {
+      const unreadKey = 'atom_chat_unread_sessions';
+      const unread = JSON.parse(localStorage.getItem(unreadKey) || '[]');
+      if (Array.isArray(unread) && !unread.includes(job.sessionId)) {
+        unread.push(job.sessionId);
+        localStorage.setItem(unreadKey, JSON.stringify(unread));
+      }
+    } catch {}
+    if (job.status === 'completed') {
+      showToast(`✅ Balasan selesai di sesi "${targetSession.title}"`, 'success');
+    }
+  }
+
+  renderSessionsSidebar();
+  updateSendButton();
 }
 
 // ─── Input Handlers ───────────────────────────────────────
@@ -66,15 +234,15 @@ chatInputEl?.addEventListener('input', () => {
 chatInputEl?.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
-    if (!isProcessing && chatInputEl.value.trim()) {
+    if (!isSessionProcessing(currentSessionId) && chatInputEl.value.trim()) {
       sendMessage();
     }
   }
 });
 
 btnSend?.addEventListener('click', () => {
-  if (isProcessing) {
-    abortProcess();
+  if (isSessionProcessing(currentSessionId)) {
+    abortProcess(currentSessionId);
   } else {
     sendMessage();
   }
@@ -217,119 +385,15 @@ window.removeFile = function(index) {
 };
 
 // ─── Abort Process ─────────────────────────────────────────
-function abortProcess() {
-  if (activeAbortController) {
-    activeAbortController.abort();
-    activeAbortController = null;
-  }
-  isProcessing = false;
-  updateSendButton();
-}
-
-// ─── Send Message ──────────────────────────────────────────
-async function sendMessage() {
-  if (isProcessing) {
-    abortProcess();
-    return;
-  }
-  const prompt = chatInputEl?.value.trim();
-  const hasFiles = contextFiles.length > 0;
-  if (!prompt && !hasFiles) return;
-
-  isProcessing = true;
-  chatInputEl.value = '';
-  autoResize(chatInputEl);
-  updateSendButton();
-
-  // Add user message to UI
-  const displayPrompt = prompt || (hasFiles ? (contextFiles.some(f => f.type?.startsWith('image/')) ? '[Gambar Terlampir]' : '[Dokumen Terlampir]') : '');
-  const sentAttachments = [...contextFiles];
-  renderMessage('user', displayPrompt, [], '', '', sentAttachments);
-  chatHistory.push({ role: 'user', content: displayPrompt, attachments: sentAttachments });
-  saveHistory();
-  updateEmptyState();
-  scrollToBottom(messagesArea);
-
-  // Show typing indicator
-  const typingEl = showTypingIndicator();
-  activeAbortController = new AbortController();
-
-  try {
-    const response = await callChatAPI(prompt, chatHistory.slice(0, -1), contextFiles, activeAbortController.signal);
-
-    typingEl?.remove();
-
-    // Render assistant response
-    renderMessage('assistant', response.response, response.thinking || [], response.model || '');
-    chatHistory.push({
-      role: 'assistant',
-      content: response.response,
-      thinking: response.thinking || [],
-      model: response.model || ''
-    });
-
-    // Log to telemetry
-    const logPrompt = prompt || displayPrompt;
-    logTelemetry({
-      user_input: logPrompt,
-      model_used: response.model || 'unknown',
-      response_time: response.duration || 0,
-      status: 'SUCCESS',
-      ai_response: response.response
-    });
-
-    // Save history
-    saveHistory();
-
-    // Clear files after sending
-    contextFiles = [];
-    renderAttachedFiles();
-
-  } catch (err) {
-    typingEl?.remove();
-    if (err.name === 'AbortError') {
-      const abortMsg = '_⚠️ Respon AI dihentikan oleh pengguna (Request aborted)._';
-      renderMessage('assistant', abortMsg, [], 'Aborted');
-      chatHistory.push({
-        role: 'assistant',
-        content: abortMsg,
-        thinking: [],
-        model: 'Aborted'
-      });
-      saveHistory();
-
-      const logPrompt = prompt || displayPrompt;
-      logTelemetry({
-        user_input: logPrompt,
-        model_used: 'Aborted',
-        response_time: 0,
-        status: 'ABORTED',
-        ai_response: abortMsg
-      });
-      showToast('Proses dibatalkan oleh pengguna.', 'warning');
-    } else {
-      const errorMsg = `[ERROR] ${err.message || 'Gagal menghubungi API. Periksa koneksi.'}`;
-      renderMessage('assistant', errorMsg);
-
-      const logPrompt = prompt || displayPrompt;
-      logTelemetry({
-        user_input: logPrompt,
-        model_used: 'ERROR',
-        response_time: 0,
-        status: 'ERROR',
-        ai_response: errorMsg
-      });
-    }
-  } finally {
-    isProcessing = false;
-    activeAbortController = null;
-    updateSendButton();
-    scrollToBottom(messagesArea);
+function abortProcess(sessionId = currentSessionId) {
+  const entry = sessionId ? runningJobsBySession.get(sessionId) : null;
+  if (entry?.jobId) {
+    window.ATOM_ChatBackground?.abortJob(entry.jobId);
   }
 }
 
-// ─── API Call ──────────────────────────────────────────────
-async function callChatAPI(prompt, history, files, signal) {
+// ─── Build Chat API Payload ────────────────────────────────
+function buildChatAPIBody(prompt, history, files) {
   const isAdvance = document.getElementById('mode-btn-advance')?.classList.contains('active');
   const modelSelectEl = document.getElementById('model-select');
   let selectedModel = (isAdvance && modelSelectEl) ? modelSelectEl.value : 'groq';
@@ -337,31 +401,93 @@ async function callChatAPI(prompt, history, files, signal) {
     selectedModel = 'groq';
   }
 
-  const body = {
+  return {
     prompt,
     history: history.map(m => ({ role: m.role, content: m.content })),
     files: files.map(f => ({ name: f.name, content: f.content })),
     model_preference: selectedModel
   };
+}
 
-  const resp = await fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: signal
-  });
+// ─── Send Message ──────────────────────────────────────────
+async function sendMessage() {
+  if (!currentSessionId) {
+    currentSessionId = 'sess_' + Date.now();
+  }
+  const targetSessionId = currentSessionId;
 
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err.detail || err.error || err.message || `HTTP ${resp.status}`);
+  if (isSessionProcessing(targetSessionId)) {
+    abortProcess(targetSessionId);
+    return;
   }
 
+  const prompt = chatInputEl?.value.trim() || '';
+  const hasFiles = contextFiles.length > 0;
+  if (!prompt && !hasFiles) return;
 
-  return resp.json();
+  const sentAttachments = [...contextFiles];
+  const historyBeforeSend = [...chatHistory];
+  const displayPrompt = prompt || (hasFiles ? (sentAttachments.some(f => f.type?.startsWith('image/')) ? '[Gambar Terlampir]' : '[Dokumen Terlampir]') : '');
+  const apiBody = buildChatAPIBody(prompt, historyBeforeSend, sentAttachments);
+
+  // Clear input & attached files immediately so tab/session switches stay clean
+  chatInputEl.value = '';
+  autoResize(chatInputEl);
+  contextFiles = [];
+  renderAttachedFiles();
+
+  // Add user message to UI and persist immediately
+  renderMessage('user', displayPrompt, [], '', '', sentAttachments);
+  chatHistory.push({ role: 'user', content: displayPrompt, attachments: sentAttachments });
+  saveHistory(true);
+  updateEmptyState();
+  scrollToBottom(messagesArea);
+
+  const jobId = 'job_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  const typingEl = showTypingIndicator();
+  runningJobsBySession.set(targetSessionId, { jobId, typingEl });
+  updateSendButton();
+  renderSessionsSidebar();
+
+  const jobPayload = {
+    jobId,
+    sessionId: targetSessionId,
+    storageKey: getSessionsKey(),
+    activeKey: getActiveIdKey(),
+    authToken: window.ATOM_Account?.getToken() || null,
+    logPrompt: prompt || displayPrompt,
+    displayPrompt,
+    body: apiBody,
+    createdAt: Date.now()
+  };
+
+  if (window.ATOM_ChatBackground?.startJob) {
+    await window.ATOM_ChatBackground.startJob(jobPayload);
+  } else {
+    // Defensive fallback if bridge isn't present
+    try {
+      const resp = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(apiBody)
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const result = await resp.json();
+      handleCommittedBackgroundJob(
+        { ...jobPayload, status: 'completed', result },
+        { role: 'assistant', content: result.response, thinking: result.thinking || [], model: result.model || '', jobId }
+      );
+    } catch (err) {
+      handleCommittedBackgroundJob(
+        { ...jobPayload, status: 'error', error: err.message },
+        { role: 'assistant', content: `[ERROR] ${err.message}`, thinking: [], model: '', jobId }
+      );
+    }
+  }
 }
 
 // ─── Render Message ────────────────────────────────────────
-function renderMessage(role, content, thinking = [], model = '', personaBadge = '', attachments = []) {
+function renderMessage(role, content, thinking = [], model = '', personaBadge = '', attachments = [], jobId = '') {
   if (!messagesArea) return;
 
   const msgId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
@@ -473,6 +599,7 @@ function renderMessage(role, content, thinking = [], model = '', personaBadge = 
   msgEl.id = msgId;
   msgEl.dataset.rawContent = content;
   msgEl.dataset.model = model;
+  if (jobId) msgEl.dataset.jobId = jobId;
   msgEl.innerHTML = `
     ${avatarHtml}
     <div class="message-body">
@@ -512,7 +639,7 @@ window.copyAssistantMessage = function(msgId) {
 };
 
 window.repeatAssistantMessage = function(msgId) {
-  if (isProcessing) {
+  if (isSessionProcessing(currentSessionId)) {
     showToast('Harap tunggu atau hentikan proses saat ini terlebih dahulu.', 'warning');
     return;
   }
@@ -684,7 +811,7 @@ function updateEmptyState() {
 
 function updateSendButton() {
   if (!btnSend || !chatInputEl) return;
-  if (isProcessing) {
+  if (isSessionProcessing(currentSessionId)) {
     btnSend.disabled = false;
     btnSend.classList.add('btn-abort');
     btnSend.setAttribute('title', 'Hentikan proses respon (Stop / Abort)');
@@ -711,17 +838,31 @@ function updateSendButton() {
 }
 
 // ─── Multi-Session Storage & Management ─────────────────────
+function getSessionsKey() {
+  return window.ATOM_Account ? window.ATOM_Account.getChatStorageKey() : 'atom_chat_sessions_guest';
+}
+
+function getActiveIdKey() {
+  return window.ATOM_Account ? window.ATOM_Account.getActiveSessionStorageKey() : 'atom_active_session_id_guest';
+}
+
 function loadSessionsFromStorage() {
+  window.ATOM_Account?.migrateLegacyGuestStorage();
+  chatSessions = [];
+  currentSessionId = null;
+  chatHistory = [];
+
   try {
-    const rawSessions = localStorage.getItem('atom_chat_sessions');
+    const rawSessions = localStorage.getItem(getSessionsKey());
     if (rawSessions) {
-      chatSessions = JSON.parse(rawSessions);
-    } else {
-      // Migrasi data lama dari atom_chat_history jika ada
+      const parsed = JSON.parse(rawSessions);
+      chatSessions = Array.isArray(parsed) ? parsed : [];
+    } else if (!window.ATOM_Account?.isLoggedIn()) {
+      // Migrasi data lama dari atom_chat_history khusus untuk Mode Guest
       const oldHistory = localStorage.getItem('atom_chat_history');
       if (oldHistory) {
         const parsedOld = JSON.parse(oldHistory);
-        if (parsedOld && parsedOld.length > 0) {
+        if (Array.isArray(parsedOld) && parsedOld.length > 0) {
           const firstUserMsg = parsedOld.find(m => m.role === 'user');
           const title = firstUserMsg ? firstUserMsg.content.slice(0, 32) : 'Percakapan Sebelumnya';
           const defaultSession = {
@@ -731,7 +872,7 @@ function loadSessionsFromStorage() {
             messages: parsedOld
           };
           chatSessions = [defaultSession];
-          saveSessionsToStorage();
+          saveSessionsToStorage(false, false);
         }
       }
     }
@@ -740,7 +881,7 @@ function loadSessionsFromStorage() {
   }
 
   // Set active session
-  const lastActiveId = localStorage.getItem('atom_active_session_id');
+  const lastActiveId = localStorage.getItem(getActiveIdKey());
   const found = chatSessions.find(s => s.id === lastActiveId);
   if (found) {
     currentSessionId = found.id;
@@ -749,44 +890,61 @@ function loadSessionsFromStorage() {
     currentSessionId = chatSessions[0].id;
     chatHistory = chatSessions[0].messages || [];
   } else {
-    // Buat sesi baru kosong jika belum ada
-    createNewSession(false);
-    return;
+    // Buat sesi baru kosong di memori/lokal TANPA mem-push ke backend agar tidak menimpa data cloud
+    createNewSession(false, false);
   }
 
   renderCurrentSessionMessages();
+  renderSessionsSidebar();
   syncSessionsWithBackend();
 }
 
 let chatSyncTimer = null;
 
 async function syncSessionsWithBackend() {
+  // Mode Guest hanya menyimpan riwayat di localStorage browser, tidak pernah ke server/MongoDB
+  if (!window.ATOM_Account || !window.ATOM_Account.isLoggedIn()) {
+    return;
+  }
+
+  const token = window.ATOM_Account.getToken();
+  if (!token) return;
+
   try {
-    const res = await fetch('/api/sessions/chat');
+    const res = await fetch('/api/sessions/chat', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
     if (!res.ok) return;
     const data = await res.json();
-    const serverSessions = (data && Array.isArray(data.sessions)) ? data.sessions : [];
+    if (data && data.guest) return;
 
-    const isClientEmpty = !chatSessions || chatSessions.length === 0 || 
-      (chatSessions.length === 1 && (!chatSessions[0].messages || chatSessions[0].messages.length === 0));
+    const serverSessions = (data && Array.isArray(data.sessions)) ? data.sessions : [];
+    const serverHasMessages = serverSessions.some(s => Array.isArray(s.messages) && s.messages.length > 0);
+
+    const isClientEmpty = !chatSessions || chatSessions.length === 0 ||
+      chatSessions.every(s => !Array.isArray(s.messages) || s.messages.length === 0);
 
     // Case 1: Client is empty, but server has sessions with messages
-    if (isClientEmpty && serverSessions.length > 0) {
-      const serverHasMessages = serverSessions.some(s => s.messages && s.messages.length > 0);
-      if (serverHasMessages) {
-        chatSessions = serverSessions;
-        currentSessionId = data.active_id || serverSessions[0].id;
-        const active = chatSessions.find(s => s.id === currentSessionId) || chatSessions[0];
-        chatHistory = active ? (active.messages || []) : [];
-        try {
-          localStorage.setItem('atom_chat_sessions', JSON.stringify(chatSessions));
-          if (currentSessionId) localStorage.setItem('atom_active_session_id', currentSessionId);
-        } catch {}
-        renderCurrentSessionMessages();
-        renderSessionsSidebar();
-        updateEmptyState();
-        return;
-      }
+    if (isClientEmpty && serverSessions.length > 0 && serverHasMessages) {
+      chatSessions = serverSessions;
+      currentSessionId = data.active_id || serverSessions[0].id;
+      const active = chatSessions.find(s => s.id === currentSessionId) || chatSessions[0];
+      chatHistory = active ? (active.messages || []) : [];
+      try {
+        localStorage.setItem(getSessionsKey(), JSON.stringify(chatSessions));
+        if (currentSessionId) localStorage.setItem(getActiveIdKey(), currentSessionId);
+      } catch {}
+      renderCurrentSessionMessages();
+      renderSessionsSidebar();
+      updateEmptyState();
+      return;
+    }
+
+    // Jika keduanya kosong, tidak perlu melakukan sinkronisasi timpa
+    if (isClientEmpty && !serverHasMessages) {
+      return;
     }
 
     // Case 2: Server has no sessions but client has active chats -> persist immediately
@@ -809,14 +967,18 @@ async function syncSessionsWithBackend() {
       // Compare with client sessions
       chatSessions.forEach(clientSess => {
         if (!clientSess || !clientSess.id) return;
+        const clientMsgs = clientSess.messages || [];
         const serverSess = sessionMap.get(clientSess.id);
 
         if (!serverSess) {
-          // Exists on client only -> keep
+          // Jangan masukkan sesi placeholder kosong jika server sudah punya sesi berisi pesan
+          if (clientMsgs.length === 0 && serverHasMessages) {
+            hasChanges = true;
+            return;
+          }
           sessionMap.set(clientSess.id, clientSess);
           clientHadNewer = true;
         } else {
-          const clientMsgs = clientSess.messages || [];
           const serverMsgs = serverSess.messages || [];
           const clientTime = clientSess.updatedAt || 0;
           const serverTime = serverSess.updatedAt || 0;
@@ -851,8 +1013,8 @@ async function syncSessionsWithBackend() {
         }
 
         try {
-          localStorage.setItem('atom_chat_sessions', JSON.stringify(chatSessions));
-          if (currentSessionId) localStorage.setItem('atom_active_session_id', currentSessionId);
+          localStorage.setItem(getSessionsKey(), JSON.stringify(chatSessions));
+          if (currentSessionId) localStorage.setItem(getActiveIdKey(), currentSessionId);
         } catch {}
 
         renderCurrentSessionMessages();
@@ -869,16 +1031,32 @@ async function syncSessionsWithBackend() {
   }
 }
 
-function saveSessionsToBackend(immediate = false) {
+function saveSessionsToBackend(immediate = false, forceOverwrite = false) {
   clearTimeout(chatSyncTimer);
+  if (!window.ATOM_Account || !window.ATOM_Account.isLoggedIn()) {
+    return;
+  }
+
+  const hasAnyMessages = chatSessions.some(s => Array.isArray(s.messages) && s.messages.length > 0);
+  if (!forceOverwrite && !hasAnyMessages) {
+    return;
+  }
+
   const doSave = async () => {
+    const token = window.ATOM_Account?.getToken();
+    if (!token) return;
     try {
       await fetch('/api/sessions/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           sessions: chatSessions,
-          active_id: currentSessionId
+          active_id: currentSessionId,
+          token: token,
+          force_overwrite: Boolean(forceOverwrite)
         }),
         keepalive: true
       });
@@ -892,25 +1070,29 @@ function saveSessionsToBackend(immediate = false) {
   }
 }
 
-function saveSessionsToStorage(immediateBackend = false) {
+function saveSessionsToStorage(immediateBackend = false, syncBackend = true, forceOverwrite = false) {
   try {
-    localStorage.setItem('atom_chat_sessions', JSON.stringify(chatSessions));
+    localStorage.setItem(getSessionsKey(), JSON.stringify(chatSessions));
     if (currentSessionId) {
-      localStorage.setItem('atom_active_session_id', currentSessionId);
+      localStorage.setItem(getActiveIdKey(), currentSessionId);
     }
-    // Backward compatibility
-    localStorage.setItem('atom_chat_history', JSON.stringify(chatHistory.slice(-50)));
+    // Backward compatibility hanya untuk mode Guest
+    if (!window.ATOM_Account?.isLoggedIn()) {
+      localStorage.setItem('atom_chat_history', JSON.stringify(chatHistory.slice(-50)));
+    }
   } catch (e) {
     console.warn('[ATOM] localStorage quota exceeded or error:', e);
   }
-  saveSessionsToBackend(immediateBackend);
+  if (syncBackend && window.ATOM_Account?.isLoggedIn()) {
+    saveSessionsToBackend(immediateBackend, forceOverwrite);
+  }
 }
 
 // Flush pending changes before page unloads (e.g. switching sidebar / changing page)
 window.addEventListener('beforeunload', () => saveSessionsToBackend(true));
 window.addEventListener('pagehide', () => saveSessionsToBackend(true));
 
-function saveHistory() {
+function saveHistory(immediateBackend = false) {
   if (!currentSessionId) {
     currentSessionId = 'sess_' + Date.now();
   }
@@ -943,11 +1125,11 @@ function saveHistory() {
     chatSessions = [session, ...chatSessions.filter(s => s.id !== currentSessionId)];
   }
 
-  saveSessionsToStorage();
+  saveSessionsToStorage(immediateBackend);
   renderSessionsSidebar();
 }
 
-function createNewSession(notify = true) {
+function createNewSession(notify = true, syncBackend = true) {
   currentSessionId = 'sess_' + Date.now();
   chatHistory = [];
   contextFiles = [];
@@ -960,7 +1142,7 @@ function createNewSession(notify = true) {
   };
 
   chatSessions.unshift(newSession);
-  saveSessionsToStorage();
+  saveSessionsToStorage(false, syncBackend);
   renderCurrentSessionMessages();
   renderSessionsSidebar();
   updateEmptyState();
@@ -994,6 +1176,7 @@ function switchSession(sessionId) {
   currentSessionId = target.id;
   chatHistory = target.messages || [];
   contextFiles = [];
+  window.ATOM_ChatBackground?.markSessionRead(currentSessionId);
 
   // Sinkronkan persona sesi yang dipilih
   if (target.personaId) {
@@ -1004,7 +1187,7 @@ function switchSession(sessionId) {
     });
   }
 
-  localStorage.setItem('atom_active_session_id', currentSessionId);
+  localStorage.setItem(getActiveIdKey(), currentSessionId);
   renderCurrentSessionMessages();
   renderSessionsSidebar();
   updateEmptyState();
@@ -1020,6 +1203,12 @@ function deleteSession(sessionId, event) {
   if (event) event.stopPropagation();
   if (!confirm('Hapus sesi obrolan ini?')) return;
 
+  if (runningJobsBySession.has(sessionId)) {
+    abortProcess(sessionId);
+    runningJobsBySession.get(sessionId)?.typingEl?.remove();
+    runningJobsBySession.delete(sessionId);
+  }
+
   chatSessions = chatSessions.filter(s => s.id !== sessionId);
 
   if (currentSessionId === sessionId) {
@@ -1027,12 +1216,14 @@ function deleteSession(sessionId, event) {
       currentSessionId = chatSessions[0].id;
       chatHistory = chatSessions[0].messages || [];
     } else {
-      createNewSession(false);
+      createNewSession(false, false);
+      saveSessionsToStorage(true, true, true);
+      showToast('Sesi dihapus', 'success');
       return;
     }
   }
 
-  saveSessionsToStorage();
+  saveSessionsToStorage(true, true, true);
   renderCurrentSessionMessages();
   renderSessionsSidebar();
   updateEmptyState();
@@ -1042,6 +1233,13 @@ function deleteSession(sessionId, event) {
 
 function renderCurrentSessionMessages() {
   if (!messagesArea) return;
+
+  // Detach existing typing indicators cleanly without cancelling active jobs
+  runningJobsBySession.forEach(entry => {
+    entry.typingEl?.remove();
+    entry.typingEl = null;
+  });
+
   const header = messagesArea.querySelector('.atom-header');
   messagesArea.innerHTML = '';
   if (header) {
@@ -1049,7 +1247,7 @@ function renderCurrentSessionMessages() {
   }
 
   chatHistory.forEach(msg => {
-    renderMessage(msg.role, msg.content, msg.thinking || [], msg.model || '', '', msg.attachments || []);
+    renderMessage(msg.role, msg.content, msg.thinking || [], msg.model || '', '', msg.attachments || [], msg.jobId || '');
   });
 
   if (emptyChatDiv) {
@@ -1057,8 +1255,14 @@ function renderCurrentSessionMessages() {
     emptyChatDiv.style.display = chatHistory.length === 0 ? '' : 'none';
   }
 
+  // Restore typing indicator if this session has an active background job
+  if (currentSessionId && runningJobsBySession.has(currentSessionId)) {
+    const entry = runningJobsBySession.get(currentSessionId);
+    entry.typingEl = showTypingIndicator();
+  }
+
   renderAttachedFiles();
-  if (chatHistory && chatHistory.length > 0) {
+  if (chatHistory && chatHistory.length > 0 || isSessionProcessing(currentSessionId)) {
     setTimeout(() => scrollToBottom(messagesArea), 50);
   } else if (messagesArea) {
     messagesArea.scrollTop = 0;
@@ -1077,9 +1281,14 @@ function renderSessionsSidebar() {
     return;
   }
 
+  const unreadIds = window.ATOM_ChatBackground?.getUnreadSessionIds() || [];
+
   chatSessions.forEach(session => {
+    const isRunning = runningJobsBySession.has(session.id);
+    const isUnread = !isRunning && session.id !== currentSessionId && unreadIds.includes(session.id);
+
     const item = document.createElement('div');
-    item.className = `session-item${session.id === currentSessionId ? ' active' : ''}`;
+    item.className = `session-item${session.id === currentSessionId ? ' active' : ''}${isRunning ? ' is-processing' : ''}${isUnread ? ' is-unread' : ''}`;
     item.onclick = () => switchSession(session.id);
 
     const info = document.createElement('div');
@@ -1091,8 +1300,14 @@ function renderSessionsSidebar() {
 
     const timeEl = document.createElement('div');
     timeEl.className = 'session-time';
-    const d = new Date(session.updatedAt || Date.now());
-    timeEl.textContent = d.toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    if (isRunning) {
+      timeEl.innerHTML = '<span class="session-status-dot running"></span> Memproses...';
+    } else if (isUnread) {
+      timeEl.innerHTML = '<span class="session-status-dot unread"></span> Balasan baru';
+    } else {
+      const d = new Date(session.updatedAt || Date.now());
+      timeEl.textContent = d.toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    }
 
     info.appendChild(titleEl);
     info.appendChild(timeEl);
@@ -1116,6 +1331,12 @@ function renderSessionsSidebar() {
 
 function clearChat() {
   if (confirm('Hapus seluruh pesan di sesi obrolan saat ini?')) {
+    if (currentSessionId && runningJobsBySession.has(currentSessionId)) {
+      abortProcess(currentSessionId);
+      runningJobsBySession.get(currentSessionId)?.typingEl?.remove();
+      runningJobsBySession.delete(currentSessionId);
+    }
+
     chatHistory = [];
     contextFiles = [];
 
@@ -1126,7 +1347,7 @@ function clearChat() {
       currentSession.updatedAt = Date.now();
     }
 
-    saveSessionsToStorage();
+    saveSessionsToStorage(true, true, true);
     renderCurrentSessionMessages();
     renderSessionsSidebar();
     showToast('Sesi obrolan direset', 'success');

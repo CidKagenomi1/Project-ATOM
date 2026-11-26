@@ -334,6 +334,7 @@ _INTERNAL_ATOM_PATTERNS = [
     "cara kerja cortex", "cortex neural router", "modul sentinel", "modul librarian",
     "arsitektur atom", "arsitektur sistem a.t.o.m", "arsitektur sistem atom",
     "blueprint arsitektur", "apa itu crewai di atom", "modul crewai",
+    "tools apa saja", "apa saja tools", "daftar tools", "tools yang dimiliki", "tools atom",
 ]
 
 

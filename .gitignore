@@ -21,6 +21,10 @@ atom_telemetry.csv
 # atom_smart_notes.json  ← uncomment kalau tidak mau commit notes
 # atom_bubbles.json      ← uncomment kalau tidak mau commit bubbles
 
+# Per-account auth & chat session storage (local runtime user data)
+data/atom_chat_sessions.json
+data/atom_accounts.json
+
 # Cache
 cache/
 .cache/

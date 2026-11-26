@@ -29,10 +29,12 @@ from api.schemas import (
     UnmarkRequest,
     SummarizeNewsRequest,
     SessionsPayload,
+    AccountRegisterRequest,
+    AccountLoginRequest,
 )
 
 # Import modular route handlers
-from api.routes import chat, notes, bubbles, telemetry, bulletin, sessions
+from api.routes import chat, notes, bubbles, telemetry, bulletin, sessions, accounts
 
 app = FastAPI(
     title="A.T.O.M. API",
@@ -56,6 +58,7 @@ app.include_router(bubbles.router, prefix="/api", tags=["Bubbles"])
 app.include_router(telemetry.router, prefix="/api", tags=["Telemetry"])
 app.include_router(bulletin.router, prefix="/api", tags=["Bulletin"])
 app.include_router(sessions.router, prefix="/api", tags=["Sessions"])
+app.include_router(accounts.router, prefix="/api", tags=["Accounts"])
 
 @app.get("/")
 async def root():
@@ -87,14 +90,5 @@ try:
                 if rows:
                     db["telemetry"].insert_many(rows)
                     safe_print("[OK] DATABASE: Telemetry migration completed.")
-        
-        # Sessions migration
-        chat_sess_file = "data/atom_chat_sessions.json"
-        if db["sessions"].count_documents({"type": "chat"}) == 0 and os.path.exists(chat_sess_file):
-            local_chat = safe_load_json(chat_sess_file, None)
-            if local_chat and local_chat.get("sessions"):
-                local_chat["type"] = "chat"
-                db["sessions"].update_one({"type": "chat"}, {"$set": local_chat}, upsert=True)
-                safe_print("[OK] DATABASE: Migrated local chat sessions to MongoDB.")
 except Exception as db_e:
     safe_print(f"[WARN] DATABASE init/migration warning: {db_e}")
