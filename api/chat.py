@@ -209,16 +209,22 @@ def call_ai(messages: list, model_preference: str = "auto", image_files: list = 
             return content, f"Fireworks-{model.split('/')[-1]}"
         raise ValueError("Fireworks not configured")
 
-    def try_openrouter(pref_model=None):
+    def try_openrouter(pref_model=None, vision_only=False):
         if os.environ.get("OPENROUTER_API_KEY"):
             if pref_model:
                 models = [pref_model]
+            elif vision_only:
+                vl_str = os.environ.get("OPENROUTER_VL_MODEL", "nvidia/nemotron-3.5-super-vl:free")
+                models = [m.strip() for m in vl_str.split(",") if m.strip()]
+                for vl_fb in ["nvidia/nemotron-3.5-super-vl:free", "google/gemma-4-31b-it:free"]:
+                    if vl_fb not in models:
+                        models.append(vl_fb)
             else:
                 models_str = os.environ.get("OPENROUTER_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
                 models = [m.strip() for m in models_str.split(",") if m.strip()]
-            for fallback in ["nvidia/nemotron-3.5-super-vl:free", "nvidia/nemotron-3-super-120b-a12b:free", "google/gemma-4-31b-it:free", "liquid/lfm-2.5-2.6b:free"]:
-                if fallback not in models:
-                    models.append(fallback)
+                for fallback in ["nvidia/nemotron-3.5-super-vl:free", "nvidia/nemotron-3-super-120b-a12b:free", "google/gemma-4-31b-it:free", "liquid/lfm-2.5-2.6b:free"]:
+                    if fallback not in models:
+                        models.append(fallback)
             
             import urllib.request
             import json
@@ -375,6 +381,13 @@ def call_ai(messages: list, model_preference: str = "auto", image_files: list = 
                 return call_funcs[pref_provider]()
         except Exception as e:
             print(f"[PREFERENCE ERROR] Preferred model {model_preference} failed: {e}. Falling back...")
+
+    if image_files:
+        for provider, kwargs in [("openrouter", {"vision_only": True}), ("gemini", {})]:
+            try:
+                return call_funcs[provider](**kwargs)
+            except Exception as e:
+                print(f"[VISION AUTO-ROUTE ERROR] {provider} failed: {e}")
             
     fallback_chain = ["groq", "fireworks", "openrouter", "deepseek", "huggingface", "gemini"]
     for provider in fallback_chain:

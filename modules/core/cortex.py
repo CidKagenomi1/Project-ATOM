@@ -348,14 +348,28 @@ class ATOMCortex:
         for msg in messages:
             cls_name = msg.__class__.__name__
             raw_c = msg.content
-            text = next((item.get("text", "") for item in raw_c if isinstance(item, dict) and item.get("type") == "text"), "") if isinstance(raw_c, list) else str(raw_c)
-            if not text:
+            parts = []
+            if isinstance(raw_c, list):
+                for item in raw_c:
+                    if not isinstance(item, dict):
+                        continue
+                    if item.get("type") == "text" and item.get("text"):
+                        parts.append({"text": str(item["text"])})
+                    elif item.get("type") == "image_url":
+                        url_val = (item.get("image_url") or {}).get("url", "")
+                        if url_val.startswith("data:") and ";base64," in url_val:
+                            header, b64_data = url_val.split(";base64,", 1)
+                            mime = header.replace("data:", "", 1) or "image/png"
+                            parts.append({"inlineData": {"mimeType": mime, "data": b64_data}})
+            elif raw_c:
+                parts.append({"text": str(raw_c)})
+            if not parts:
                 continue
             if cls_name == "SystemMessage":
-                system_parts.append(text)
+                system_parts.extend(p.get("text", "") for p in parts if "text" in p)
             else:
                 role = "model" if cls_name == "AIMessage" else "user"
-                contents.append({"role": role, "parts": [{"text": text}]})
+                contents.append({"role": role, "parts": parts})
 
         if not contents:
             contents = [{"role": "user", "parts": [{"text": "\n\n".join(system_parts)}]}]
@@ -402,6 +416,12 @@ class ATOMCortex:
             parts = pref.split(":", 1)
             pref_provider = parts[0]
             pref_model = parts[1]
+
+        has_images = any(
+            isinstance(getattr(m, "content", None), list)
+            and any(isinstance(item, dict) and item.get("type") == "image_url" for item in m.content)
+            for m in messages
+        )
 
         def get_text_messages(msgs):
             text_msgs = []
@@ -466,15 +486,23 @@ class ATOMCortex:
                 return content, f"Fireworks-{model.split('/')[-1]}-Cloud", False
             raise ValueError("Fireworks not configured")
 
-        def try_openrouter(model_override=None):
+        def try_openrouter(model_override=None, vision_only=False):
             if OPENROUTER_AVAILABLE:
-                self._update_status("🌐 Cloud (OpenRouter)...")
-                raw_model = model_override if model_override else os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
-                models = [m.strip() for m in raw_model.split(",") if m.strip()]
-                # Add reliable fallback free models if none specified or if custom failed
-                for fallback in ["nvidia/nemotron-3.5-super-vl:free", "nvidia/nemotron-3-super-120b-a12b:free", "google/gemma-4-31b-it:free", "liquid/lfm-2.5-2.6b:free"]:
-                    if fallback not in models:
-                        models.append(fallback)
+                self._update_status("👁️ Vision (OpenRouter VL)..." if vision_only else "🌐 Cloud (OpenRouter)...")
+                if model_override:
+                    models = [m.strip() for m in model_override.split(",") if m.strip()]
+                elif vision_only:
+                    vl_env = os.getenv("OPENROUTER_VL_MODEL", "nvidia/nemotron-3.5-super-vl:free")
+                    models = [m.strip() for m in vl_env.split(",") if m.strip()]
+                    for vl_fb in ["nvidia/nemotron-3.5-super-vl:free", "google/gemma-4-31b-it:free"]:
+                        if vl_fb not in models:
+                            models.append(vl_fb)
+                else:
+                    raw_model = os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
+                    models = [m.strip() for m in raw_model.split(",") if m.strip()]
+                    for fallback in ["nvidia/nemotron-3.5-super-vl:free", "nvidia/nemotron-3-super-120b-a12b:free", "google/gemma-4-31b-it:free", "liquid/lfm-2.5-2.6b:free"]:
+                        if fallback not in models:
+                            models.append(fallback)
                 last_err = None
                 for model in models:
                     try:
@@ -578,6 +606,24 @@ class ATOMCortex:
             except Exception as e:
                 print(f"[PREFERENCE ERROR] Preferred provider {pref_provider} failed: {e}. Falling back to default chain.")
                 self._update_status(f"⚠️ Preferred model failed. Falling back...")
+
+        # === AUTO VISION ROUTING (Saat input mengandung gambar/foto) ===
+        if has_images:
+            self._update_status("👁️ Multimodal image detected — switching to Vision (VL)...")
+            if OPENROUTER_AVAILABLE:
+                try:
+                    res, model_label, _ = try_openrouter(vision_only=True)
+                    return res, model_label, False
+                except Exception as e:
+                    print(f"   [!] OpenRouter VL error: {e}")
+                    self._update_status("⚠️ OpenRouter VL gagal. Beralih ke Gemini Vision...")
+            if self.gemini_brain or GEMINI_AVAILABLE:
+                try:
+                    res, model_label, _ = try_gemini()
+                    return res, model_label, True
+                except Exception as e:
+                    print(f"   [!] Gemini Vision error: {e}")
+            return "Gagal memproses gambar: pastikan OpenRouter VL atau Gemini API aktif.", "VISION_FAIL", True
 
         # === PHASE 1: TRY LOCAL (OLLAMA) ===
         if self.local_brain:
@@ -764,6 +810,8 @@ KONTEKS PERCAKAPAN:
 {context}""")
             
             if image_files:
+                if (model_preference or "auto").lower() == "auto":
+                    thinking.append({"step": "[VISION]", "detail": "Gambar terdeteksi — Auto-routing ke model Vision (VL)"})
                 content_list = [{"type": "text", "text": user_input}]
                 for img in image_files:
                     content_list.append({

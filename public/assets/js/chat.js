@@ -396,9 +396,12 @@ function abortProcess(sessionId = currentSessionId) {
 function buildChatAPIBody(prompt, history, files) {
   const isAdvance = document.getElementById('mode-btn-advance')?.classList.contains('active');
   const modelSelectEl = document.getElementById('model-select');
-  let selectedModel = (isAdvance && modelSelectEl) ? modelSelectEl.value : 'groq';
-  if (!selectedModel || (!selectedModel.startsWith('groq') && !selectedModel.startsWith('openrouter'))) {
-    selectedModel = 'groq';
+  let selectedModel = 'auto';
+  if (isAdvance && modelSelectEl) {
+    selectedModel = modelSelectEl.value || 'groq';
+    if (!selectedModel.startsWith('groq') && !selectedModel.startsWith('openrouter')) {
+      selectedModel = 'groq';
+    }
   }
 
   return {
