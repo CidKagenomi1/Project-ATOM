@@ -73,8 +73,93 @@ def _extract_topic_from_note(note_context: str) -> str:
     return " ".join(words[:10])
 
 
+_ID_ABBR_MAP = {
+    "yg": "yang",
+    "brp": "berapa",
+    "hrg": "harga",
+    "dgn": "dengan",
+    "utk": "untuk",
+    "gak": "tidak",
+    "ga": "tidak",
+    "bgt": "banget",
+    "kalo": "kalau",
+    "kl": "kalau",
+}
+
+_CHAT_TOPIC_STOPWORDS = {
+    "saya", "aku", "kamu", "anda", "yang", "dan", "atau", "untuk", "dari", "pada",
+    "dengan", "ini", "itu", "lagi", "mau", "bisa", "ada", "apa", "bagaimana",
+    "gimana", "tolong", "dong", "nih", "sih", "aja", "saja", "nya", "ya",
+    "kalau", "kalo", "tentang", "soal", "user", "atom",
+}
+
+_FOLLOWUP_MARKERS = (
+    "maksudnya", "maksud kamu", "yg itu", "yang itu", "yang tadi", "tadi",
+    "bandingkan", "bedanya", "mana yang lebih", "menurutmu", "kenapa gitu",
+    "jelaskan lagi", "contohnya", "lanjut", "terus", "kalo yg", "kalau yang",
+    "apa bedanya",
+)
+
+_QUERY_FOLLOWUP_TOKENS = {
+    "itu", "nya", "yang", "yg", "tadi", "kalo", "kalau", "gimana",
+    "berapa", "brp", "maksudnya", "bedanya",
+}
+
+_LIVE_WEB_KEYWORDS = (
+    "terbaru", "hari ini", "sekarang", "2025", "2026", "berita", "harga",
+    "kurs", "rilis", "update", "cari di web", "google", "link", "sumber",
+)
+
+
+def _normalize_chat_abbreviations(text: str) -> str:
+    """Expand common Indonesian shorthand tokens while keeping original unknowns intact."""
+    tokens = []
+    for tok in (text or "").split():
+        low = tok.lower()
+        tokens.append(_ID_ABBR_MAP.get(low, tok))
+    return " ".join(tokens)
+
+
+def _extract_chat_topic_keywords(context_text: str, max_words: int = 8) -> str:
+    """Extract primary topic keywords from chat context hint when not a Notes header."""
+    if not context_text or "=== DOKUMEN" in context_text:
+        return ""
+    cleaned = re.sub(r"\[[^\]]+\]", " ", str(context_text))
+    cleaned = re.sub(r"[|•·?!.,:;\"'()\[\]{}]+", " ", cleaned)
+    words: List[str] = []
+    seen = set()
+    for w in cleaned.split():
+        low = w.lower()
+        if len(low) <= 2 or low in _CHAT_TOPIC_STOPWORDS or low in seen:
+            continue
+        seen.add(low)
+        words.append(w)
+        if len(words) >= max_words:
+            break
+    return " ".join(words)
+
+
+def _is_contextual_followup_without_web(clean_q: str, context_text: str) -> bool:
+    """Smart Web-Search Gating: skip web search for internal conversational follow-ups."""
+    if not context_text or not context_text.strip():
+        return False
+    low = (clean_q or "").lower().strip()
+    if not low:
+        return False
+    if re.search(r"https?://", low):
+        return False
+    if any(kw in low for kw in _LIVE_WEB_KEYWORDS):
+        return False
+    words = low.split()
+    if len(words) <= 8:
+        return True
+    if any(marker in low for marker in _FOLLOWUP_MARKERS):
+        return True
+    return False
+
+
 def _extract_search_query(query: str, note_context: str = "") -> str:
-    """Derive a clean, concise search query from user prompt and/or active note context."""
+    """Derive a clean, concise search query from user prompt and/or active note/chat context."""
     text = (query or "").strip()
     # Remove bracketed attachment badges like [📎 file.pdf] and URLs
     text = re.sub(r"\[📎[^\]]*\]", " ", text)
@@ -90,16 +175,38 @@ def _extract_search_query(query: str, note_context: str = "") -> str:
         if cleaned == prev:
             break
 
-    # Fall back to note topic when query is empty or too generic
-    topic = _extract_topic_from_note(note_context)
+    cleaned = _normalize_chat_abbreviations(cleaned)
+
+    # Fall back to note topic or chat topic hint when query is empty, short, or follow-up
+    is_chat_hint = bool(note_context) and ("=== DOKUMEN" not in note_context) and ("\n" not in note_context)
+    topic = "" if is_chat_hint else _extract_topic_from_note(note_context)
+    chat_topic = _extract_chat_topic_keywords(note_context) if is_chat_hint else ""
+    active_topic = topic or chat_topic
+
+    low_tokens = set(cleaned.lower().split())
+    has_followup_token = (
+        bool(low_tokens & _QUERY_FOLLOWUP_TOKENS)
+        or any(marker in cleaned.lower() for marker in ("apa bedanya", "kalo yg", "kalau yang"))
+    )
+
     if len(cleaned) < 4 or cleaned.lower() in (
         "catatan", "note", "notes", "web", "internet", "referensi", "fakta",
         "data", "statistik", "wawasan tambahan", "ringkasan", "kesimpulan",
     ):
-        cleaned = topic or text_no_urls or "pengetahuan umum"
-    elif topic and len(cleaned.split()) <= 3 and topic.lower() not in cleaned.lower():
-        # Ground short keyword prompts (e.g. "harga pasar" or "tren 2026") with note title/topic
-        cleaned = f"{topic} {cleaned}"
+        cleaned = active_topic or text_no_urls or "pengetahuan umum"
+    elif active_topic and (
+        (topic and len(cleaned.split()) <= 3)
+        or (chat_topic and (len(cleaned.split()) <= 6 or has_followup_token))
+    ) and active_topic.lower() not in cleaned.lower():
+        # Ground short/follow-up/typo prompts with active topic and deduplicate repeated words
+        merged_words: List[str] = []
+        seen_w = set()
+        for w in f"{active_topic} {cleaned}".split():
+            lw = w.lower()
+            if lw not in seen_w:
+                seen_w.add(lw)
+                merged_words.append(w)
+        cleaned = " ".join(merged_words)
 
     words = cleaned.split()
     return " ".join(words[:12]).strip() or "pengetahuan umum"
@@ -352,7 +459,11 @@ def extract_user_query_from_chat_prompt(prompt: str) -> str:
     return text
 
 
-def should_search_web_for_chat(prompt: str, has_images: bool = False) -> Tuple[bool, str]:
+def should_search_web_for_chat(
+    prompt: str,
+    has_images: bool = False,
+    context_text: str = "",
+) -> Tuple[bool, str]:
     """Return (should_search, clean_query) for ATOM Chat prompts."""
     clean_q = extract_user_query_from_chat_prompt(prompt)
     low = re.sub(r"[?!.,:;]+$", "", clean_q.lower()).strip()
@@ -369,6 +480,9 @@ def should_search_web_for_chat(prompt: str, has_images: bool = False) -> Tuple[b
     if any(pat in low for pat in _INTERNAL_ATOM_PATTERNS) and len(low.split()) <= 15:
         return False, ""
 
+    if _is_contextual_followup_without_web(clean_q, context_text):
+        return False, ""
+
     return True, clean_q
 
 
@@ -379,7 +493,11 @@ def build_chat_web_grounding(
     max_results: int = 6,
 ) -> Dict[str, Any]:
     """Evaluate if chat query needs web grounding and fetch live references gracefully."""
-    should_search, clean_q = should_search_web_for_chat(prompt, has_images=has_images)
+    should_search, clean_q = should_search_web_for_chat(
+        prompt,
+        has_images=has_images,
+        context_text=context_text,
+    )
     if not should_search:
         return {"searched": False, "block": "", "step": None, "sources": [], "query": ""}
 
@@ -399,8 +517,9 @@ def build_chat_web_grounding(
             "\n\nWEB SEARCH GROUNDING (REAL-TIME):\n"
             f"{web_data['formatted_context']}\n\n"
             "INSTRUKSI PENGGUNAAN HASIL WEB:\n"
-            "- Prioritaskan fakta terbaru, angka, tanggal, dan konteks dari HASIL PENCARIAN WEB REAL-TIME di atas untuk menjawab pertanyaan secara akurat dan mutakhir.\n"
-            "- Cantumkan kutipan sumber secara natural menggunakan tautan Markdown `[Nama Sumber / Judul](URL)` pada fakta penting atau di bagian akhir sebagai referensi singkat.\n"
+            "- HANYA gunakan hasil web di atas jika benar-benar relevan dengan topik percakapan aktif.\n"
+            "- Jika hasil pencarian melenceng (misalnya akibat typo pada kueri), ABAIKAN hasil web tersebut dan jawab berdasarkan konteks percakapan serta pengetahuan internal.\n"
+            "- Jika relevan, cantumkan kutipan sumber secara natural menggunakan tautan Markdown `[Nama Sumber / Judul](URL)`.\n"
         )
         step = {
             "step": "[WEB SEARCH]",

@@ -9,6 +9,7 @@ let currentSessionId = null;
 let chatHistory   = [];   // Active session messages [{role:'user'|'assistant', content:str, thinking:[], model:str}]
 let contextFiles  = [];   // [{name:str, content:str}]
 const runningJobsBySession = new Map(); // sessionId -> { jobId, typingEl }
+const dismissedMemoryWarnSessions = new Set(); // sessionId where user chose to continue anyway
 
 function isSessionProcessing(sessionId = currentSessionId) {
   return Boolean(sessionId && runningJobsBySession.has(sessionId));
@@ -39,6 +40,7 @@ async function init() {
   }
   updateEmptyState();
   updateSendButton();
+  updateMemoryHealthBanner();
   initModelModeSwitch();
   renderSessionsSidebar();
   await restoreRunningBackgroundJobs();
@@ -202,6 +204,7 @@ function handleCommittedBackgroundJob(job, assistantMsg) {
 
     updateEmptyState();
     scrollToBottom(messagesArea);
+    updateMemoryHealthBanner(job.result?.memory_meta || null);
 
     if (job.status === 'aborted') {
       showToast('Proses dibatalkan oleh pengguna.', 'warning');
@@ -392,6 +395,85 @@ function abortProcess(sessionId = currentSessionId) {
   }
 }
 
+// ─── Cross-Session Memory & Memory Health Banner ────────────
+function buildCrossSessionMemory(excludeSessionId = currentSessionId) {
+  if (!Array.isArray(chatSessions) || chatSessions.length === 0) return [];
+  const summaries = [];
+  for (const sess of chatSessions) {
+    if (!sess || sess.id === excludeSessionId) continue;
+    const msgs = Array.isArray(sess.messages) ? sess.messages : [];
+    const userMsgs = msgs.filter(m => m && m.role === 'user' && String(m.content || '').trim());
+    if (userMsgs.length === 0) continue;
+
+    const firstTopic = String(userMsgs[0].content).replace(/\s+/g, ' ').trim().slice(0, 90);
+    const lastTopic = userMsgs.length > 1
+      ? String(userMsgs[userMsgs.length - 1].content).replace(/\s+/g, ' ').trim().slice(0, 80)
+      : '';
+    const summaryText = lastTopic && lastTopic !== firstTopic
+      ? `${firstTopic} ... lanjut: ${lastTopic}`
+      : firstTopic;
+
+    summaries.push({
+      title: String(sess.title || 'Percakapan Sebelumnya').slice(0, 60),
+      summary: summaryText.slice(0, 180)
+    });
+    if (summaries.length >= 8) break;
+  }
+  return summaries;
+}
+
+function updateMemoryHealthBanner(memoryMeta = null) {
+  const inputArea = document.querySelector('.input-area');
+  const inputRow = document.getElementById('input-row');
+  if (!inputArea || !inputRow) return;
+
+  let banner = document.getElementById('memory-health-banner');
+  const msgCount = Array.isArray(chatHistory) ? chatHistory.length : 0;
+  const estTokens = Math.floor(
+    (Array.isArray(chatHistory) ? chatHistory : []).reduce((acc, m) => acc + String(m?.content || '').length, 0) / 4
+  );
+
+  const shouldSuggest = Boolean(
+    memoryMeta?.suggest_new_chat || msgCount >= 24 || estTokens >= 6000
+  );
+
+  if (!shouldSuggest || !currentSessionId || dismissedMemoryWarnSessions.has(currentSessionId)) {
+    banner?.remove();
+    return;
+  }
+
+  const isHigh = Boolean(memoryMeta?.level === 'high' || msgCount >= 40 || estTokens >= 12000);
+  const messageText = memoryMeta?.message || (isHigh
+    ? `Sesi ini sudah sangat panjang (${msgCount} pesan). Ringkasan memori tetap aktif, namun disarankan memulai chat baru agar akurasi tetap maksimal.`
+    : `Percakapan ini sudah cukup panjang (${msgCount} pesan). Disarankan memulai chat baru untuk memori paling tajam — atau tetap lanjut di sini.`);
+
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'memory-health-banner';
+    inputArea.insertBefore(banner, inputRow);
+  }
+
+  banner.className = `memory-health-banner${isHigh ? ' level-high' : ''}`;
+  banner.innerHTML = `
+    <div class="memory-banner-text">
+      <span class="memory-banner-icon">${isHigh ? '🧠' : '💡'}</span>
+      <span>${escapeHtml(messageText)}</span>
+    </div>
+    <div class="memory-banner-actions">
+      <button type="button" class="btn-memory-new" id="btn-memory-new-chat">Mulai Chat Baru</button>
+      <button type="button" class="btn-memory-dismiss" id="btn-memory-dismiss">Tetap Lanjut</button>
+    </div>
+  `;
+
+  banner.querySelector('#btn-memory-new-chat')?.addEventListener('click', () => {
+    createNewSession();
+  });
+  banner.querySelector('#btn-memory-dismiss')?.addEventListener('click', () => {
+    if (currentSessionId) dismissedMemoryWarnSessions.add(currentSessionId);
+    banner.remove();
+  });
+}
+
 // ─── Build Chat API Payload ────────────────────────────────
 function buildChatAPIBody(prompt, history, files) {
   const isAdvance = document.getElementById('mode-btn-advance')?.classList.contains('active');
@@ -408,7 +490,8 @@ function buildChatAPIBody(prompt, history, files) {
     prompt,
     history: history.map(m => ({ role: m.role, content: m.content })),
     files: files.map(f => ({ name: f.name, content: f.content })),
-    model_preference: selectedModel
+    model_preference: selectedModel,
+    cross_session_memory: buildCrossSessionMemory(currentSessionId)
   };
 }
 
@@ -444,6 +527,7 @@ async function sendMessage() {
   chatHistory.push({ role: 'user', content: displayPrompt, attachments: sentAttachments });
   saveHistory(true);
   updateEmptyState();
+  updateMemoryHealthBanner();
   scrollToBottom(messagesArea);
 
   const jobId = 'job_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
@@ -1150,6 +1234,7 @@ function createNewSession(notify = true, syncBackend = true) {
   renderSessionsSidebar();
   updateEmptyState();
   updateSendButton();
+  updateMemoryHealthBanner();
 
   if (chatInputEl) {
     chatInputEl.value = '';
@@ -1195,6 +1280,7 @@ function switchSession(sessionId) {
   renderSessionsSidebar();
   updateEmptyState();
   updateSendButton();
+  updateMemoryHealthBanner();
 
   // Tutup sidebar otomatis di mobile setelah memilih sesi
   if (typeof closeSidebar === 'function' && window.innerWidth <= 768) {
@@ -1353,6 +1439,7 @@ function clearChat() {
     saveSessionsToStorage(true, true, true);
     renderCurrentSessionMessages();
     renderSessionsSidebar();
+    updateMemoryHealthBanner();
     showToast('Sesi obrolan direset', 'success');
   }
 }

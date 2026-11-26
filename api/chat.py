@@ -85,7 +85,13 @@ ATURAN FORMAT JAWABAN:
 - Jawab to the point, terstruktur rapi, dan mudah dipahami.
 - Bila menjelaskan hal teknis atau arsitektur, berikan poin-poin yang jelas dan analogi konkret bila perlu.
 - Format kode selalu menggunakan markdown code block dengan penanda bahasa pemrograman yang sesuai.
-- Bila ditanya tentang identitasmu, penciptamu (Alif Rahmadi), cara kerja Cortex, CrewAI, atau arsitektur sistem A.T.O.M., jelaskan secara percaya diri dan akurat berdasarkan fakta di atas."""
+- Bila ditanya tentang identitasmu, penciptamu (Alif Rahmadi), cara kerja Cortex, CrewAI, atau arsitektur sistem A.T.O.M., jelaskan secara percaya diri dan akurat berdasarkan fakta di atas.
+
+MEMORI MULTI-LAYER & PEMAHAMAN TYPO:
+- Selalu perhatikan seluruh 3 layer memori percakapan: riwayat multi-turn terbaru (Layer 1), ringkasan keseluruhan awal sesi aktif (Layer 2), serta memori lintas sesi pengguna (Layer 3) bila tersedia.
+- Jika pengguna salah ketik (typo), menggunakan singkatan ("yg", "brp", "kalo"), atau bertanya secara implisit merujuk ke pesan sebelumnya ("yang itu", "tadi", "mesinnya berapa cc?"), tafsirkan maksudnya berdasarkan topik utama percakapan terlebih dahulu sebelum mengasumsikan topik baru.
+- Bila sebuah typo memiliki dua tafsir yang sama-sama masuk akal, jawab tafsir yang paling sesuai dengan konteks sesi sambil mengonfirmasi secara singkat.
+- Jika terdapat blok WEB SEARCH GROUNDING tetapi hasilnya melenceng dari topik percakapan (misalnya karena typo), abaikan hasil web tersebut dan utamakan konteks percakapan."""
 
 
 def get_route(text: str) -> str:
@@ -98,9 +104,9 @@ def get_route(text: str) -> str:
 
 
 def build_messages(system: str, history: list, prompt: str) -> list:
-    """Build LangChain message list from history."""
+    """Build LangChain message list from working history turns."""
     messages = [SystemMessage(content=system)]
-    for msg in history[-6:]:  # Last 3 exchanges = 6 messages
+    for msg in history[-12:]:  # Up to 6 full exchanges = 12 messages
         role = msg.get("role", "user")
         content = msg.get("content", "")
         if role == "user":
@@ -473,7 +479,38 @@ class handler(BaseHTTPRequestHandler):
             thinking.append({"step": "[CREW]", "detail": "CrewAI tidak tersedia di versi web. Melanjutkan dengan AI standar..."})
 
         model_preference = data.get("model_preference", "auto")
+        cross_session_memory = data.get("cross_session_memory", [])
         thinking.append({"step": "[AI]", "detail": f"Cloud mode aktif (Preference: {model_preference.upper()})"})
+
+        # Hydrate 3-layer memory via Librarian (fallback gracefully if module unavailable)
+        memory_block = ""
+        active_topic_hint = ""
+        working_turns = history[-12:]
+        memory_meta = None
+        try:
+            from modules.core.librarian import Librarian
+            librarian = Librarian()
+            librarian.load_session_history(history, cross_session_memory)
+            memory_block = librarian.get_memory_prompt_block()
+            active_topic_hint = librarian.get_active_topic_hint()
+            working_turns = librarian.get_working_messages()
+            memory_meta = librarian.get_memory_stats()
+            layers_info = memory_meta.get("layers", {})
+            if (
+                layers_info.get("working_messages")
+                or layers_info.get("session_summarized")
+                or layers_info.get("cross_sessions")
+            ):
+                thinking.append({
+                    "step": "[MEMORY]",
+                    "detail": (
+                        f"3-Layer Memory: {layers_info.get('working_messages', 0)} recent, "
+                        f"{layers_info.get('session_summarized', 0)} summarized, "
+                        f"{layers_info.get('cross_sessions', 0)} cross-sessions"
+                    ),
+                })
+        except Exception as lib_err:
+            print(f"[WARN] Serverless Librarian fallback: {lib_err}")
 
         # Automatic Live Web Search Grounding for general questions
         web_grounding_block = ""
@@ -481,7 +518,7 @@ class handler(BaseHTTPRequestHandler):
             from modules.notes.web_search import build_chat_web_grounding
             web_res = build_chat_web_grounding(
                 prompt,
-                context_text="",
+                context_text=active_topic_hint,
                 has_images=bool(image_files),
                 max_results=6,
             )
@@ -492,8 +529,10 @@ class handler(BaseHTTPRequestHandler):
         except Exception as we:
             print(f"[WARN] Serverless chat web search skipped: {we}")
 
-        effective_system_prompt = f"{SYSTEM_PROMPT}{web_grounding_block}"
-        messages = build_messages(effective_system_prompt, history, prompt)
+        effective_system_prompt = "\n\n".join(
+            part for part in [SYSTEM_PROMPT, memory_block, web_grounding_block.strip()] if part
+        )
+        messages = build_messages(effective_system_prompt, working_turns, prompt)
         response_text, model_name = call_ai(messages, model_preference, image_files)
 
         # Extract Deep Reasoning / Chain of Thought tokens
@@ -513,7 +552,8 @@ class handler(BaseHTTPRequestHandler):
             "response": response_text,
             "model": model_name,
             "thinking": thinking,
-            "duration": duration
+            "duration": duration,
+            "memory_meta": memory_meta
         })
 
     def _set_cors_headers(self):

@@ -10,12 +10,14 @@ class ChatRequest(BaseModel):
     history: List[Dict[str, Any]] = []
     files: List[ChatFile] = []
     model_preference: str = "auto"
+    cross_session_memory: List[Dict[str, Any]] = []
 
 class ChatResponse(BaseModel):
     response: str
     model: str
     thinking: List[Dict[str, str]]
     duration: float
+    memory_meta: Optional[Dict[str, Any]] = None
 
 class NotesAIRequest(BaseModel):
     action: str

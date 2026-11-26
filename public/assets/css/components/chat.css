@@ -950,3 +950,81 @@
   display: none;
 }
 
+/* ─── Soft Memory Health Banner (Non-Blocking) ─── */
+.memory-health-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-lg);
+  background: rgba(201, 162, 39, 0.1);
+  border: 1px solid rgba(201, 162, 39, 0.32);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  font-family: var(--font-sans);
+  font-size: 0.76rem;
+  color: var(--text-primary);
+  flex-wrap: wrap;
+}
+
+.memory-health-banner.level-high {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.memory-banner-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 200px;
+  line-height: 1.35;
+  color: var(--text-secondary);
+}
+
+.memory-banner-icon {
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.memory-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-memory-new,
+.btn-memory-dismiss {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-memory-new {
+  background: var(--gold-primary);
+  color: #0b0e14;
+  border: 1px solid transparent;
+}
+
+.btn-memory-new:hover {
+  filter: brightness(1.08);
+}
+
+.btn-memory-dismiss {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-memory-dismiss:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+

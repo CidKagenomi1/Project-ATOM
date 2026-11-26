@@ -204,7 +204,13 @@ ATURAN FORMAT JAWABAN:
 - Jawab to the point, terstruktur rapi, dan mudah dipahami.
 - Bila menjelaskan hal teknis atau arsitektur, berikan poin-poin yang jelas dan analogi konkret bila perlu.
 - Format kode selalu menggunakan markdown code block dengan penanda bahasa pemrograman yang sesuai.
-- Bila ditanya tentang identitasmu, penciptamu (Alif Rahmadi), cara kerja Cortex, CrewAI, atau arsitektur sistem A.T.O.M., jelaskan secara percaya diri dan akurat berdasarkan fakta di atas."""
+- Bila ditanya tentang identitasmu, penciptamu (Alif Rahmadi), cara kerja Cortex, CrewAI, atau arsitektur sistem A.T.O.M., jelaskan secara percaya diri dan akurat berdasarkan fakta di atas.
+
+MEMORI MULTI-LAYER & PEMAHAMAN TYPO:
+- Selalu perhatikan seluruh 3 layer memori percakapan: riwayat multi-turn terbaru (Layer 1), ringkasan keseluruhan awal sesi aktif (Layer 2), serta memori lintas sesi pengguna (Layer 3) bila tersedia.
+- Jika pengguna melakukan salah ketik (typo), menggunakan singkatan ("yg", "brp", "kalo"), atau bertanya secara implisit merujuk ke pesan sebelumnya ("yang itu", "tadi", "mesinnya berapa cc?"), tafsirkan maksudnya berdasarkan topik utama percakapan terlebih dahulu sebelum mengasumsikan topik baru.
+- Bila sebuah typo memiliki dua tafsir yang sama-sama masuk akal, jawab tafsir yang paling sesuai dengan konteks sesi sambil mengonfirmasi secara singkat.
+- Jika terdapat blok WEB SEARCH GROUNDING tetapi hasilnya melenceng dari topik percakapan (misalnya karena typo), abaikan hasil web tersebut dan utamakan konteks percakapan."""
 
 
 # --- 4. THE CORTEX (Otak Utama dengan Timeout Failover) ---
@@ -740,9 +746,24 @@ class ATOMCortex:
         thinking.append({"step": "[ROUTER]", "detail": f"Route: **{route}**"})
         print(f"   > Route: {route}")
         
-        context = self.librarian.get_context()
-        if context:
-            thinking.append({"step": "[MEMORY]", "detail": f"Context loaded ({len(self.librarian.raw_history)} msgs)"})
+        memory_block = self.librarian.get_memory_prompt_block()
+        working_turns = self.librarian.get_working_messages()
+        mem_stats = self.librarian.get_memory_stats()
+        active_topic_hint = self.librarian.get_active_topic_hint()
+        layers_info = mem_stats.get("layers", {})
+        if (
+            layers_info.get("working_messages")
+            or layers_info.get("session_summarized")
+            or layers_info.get("cross_sessions")
+        ):
+            thinking.append({
+                "step": "[MEMORY]",
+                "detail": (
+                    f"3-Layer Memory: {layers_info.get('working_messages', 0)} recent, "
+                    f"{layers_info.get('session_summarized', 0)} summarized, "
+                    f"{layers_info.get('cross_sessions', 0)} cross-sessions"
+                ),
+            })
         
         response = ""
         model_name = "System"
@@ -788,12 +809,16 @@ class ATOMCortex:
             web_grounding_block = ""
             try:
                 from modules.notes.web_search import should_search_web_for_chat, build_chat_web_grounding
-                will_search, _ = should_search_web_for_chat(user_input, has_images=bool(image_files))
+                will_search, _ = should_search_web_for_chat(
+                    user_input,
+                    has_images=bool(image_files),
+                    context_text=active_topic_hint,
+                )
                 if will_search:
                     self._update_status("🌐 Searching live web sources...")
                     web_res = build_chat_web_grounding(
                         user_input,
-                        context_text="",
+                        context_text=active_topic_hint,
                         has_images=bool(image_files),
                         max_results=6,
                     )
@@ -804,11 +829,22 @@ class ATOMCortex:
             except Exception as we:
                 print(f"[WARN] Chat web search skipped: {we}")
 
-            system_prompt = SystemMessage(content=f"""{ATOM_SYSTEM_PROMPT}{ancestor_block}{web_grounding_block}
+            system_parts = [ATOM_SYSTEM_PROMPT]
+            if memory_block:
+                system_parts.append(memory_block)
+            if ancestor_block:
+                system_parts.append(ancestor_block.strip())
+            if web_grounding_block:
+                system_parts.append(web_grounding_block.strip())
 
-KONTEKS PERCAKAPAN:
-{context}""")
-            
+            system_prompt = SystemMessage(content="\n\n".join(system_parts))
+            messages = [system_prompt]
+            for turn in working_turns:
+                if turn.get("role") == "assistant":
+                    messages.append(AIMessage(content=turn.get("content", "")))
+                else:
+                    messages.append(HumanMessage(content=turn.get("content", "")))
+
             if image_files:
                 if (model_preference or "auto").lower() == "auto":
                     thinking.append({"step": "[VISION]", "detail": "Gambar terdeteksi — Auto-routing ke model Vision (VL)"})
@@ -818,9 +854,9 @@ KONTEKS PERCAKAPAN:
                         "type": "image_url",
                         "image_url": {"url": img["content"]}
                     })
-                messages = [system_prompt, HumanMessage(content=content_list)]
+                messages.append(HumanMessage(content=content_list))
             else:
-                messages = [system_prompt, HumanMessage(content=user_input)]
+                messages.append(HumanMessage(content=user_input))
                 
             response, model_name, was_failover = self._call_ai_with_timeout(messages, model_preference)
             

@@ -91,15 +91,9 @@ async def chat_endpoint(request: ChatRequest):
     # Process using shared ATOMCortex
     cortex = get_cortex()
     
-    # Synchronize raw history in cortex Librarian with client-provided history
-    cortex.librarian.clear()
-    for msg in history[-6:]:
-        role = msg.get("role", "user")
-        content = msg.get("content", "")
-        if role == "user":
-            cortex.librarian.raw_history.append(f"User: {content}")
-        else:
-            cortex.librarian.raw_history.append(f"ATOM: {content}")
+    # Hydrate 3-layer memory (Layer 1 working turns, Layer 2 session summary, Layer 3 cross-session)
+    cortex.librarian.load_session_history(history, request.cross_session_memory)
+    memory_meta = cortex.librarian.get_memory_stats()
 
     try:
         response_text, thinking = cortex.process(
@@ -138,5 +132,6 @@ async def chat_endpoint(request: ChatRequest):
         response=response_text,
         model=model_name,
         thinking=sanitized_thinking,
-        duration=duration
+        duration=duration,
+        memory_meta=memory_meta
     )
